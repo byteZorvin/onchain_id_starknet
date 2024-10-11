@@ -1,5 +1,6 @@
 pub mod claim_issuer;
 pub mod identity;
+pub mod identity_component;
 pub mod factory {
     pub mod id_factory;
     pub mod iid_factory;
