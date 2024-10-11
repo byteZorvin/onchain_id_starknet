@@ -3,12 +3,11 @@ pub mod IdentityComponent {
     #[allow(unused_imports)]
     use onchain_id_starknet::interface::{
         iclaim_issuer::{IClaimIssuer, IClaimIssuerDispatcher, IClaimIssuerDispatcherTrait},
-        iidentity::{IIdentity, IIdentityDispatcher}, ierc734::IERC734, ierc734, ierc735::IERC735,
+        iidentity::{IIdentity, IIdentityDispatcher}, ierc734::IERC734, ierc735::IERC735, ierc734,
         ierc735
     };
-    #[allow(unused_imports)]
-    use onchain_id_starknet::version::version::Version;
     use onchain_id_starknet::storage::{storage::IdentityStorage, structs::Signature};
+    use onchain_id_starknet::version::version::VersionComponent;
     use starknet::ContractAddress;
     use starknet::storage::{ //    StorageMapReadAccess, StorageMapWriteAccess,
         StoragePointerReadAccess, //    StoragePointerWriteAccess
@@ -16,7 +15,6 @@ pub mod IdentityComponent {
 
     #[storage]
     pub struct Storage {
-        #[flat]
         IdentityComponent_storage: IdentityStorage,
     }
 
@@ -24,15 +22,18 @@ pub mod IdentityComponent {
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         #[flat]
-        IERC735Event: ierc735::ERC735Event,
+        ERC734Event: ierc734::ERC734Event,
         #[flat]
-        IERC734Event: ierc734::ERC734Event,
+        ERC735Event: ierc735::ERC735Event
     }
 
     // TODO: implement the interface
     #[embeddable_as(IdentityImpl)]
     pub impl Identity<
-        TContractState, +Drop<TContractState>, +HasComponent<TContractState>
+        TContractState,
+        +Drop<TContractState>,
+        +HasComponent<TContractState>,
+        +VersionComponent::HasComponent<TContractState>
     > of IIdentity<ComponentState<TContractState>> {
         // TODO: this should be partialy overiddeable by claim issuer
         fn is_claim_valid(
@@ -53,7 +54,10 @@ pub mod IdentityComponent {
     // TODO: Implement the interface
     #[embeddable_as(ERC734Impl)]
     pub impl ERC734<
-        TContractState, +Drop<TContractState>, +HasComponent<TContractState>
+        TContractState,
+        +Drop<TContractState>,
+        +HasComponent<TContractState>,
+        +VersionComponent::HasComponent<TContractState>
     > of IERC734<ComponentState<TContractState>> {
         fn add_key(
             ref self: ComponentState<TContractState>, key: felt252, purpose: u256, key_type: u256
@@ -98,7 +102,10 @@ pub mod IdentityComponent {
 
     #[embeddable_as(ERC735Impl)]
     pub impl ERC735<
-        TContractState, +Drop<TContractState>, +HasComponent<TContractState>
+        TContractState,
+        +Drop<TContractState>,
+        +HasComponent<TContractState>,
+        +VersionComponent::HasComponent<TContractState>
     > of IERC735<ComponentState<TContractState>> {
         fn add_claim(
             ref self: ComponentState<TContractState>,
