@@ -97,8 +97,8 @@ mod Gateway {
     }
 
     pub mod Errors {
-        use super::SignatureHash;
         use super::Signature;
+        use super::SignatureHash;
         pub fn ZeroAddress() {
             panic!("A required parameter was set to the Zero address.");
         }
@@ -210,12 +210,12 @@ mod Gateway {
             }
 
             /// TODO: signature revocer decide on sig type
-            /// 
-            let signer: ContractAddress= Zero::zero();
+            ///
+            let signer: ContractAddress = Zero::zero();
 
             if self.approved_signers.read(signer) {
                 Errors::UnapprovedSigner(signer);
-            } 
+            }
 
             let mut signature_serialized: Array<felt252> = array![];
             signature.serialize(ref signature_serialized);
@@ -224,7 +224,8 @@ mod Gateway {
                 Errors::SignatureAlreadyRevoked(signature_hash);
             }
 
-            IIdFactoryDispatcher{contract_address: self.id_factory.read()}.create_identity(identity_owner, salt)
+            IIdFactoryDispatcher { contract_address: self.id_factory.read() }
+                .create_identity(identity_owner, salt)
         }
 
         fn deploy_identity_with_salt_and_management_keys(
@@ -244,12 +245,12 @@ mod Gateway {
             }
 
             /// TODO: signature revocer decide on sig type
-            /// 
-            let signer: ContractAddress= Zero::zero();
+            ///
+            let signer: ContractAddress = Zero::zero();
 
             if self.approved_signers.read(signer) {
                 Errors::UnapprovedSigner(signer);
-            } 
+            }
 
             let mut signature_serialized: Array<felt252> = array![];
             signature.serialize(ref signature_serialized);
@@ -258,7 +259,8 @@ mod Gateway {
                 Errors::SignatureAlreadyRevoked(signature_hash);
             }
 
-            IIdFactoryDispatcher{contract_address: self.id_factory.read()}.create_identity_with_management_keys(identity_owner, salt, management_keys)
+            IIdFactoryDispatcher { contract_address: self.id_factory.read() }
+                .create_identity_with_management_keys(identity_owner, salt, management_keys)
         }
 
         fn deploy_identity_for_wallet(
@@ -300,7 +302,8 @@ mod Gateway {
         }
 
         fn call_factory(ref self: ContractState, selector: felt252, call_data: Span<felt252>) {
-            starknet::syscalls::call_contract_syscall(self.id_factory.read(), selector, call_data).unwrap();
+            starknet::syscalls::call_contract_syscall(self.id_factory.read(), selector, call_data)
+                .unwrap();
         }
     }
 }
