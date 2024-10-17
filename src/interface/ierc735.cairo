@@ -12,51 +12,51 @@ pub enum ERC735Event {
 #[derive(Drop, starknet::Event)]
 pub struct ClaimAdded {
     #[key]
-    claim_id: felt252,
+    pub claim_id: felt252,
     #[key]
-    topic: u256,
-    scheme: u256,
+    pub topic: felt252,
+    pub scheme: felt252,
     #[key]
-    issuer: ContractAddress,
-    signature: Signature,
-    uri: ByteArray,
-    data: ByteArray,
+    pub issuer: ContractAddress,
+    pub signature: Signature,
+    pub uri: ByteArray,
+    pub data: ByteArray,
 }
 
 #[derive(Drop, starknet::Event)]
 pub struct ClaimRemoved {
     #[key]
-    claim_id: felt252,
+    pub claim_id: felt252,
     #[key]
-    topic: u256,
-    scheme: u256,
+    pub topic: felt252,
+    pub scheme: felt252,
     #[key]
-    issuer: ContractAddress,
-    signature: Signature,
-    uri: ByteArray,
-    data: ByteArray,
+    pub issuer: ContractAddress,
+    pub signature: Signature,
+    pub uri: ByteArray,
+    pub data: ByteArray,
 }
 
 #[derive(Drop, starknet::Event)]
 pub struct ClaimChanged {
     #[key]
-    claim_id: felt252,
+    pub claim_id: felt252,
     #[key]
-    topic: u256,
-    scheme: u256,
+    pub topic: felt252,
+    pub scheme: felt252,
     #[key]
-    issuer: ContractAddress,
-    signature: Signature,
-    uri: ByteArray,
-    data: ByteArray,
+    pub issuer: ContractAddress,
+    pub signature: Signature,
+    pub uri: ByteArray,
+    pub data: ByteArray,
 }
 
 #[starknet::interface]
 pub trait IERC735<TContractState> {
     fn add_claim(
         ref self: TContractState,
-        topic: u256,
-        scheme: u256,
+        topic: felt252,
+        scheme: felt252,
         issuer: ContractAddress,
         signature: Signature,
         data: ByteArray,
@@ -65,6 +65,8 @@ pub trait IERC735<TContractState> {
     fn remove_claim(ref self: TContractState, claim_id: felt252) -> bool;
     fn get_claim(
         self: @TContractState, claim_id: felt252
-    ) -> (u256, u256, ContractAddress, Signature, ByteArray, ByteArray); // turn this into a struct?
-    fn get_claim_ids_by_topics(self: @TContractState, topic: u256) -> Array<felt252>;
+    ) -> (
+        felt252, felt252, ContractAddress, Signature, ByteArray, ByteArray
+    ); // NOTE: turn this into a struct?
+    fn get_claim_ids_by_topics(self: @TContractState, topic: felt252) -> Array<felt252>;
 }
