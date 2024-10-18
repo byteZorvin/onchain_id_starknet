@@ -1,9 +1,11 @@
 use starknet::ContractAddress;
-use starknet::storage::Vec;
+use starknet::storage::{StoragePointerWriteAccess, StoragePath, Mutable};
+use onchain_id_starknet::storage::storage::{StorageArray as StorageArrayFelt};
+use core::num::traits::Zero;
 
 #[starknet::storage_node]
 pub struct Key {
-    pub purposes: Vec<felt252>,
+    pub purposes: StorageArrayFelt,
     pub key_type: felt252,
     pub key: felt252
 }
@@ -33,3 +35,17 @@ pub struct Signature {
     pub y_parity: bool
 }
 
+// Note: Assumes purposes are already cleared
+pub fn delete_key(self: StoragePath<Mutable<Key>>) {
+    self.key_type.write(Zero::zero());
+    self.key.write(Zero::zero());
+}
+
+pub fn delete_claim(self: StoragePath<Mutable<Claim>>) {
+    self.topic.write(Zero::zero());
+    self.scheme.write(Zero::zero());
+    self.issuer.write(Zero::zero());
+    self.signature.write(Default::default());
+    self.data.write(Default::default());
+    self.uri.write(Default::default());
+}
