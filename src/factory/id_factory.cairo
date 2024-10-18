@@ -6,8 +6,8 @@ mod IdFactory {
     use starknet::ContractAddress;
     use starknet::storage::{
         Map, //StorageMapReadAccess,
-        StorageMapWriteAccess, // StoragePathEntry, StoragePointerReadAccess,
-        StoragePointerWriteAccess, Vec, //VecTrait, MutableVecTrait,
+         StorageMapWriteAccess, StoragePathEntry,
+        StoragePointerReadAccess, StoragePointerWriteAccess, Vec, //VecTrait, MutableVecTrait,
     };
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -113,7 +113,7 @@ mod IdFactory {
         }
 
         fn create_identity(
-            ref self: ContractState, wallet: ContractAddress, salt: ByteArray
+            ref self: ContractState, wallet: ContractAddress, salt: felt252
         ) -> ContractAddress {
             Zero::zero()
         }
@@ -121,7 +121,7 @@ mod IdFactory {
         fn create_identity_with_management_keys(
             ref self: ContractState,
             wallet: ContractAddress,
-            salt: ByteArray,
+            salt: felt252,
             management_keys: Array<felt252>
         ) -> ContractAddress {
             Zero::zero()
@@ -131,7 +131,7 @@ mod IdFactory {
             ref self: ContractState,
             token: ContractAddress,
             token_owner: ContractAddress,
-            salt: ByteArray
+            salt: felt252
         ) -> ContractAddress {
             Zero::zero()
         }
@@ -147,17 +147,21 @@ mod IdFactory {
         fn get_wallets(self: @ContractState, identity: ContractAddress) -> Array<ContractAddress> {
             array![]
         }
+
         fn get_token(self: @ContractState, identity: ContractAddress) -> ContractAddress {
-            Zero::zero()
+            self.token_address.entry(identity).read()
         }
+
         fn is_token_factory(self: @ContractState, factory: ContractAddress) -> bool {
-            true
+            self.token_factories.entry(factory).read()
         }
-        fn is_salt_taken(self: @ContractState, salt: ByteArray) -> bool {
-            true
+
+        fn is_salt_taken(self: @ContractState, salt: felt252) -> bool {
+            self.salt_taken.entry(salt).read()
         }
+
         fn implemenatation_authority(self: @ContractState) -> ContractAddress {
-            Zero::zero()
+            self.implementation_authority.read()
         }
     }
 }
