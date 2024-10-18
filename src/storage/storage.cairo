@@ -1,7 +1,6 @@
 use core::num::traits::Zero;
 use starknet::storage::{
-    Vec, StoragePath, VecTrait, StoragePointerReadAccess, StoragePointerWriteAccess, Mutable, Map,
-    StoragePathEntry
+    StoragePath, StoragePointerReadAccess, StoragePointerWriteAccess, Mutable, Map, StoragePathEntry
 };
 
 #[starknet::storage_node]
@@ -19,9 +18,7 @@ pub trait StorageArrayTrait<T> {
 
 pub impl StorageArrayImpl of StorageArrayTrait<StoragePath<StorageArray>> {
     type ElementType = felt252;
-    fn get(
-        self: StoragePath<StorageArray>, index: u64
-    ) -> Option<StoragePath<Self::ElementType>> {
+    fn get(self: StoragePath<StorageArray>, index: u64) -> Option<StoragePath<Self::ElementType>> {
         let vec_len = self.len.read();
         if index < vec_len {
             return Option::Some(self.vec.entry(index));
@@ -78,7 +75,9 @@ pub impl MutableStorageArrayImpl of MutableStorageArrayTrait<StoragePath<Mutable
         Option::None
     }
 
-    fn at(self: StoragePath<Mutable<StorageArray>>, index: u64) -> StoragePath<Mutable<Self::ElementType>> {
+    fn at(
+        self: StoragePath<Mutable<StorageArray>>, index: u64
+    ) -> StoragePath<Mutable<Self::ElementType>> {
         assert!(index < self.len.read(), "Index out of bounds");
         self.vec.entry(index)
     }
@@ -95,7 +94,9 @@ pub impl StorageArrayIndexView of core::ops::IndexView<StoragePath<StorageArray>
     }
 }
 
-pub impl MutableStorageArrayIndexView of core::ops::IndexView<StoragePath<Mutable<StorageArray>>, u64> {
+pub impl MutableStorageArrayIndexView of core::ops::IndexView<
+    StoragePath<Mutable<StorageArray>>, u64
+> {
     type Target = StoragePath<Mutable<felt252>>;
     fn index(self: @StoragePath<Mutable<StorageArray>>, index: u64) -> Self::Target {
         (*self).at(index)

@@ -20,7 +20,7 @@ mod IdFactory {
     struct Storage {
         token_factories: Map<ContractAddress, bool>,
         implementation_authority: ContractAddress, // immutable
-        salt_taken: Map<ByteArray, bool>,
+        salt_taken: Map<felt252, bool>,
         user_identity: Map<ContractAddress, ContractAddress>,
         wallets: Map<ContractAddress, Vec<ContractAddress>>,
         token_identity: Map<ContractAddress, ContractAddress>,

@@ -10,16 +10,16 @@ pub mod IdentityComponent {
     use core::num::traits::{Bounded, Zero};
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::storage::{
-        storage::{Felt252VecToFelt252Array,
-        MutableStorageArrayTrait, StorageArrayTrait, StorageArray, StorageArrayIndexView, MutableStorageArrayIndexView,
+        storage::{
+            Felt252VecToFelt252Array, MutableStorageArrayTrait, StorageArrayTrait, StorageArray,
+            StorageArrayIndexView, MutableStorageArrayIndexView,
         },
         structs::{Signature, Key, Claim, Execution, delete_key, delete_claim}
     };
     use onchain_id_starknet::version::version::VersionComponent;
     use starknet::ContractAddress;
     use starknet::storage::{
-        Map, StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, VecTrait,
-        MutableVecTrait, StorageAsPath
+        Map, StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, StorageAsPath
     };
 
     #[storage]
@@ -136,7 +136,7 @@ pub mod IdentityComponent {
             self.delegated_only();
             true
         }
-        
+
         fn remove_key(
             ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
@@ -144,7 +144,7 @@ pub mod IdentityComponent {
             self.only_manager();
             let path_entry = self.keys.entry(key);
             assert(path_entry.key.read() == key, Errors::KEY_NOT_REGISTERED);
-        
+
             let purposes = path_entry.purposes.as_path();
             let purpose_size = purposes.len();
             let mut purpose_index = Bounded::MAX;
@@ -174,14 +174,14 @@ pub mod IdentityComponent {
                 };
             keys_by_purpose_key_storage_path.delete(key_index);
             let key_type = path_entry.key_type.read();
-          
+
             /// if (_purposes.length - 1 == 0) {
             ///     delete _keys[_key];
             ///}
             if purposes.len().is_zero() {
                 delete_key(path_entry);
             }
-        
+
             self.emit(ERC734Event::KeyRemoved(ierc734::KeyRemoved { key, purpose, key_type }));
             true
         }
