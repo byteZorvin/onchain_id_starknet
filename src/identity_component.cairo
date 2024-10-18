@@ -10,25 +10,26 @@ pub mod IdentityComponent {
     use core::num::traits::{Bounded, Zero};
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::storage::{
-        storage::{VecToArray, //U256VecToU256Array, Felt252VecToFelt252Array
+        storage::{Felt252VecToFelt252Array,
+        MutableStorageArrayTrait, StorageArrayTrait, StorageArray, StorageArrayIndexView, MutableStorageArrayIndexView,
         },
-        structs::{Signature, Key, Claim, Execution}
+        structs::{Signature, Key, Claim, Execution, delete_key, delete_claim}
     };
     use onchain_id_starknet::version::version::VersionComponent;
     use starknet::ContractAddress;
     use starknet::storage::{
-        Map, Vec, StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, VecTrait,
-        MutableVecTrait
+        Map, StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, VecTrait,
+        MutableVecTrait, StorageAsPath
     };
 
     #[storage]
     pub struct Storage {
         execution_nonce: felt252,
         keys: Map<felt252, Key>,
-        keys_by_purpose: Map<felt252, Vec<felt252>>,
+        keys_by_purpose: Map<felt252, StorageArray>,
         executions: Map<felt252, Execution>,
         claims: Map<felt252, Claim>,
-        claims_by_topic: Map<felt252, Vec<felt252>>,
+        claims_by_topic: Map<felt252, StorageArray>,
         initialized: bool,
         can_interact: bool,
     }
@@ -108,7 +109,7 @@ pub mod IdentityComponent {
             self.only_manager();
             let mut key_storage_path = self.keys.entry(key);
             if key_storage_path.key.read() == key {
-                let purposes_storage_path = key_storage_path.purposes;
+                let purposes_storage_path = key_storage_path.purposes.as_path();
                 for i in 0
                     ..purposes_storage_path
                         .len() {
@@ -121,7 +122,7 @@ pub mod IdentityComponent {
             } else {
                 key_storage_path.key.write(key);
                 key_storage_path.key_type.write(key_type);
-                key_storage_path.purposes.append().write(purpose);
+                key_storage_path.purposes.as_path().append().write(purpose);
             }
             self.keys_by_purpose.entry(purpose).append().write(key);
             self.emit(ERC734Event::KeyAdded(ierc734::KeyAdded { key, purpose, key_type }));
@@ -135,7 +136,7 @@ pub mod IdentityComponent {
             self.delegated_only();
             true
         }
-        // TODO: Find a way to remove elems from Vec
+        
         fn remove_key(
             ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
@@ -143,8 +144,8 @@ pub mod IdentityComponent {
             self.only_manager();
             let path_entry = self.keys.entry(key);
             assert(path_entry.key.read() == key, Errors::KEY_NOT_REGISTERED);
-            // clear the purpose from key.purposes
-            let purposes = path_entry.purposes;
+        
+            let purposes = path_entry.purposes.as_path();
             let purpose_size = purposes.len();
             let mut purpose_index = Bounded::MAX;
             for i in 0
@@ -154,22 +155,15 @@ pub mod IdentityComponent {
                         break;
                     }
                 };
-            /// TODO: this needs removed
             assert(purpose_index != Bounded::MAX, Errors::KEY_DOES_NOT_HAVE_PURPOSE);
-            // if not the last element swap with the last element then pop
-            if purpose_index != purpose_size {
-                purposes[purpose_index].write(purposes[purpose_size - 1].read());
-            }
-            purposes[purpose_size - 1].write(Zero::zero());
-            // TODO: remove the element from vec
+            purposes.delete(purpose_index);
 
-            // TODO: clear the purpose from keysBypurpose
             let keys_by_purpose_key_storage_path = self.keys_by_purpose.entry(purpose);
             let mut keys_len = keys_by_purpose_key_storage_path.len();
-            // this loops assumes that whenever key is added to keys mapping it
+            // MOTE: this loops assumes that whenever key is added to keys mapping it
             // keys_by_purpose mapping is also updated thus no need to check for
-            //purpose exist for key or not if this invariant holds check for
-            //removal above should guarantee purpose exist for key
+            // purpose exist for key or not if this invariant holds check for
+            // removal above should guarantee purpose exist for key
             let mut key_index = 0;
             for i in 0
                 ..keys_len {
@@ -178,15 +172,16 @@ pub mod IdentityComponent {
                         break;
                     }
                 };
-            // if keys is not the last elem swap it with last elem then pop
-            if key_index != keys_len - 1 {
-                keys_by_purpose_key_storage_path[key_index]
-                    .write(keys_by_purpose_key_storage_path[keys_len - 1].read());
-            }
-            keys_by_purpose_key_storage_path[keys_len - 1].write(Zero::zero());
+            keys_by_purpose_key_storage_path.delete(key_index);
             let key_type = path_entry.key_type.read();
-            // TODO: clear the Key
-            // remove the element from keys.purposes vec
+          
+            /// if (_purposes.length - 1 == 0) {
+            ///     delete _keys[_key];
+            ///}
+            if purposes.len().is_zero() {
+                delete_key(path_entry);
+            }
+        
             self.emit(ERC734Event::KeyRemoved(ierc734::KeyRemoved { key, purpose, key_type }));
             true
         }
@@ -230,7 +225,7 @@ pub mod IdentityComponent {
             if key_storage_path.key.read().is_zero() {
                 return false;
             }
-            let purposes_storage_path = key_storage_path.purposes;
+            let purposes_storage_path = key_storage_path.purposes.as_path();
             let mut has_purpose = false;
             for i in 0
                 ..purposes_storage_path
@@ -307,7 +302,7 @@ pub mod IdentityComponent {
 
             claim_id
         }
-        // TODO: Find a way to remove elems from Vec
+
         fn remove_claim(ref self: ComponentState<TContractState>, claim_id: felt252) -> bool {
             self.delegated_only();
             self.only_claim_key();
@@ -327,13 +322,9 @@ pub mod IdentityComponent {
             assert(
                 claim_index == Bounded::MAX, Errors::CLAIM_DOES_NOT_EXIST
             ); // NOTE: this check might not be necessary due to above assertion we might assume claim_id will always be there
-            if claim_index != claims_len - 1 {
-                claims_by_topic_path_entry[claim_index]
-                    .write(claims_by_topic_path_entry[claims_len - 1].read());
-            }
-            claims_by_topic_path_entry[claims_len - 1].write(Zero::zero());
-            //claims_by_topic_path_entry.as_ptr().write(claims_len - 1);
-            //claims_by_topic_path_entry.update(claims_len);
+
+            claims_by_topic_path_entry.delete(claim_index);
+
             self
                 .emit(
                     ERC735Event::ClaimRemoved(
@@ -348,7 +339,7 @@ pub mod IdentityComponent {
                         }
                     )
                 );
-            //delete _claims[_claimId];
+            delete_claim(claims_path_entry);
             true
         }
 
