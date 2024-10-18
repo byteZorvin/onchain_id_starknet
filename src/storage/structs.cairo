@@ -3,34 +3,33 @@ use starknet::storage::Vec;
 
 #[starknet::storage_node]
 pub struct Key {
-    purposes: Vec<u256>,
-    key_type: u256,
-    key: felt252
+    pub purposes: Vec<felt252>,
+    pub key_type: felt252,
+    pub key: felt252
 }
 
 #[starknet::storage_node]
 pub struct Execution {
-    to: ContractAddress,
-    value: u256,
-    data: ByteArray,
-    approved: bool,
-    executed: bool
+    pub to: ContractAddress,
+    pub data: ByteArray,
+    pub approved: bool,
+    pub executed: bool
 }
 
 #[starknet::storage_node]
 pub struct Claim {
-    topic: u256,
-    scheme: u256,
-    issuer: ContractAddress,
-    signature: Signature,
-    data: ByteArray,
-    uri: ByteArray
+    pub topic: felt252,
+    pub scheme: felt252,
+    pub issuer: ContractAddress,
+    pub signature: Signature,
+    pub data: ByteArray,
+    pub uri: ByteArray
 }
-
-#[derive(Copy, Debug, Default, Drop, Serde, starknet::Store)]
+// NOTE: Implement StoragePacking if this type of sig can comply with compact signatures
+#[derive(Copy, Debug, Default, Drop, Serde, Hash, starknet::Store)]
 pub struct Signature {
     pub r: felt252,
     pub s: felt252,
+    pub y_parity: bool
 }
 
-pub type SignatureHash = felt252;
