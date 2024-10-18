@@ -142,21 +142,21 @@ pub mod IdentityComponent {
         ) -> bool {
             self.delegated_only();
             self.only_manager();
-            let path_entry = self.keys.entry(key);
-            assert(path_entry.key.read() == key, Errors::KEY_NOT_REGISTERED);
+            let key_storage_path = self.keys.entry(key);
+            assert(key_storage_path.key.read() == key, Errors::KEY_NOT_REGISTERED);
 
-            let purposes = path_entry.purposes.as_path();
-            let purpose_size = purposes.len();
+            let purposes_storage_path = key_storage_path.purposes.as_path();
+            let purpose_size = purposes_storage_path.len();
             let mut purpose_index = Bounded::MAX;
             for i in 0
                 ..purpose_size {
-                    if purpose == purposes[i].read() {
+                    if purpose == purposes_storage_path[i].read() {
                         purpose_index = i;
                         break;
                     }
                 };
             assert(purpose_index != Bounded::MAX, Errors::KEY_DOES_NOT_HAVE_PURPOSE);
-            purposes.delete(purpose_index);
+            purposes_storage_path.delete(purpose_index);
 
             let keys_by_purpose_key_storage_path = self.keys_by_purpose.entry(purpose);
             let mut keys_len = keys_by_purpose_key_storage_path.len();
@@ -173,13 +173,13 @@ pub mod IdentityComponent {
                     }
                 };
             keys_by_purpose_key_storage_path.delete(key_index);
-            let key_type = path_entry.key_type.read();
+            let key_type = key_storage_path.key_type.read();
 
             /// if (_purposes.length - 1 == 0) {
             ///     delete _keys[_key];
             ///}
-            if purposes.len().is_zero() {
-                delete_key(path_entry);
+            if purposes_storage_path.len().is_zero() {
+                delete_key(key_storage_path);
             }
 
             self.emit(ERC734Event::KeyRemoved(ierc734::KeyRemoved { key, purpose, key_type }));
@@ -259,8 +259,7 @@ pub mod IdentityComponent {
             self.delegated_only();
             self.only_claim_key();
             let this_address = starknet::get_contract_address();
-            let mut dispatcher = IIdentityDispatcher { contract_address: issuer };
-            let is_valid_claim = dispatcher
+            let is_valid_claim = IIdentityDispatcher { contract_address: issuer }
                 .is_claim_valid(this_address, topic, signature, data.clone());
             if issuer != this_address {
                 assert(is_valid_claim, Errors::INVALID_CLAIM);
@@ -306,15 +305,15 @@ pub mod IdentityComponent {
         fn remove_claim(ref self: ComponentState<TContractState>, claim_id: felt252) -> bool {
             self.delegated_only();
             self.only_claim_key();
-            let claims_path_entry = self.claims.entry(claim_id);
-            let topic = claims_path_entry.topic.read();
+            let claim_storage_path = self.claims.entry(claim_id);
+            let topic = claim_storage_path.topic.read();
             assert(topic.is_non_zero(), Errors::CLAIM_DOES_NOT_EXIST);
-            let claims_by_topic_path_entry = self.claims_by_topic.entry(topic);
+            let claims_by_topic_storage_path = self.claims_by_topic.entry(topic);
             let mut claim_index = Bounded::MAX; // TODO: Might turn into Option<index>
-            let claims_len = claims_by_topic_path_entry.len();
+            let claims_len = claims_by_topic_storage_path.len();
             for i in 0
                 ..claims_len {
-                    if claims_by_topic_path_entry[i].read() == claim_id {
+                    if claims_by_topic_storage_path[i].read() == claim_id {
                         claim_index = i;
                         break;
                     }
@@ -323,7 +322,7 @@ pub mod IdentityComponent {
                 claim_index == Bounded::MAX, Errors::CLAIM_DOES_NOT_EXIST
             ); // NOTE: this check might not be necessary due to above assertion we might assume claim_id will always be there
 
-            claims_by_topic_path_entry.delete(claim_index);
+            claims_by_topic_storage_path.delete(claim_index);
 
             self
                 .emit(
@@ -331,15 +330,15 @@ pub mod IdentityComponent {
                         ierc735::ClaimRemoved {
                             claim_id,
                             topic,
-                            scheme: claims_path_entry.scheme.read(),
-                            issuer: claims_path_entry.issuer.read(),
-                            signature: claims_path_entry.signature.read(),
-                            data: claims_path_entry.data.read(),
-                            uri: claims_path_entry.uri.read()
+                            scheme: claim_storage_path.scheme.read(),
+                            issuer: claim_storage_path.issuer.read(),
+                            signature: claim_storage_path.signature.read(),
+                            data: claim_storage_path.data.read(),
+                            uri: claim_storage_path.uri.read()
                         }
                     )
                 );
-            delete_claim(claims_path_entry);
+            delete_claim(claim_storage_path);
             true
         }
 
