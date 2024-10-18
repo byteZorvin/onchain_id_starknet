@@ -1,11 +1,11 @@
 use core::num::traits::Zero;
-use onchain_id_starknet::storage::storage::{StorageArray as StorageArrayFelt};
+use onchain_id_starknet::storage::storage::StorageArrayFelt252;
 use starknet::ContractAddress;
 use starknet::storage::{StoragePointerWriteAccess, StoragePath, Mutable};
 
 #[starknet::storage_node]
 pub struct Key {
-    pub purposes: StorageArrayFelt,
+    pub purposes: StorageArrayFelt252,
     pub key_type: felt252,
     pub key: felt252
 }

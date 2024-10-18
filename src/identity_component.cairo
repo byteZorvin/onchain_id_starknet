@@ -11,8 +11,8 @@ pub mod IdentityComponent {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::storage::{
         storage::{
-            Felt252VecToFelt252Array, MutableStorageArrayTrait, StorageArrayTrait, StorageArray,
-            StorageArrayIndexView, MutableStorageArrayIndexView,
+            Felt252VecToFelt252Array, MutableStorageArrayTrait, StorageArrayTrait,
+            StorageArrayFelt252, StorageArrayFelt252IndexView, MutableStorageArrayFelt252IndexView,
         },
         structs::{Signature, Key, Claim, Execution, delete_key, delete_claim}
     };
@@ -26,10 +26,10 @@ pub mod IdentityComponent {
     pub struct Storage {
         execution_nonce: felt252,
         keys: Map<felt252, Key>,
-        keys_by_purpose: Map<felt252, StorageArray>,
+        keys_by_purpose: Map<felt252, StorageArrayFelt252>,
         executions: Map<felt252, Execution>,
         claims: Map<felt252, Claim>,
-        claims_by_topic: Map<felt252, StorageArray>,
+        claims_by_topic: Map<felt252, StorageArrayFelt252>,
         initialized: bool,
         can_interact: bool,
     }
