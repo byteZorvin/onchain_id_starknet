@@ -34,19 +34,16 @@ pub trait IVerifier<TContractState> {
     fn is_claim_topic_required(self: @TContractState, claim_topic: felt252) -> bool;
 }
 
-#[starknet::contract]
+#[starknet::component]
 pub mod Verifier {
     use super::IVerifier;
-    use starknet::storage::VecTrait;
-    use starknet::storage::{StoragePath, Mutable};
+    use starknet::storage::{StoragePath, Mutable,VecTrait,StoragePathEntry,StorageAsPath,Map,  StoragePointerReadAccess, StoragePointerWriteAccess};
     use core::iter::IntoIterator;
     use super::ITrustedIssuersRegistry;
     use starknet::event::EventEmitter;
-    use starknet::storage::StoragePathEntry;
     use onchain_id_starknet::interface::iclaim_issuer::IClaimIssuerDispatcher;
     use starknet::ContractAddress;
     use starknet::get_caller_address;
-    use starknet::storage::{StorageAsPath,Map,  StoragePointerReadAccess, StoragePointerWriteAccess,};
     use core::num::traits::Zero;
     use onchain_id_starknet::storage::{storage::{StorageArrayFelt252, StorageArrayContractAddress, MutableStorageArrayTrait, StorageArrayTrait} };
     #[storage]
@@ -130,12 +127,12 @@ pub mod Verifier {
     
     
     #[abi(embed_v0)]
-    impl VerifierImpl of super::IVerifier<ContractState> {
-        fn verify(self: @ContractState, identity: ContractAddress) -> bool {
+    impl VerifierImpl<TContractState> of super::IVerifier<ComponentState<TContractState>> {
+        fn verify(self: @ComponentState<TContractState>, identity: ContractAddress) -> bool {
             true
         }
 
-        fn is_claim_topic_required(self: @ContractState, claim_topic: felt252) -> bool {
+        fn is_claim_topic_required(self: @ComponentState<TContractState>, claim_topic: felt252) -> bool {
             for i in 0..self.required_claim_topics.as_path().len(){
                 if claim_topic == self.required_claim_topics.as_path().at(i).read() {
                     true;
@@ -146,18 +143,18 @@ pub mod Verifier {
     }
 
     #[abi(embed_v0)]
-    impl ClaimTopicsRegistryImpl of super::IClaimTopicsRegistry<ContractState> {
-        fn add_claim_topic(ref self: ContractState, claim_topic: felt252) {}
-        fn remove_claim_topic(ref self: ContractState, claim_topic: felt252) {}
-        fn get_claim_topics(self: @ContractState) -> Array<felt252> {
+    impl ClaimTopicsRegistryImpl<TContractState>  of super::IClaimTopicsRegistry<ComponentState<TContractState>> {
+        fn add_claim_topic(ref self: ComponentState<TContractState>, claim_topic: felt252) {}
+        fn remove_claim_topic(ref self: ComponentState<TContractState>, claim_topic: felt252) {}
+        fn get_claim_topics(self: @ComponentState<TContractState>) -> Array<felt252> {
             array![]
         }
     }
 
     #[abi(embed_v0)]
-    impl TrustedIssuerRegistryImpl of super::ITrustedIssuersRegistry<ContractState> {
+    impl TrustedIssuerRegistryImpl<TContractState,+HasComponent<TContractState>> of super::ITrustedIssuersRegistry<ComponentState<TContractState>> {
         fn add_trusted_issuer(
-            ref self: ContractState, trusted_issuer: ContractAddress, claim_topics: Array<felt252>
+            ref self: ComponentState<TContractState>, trusted_issuer: ContractAddress, claim_topics: Array<felt252>
         ) {
             assert(trusted_issuer != get_caller_address(), 'invalid argument - zero address');
             assert(self.claim_topics_to_trusted_issuers.entry(trusted_issuer).len() == 0,'trusted Issuer already exists');
@@ -174,7 +171,7 @@ pub mod Verifier {
             };
             self.emit(TrustedIssuerAdded { trusted_issuer: trusted_issuer, claim_topics })
         }
-        fn remove_trusted_issuer(ref self: ContractState, trusted_issuer: ContractAddress) {
+        fn remove_trusted_issuer(ref self: ComponentState<TContractState>, trusted_issuer: ContractAddress) {
             assert(trusted_issuer!=get_caller_address(), 'invalid argument - zero address');
             assert(self.claim_topics_to_trusted_issuers.entry(trusted_issuer).len() == 0,'trusted Issuer already exists');
             let total_issuers=self.trusted_issuers.as_path().len();
@@ -188,7 +185,7 @@ pub mod Verifier {
             self.emit(TrustedIssuerRemoved { trusted_issuer: trusted_issuer});
         }
         fn update_issuer_claim_topics(
-            ref self: ContractState, trusted_issuer: ContractAddress, claim_topics: Array<felt252>
+            ref self: ComponentState<TContractState>, trusted_issuer: ContractAddress, claim_topics: Array<felt252>
         ) {
             assert(trusted_issuer!=get_caller_address(), 'invalid argument - zero address');
             assert(self.claim_topics_to_trusted_issuers.entry(trusted_issuer).len() == 0,'there are topics');
@@ -210,7 +207,7 @@ pub mod Verifier {
             };
             self.emit(TrustedIssuerAdded { trusted_issuer: trusted_issuer, claim_topics });
         }
-        fn get_trusted_issuers(self: @ContractState) -> Array<ContractAddress> {
+        fn get_trusted_issuers(self: @ComponentState<TContractState>) -> Array<ContractAddress> {
             let mut issuers_array = ArrayTrait::<ContractAddress>::new();
             let total_issuers = self.trusted_issuers.as_path().len();
 
@@ -221,7 +218,7 @@ pub mod Verifier {
             issuers_array
         }
         fn get_trusted_issuers_for_claim_topic(
-            self: @ContractState, claim_topic: felt252
+            self: @ComponentState<TContractState>, claim_topic: felt252
         ) -> Array<ContractAddress> {
             let mut issuers_with_topic = ArrayTrait::<ContractAddress>::new();
 
@@ -239,7 +236,7 @@ pub mod Verifier {
             issuers_with_topic
 
         }
-        fn is_trusted_issuer(self: @ContractState, issuer: ContractAddress) -> bool {
+        fn is_trusted_issuer(self: @ComponentState<TContractState>, issuer: ContractAddress) -> bool {
             let total_issuers = self.trusted_issuers.as_path().len();
 
             for i in 0..total_issuers{
@@ -251,7 +248,7 @@ pub mod Verifier {
             false
         }
         fn get_trusted_issuer_claim_topics(
-            self: @ContractState, trusted_issuer: ContractAddress
+            self: @ComponentState<TContractState>, trusted_issuer: ContractAddress
         ) -> Array<felt252> {
             assert(self.claim_topics_to_trusted_issuers.entry(trusted_issuer).len() == 0,'trusted Issuer already exists');
             let mut topics = ArrayTrait::<felt252>::new();
@@ -262,7 +259,7 @@ pub mod Verifier {
             topics
         }
         fn has_claim_topic(
-            self: @ContractState, trusted_issuer: ContractAddress, claim_topic: felt252
+            self: @ComponentState<TContractState>, trusted_issuer: ContractAddress, claim_topic: felt252
         ) -> bool {
             if self.claim_topics_to_trusted_issuers.entry(trusted_issuer).len() > 0 {
                 true
@@ -274,8 +271,8 @@ pub mod Verifier {
     }
 
     #[generate_trait]
-    impl InternalImpl of InternalTrait {
-        fn only_verified_sender(self: @ContractState) {}
+    impl InternalImpl<TContractState>   of InternalTrait<TContractState> {
+        fn only_verified_sender(self: @ComponentState<TContractState>) {}
     }
 
 }
