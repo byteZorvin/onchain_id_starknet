@@ -56,7 +56,7 @@ mod ClaimIssuer {
     // TODO: ensure initialization pattern is correct.
     // NOTE: Depends on central upgreadeability mechanism we come up with
     #[constructor]
-    fn constructor(ref self: ContractState, initial_management_key: ContractAddress) {
+    fn constructor(ref self: ContractState, initial_management_key: felt252) {
         self.identity.initialize(initial_management_key);
     }
 
