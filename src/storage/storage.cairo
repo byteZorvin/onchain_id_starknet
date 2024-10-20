@@ -124,6 +124,18 @@ pub impl Felt252VecToFelt252Array of Into<StoragePath<StorageArrayFelt252>, Arra
     }
 }
 
+pub impl MutableFelt252VecToFelt252Array of Into<
+    StoragePath<Mutable<StorageArrayFelt252>>, Array<felt252>
+> {
+    fn into(self: StoragePath<Mutable<StorageArrayFelt252>>) -> Array<felt252> {
+        let mut array = array![];
+        for i in 0..self.len() {
+            array.append(self[i].read());
+        };
+        array
+    }
+}
+
 //********************************************************
 //             StorageArray for ContractAddress
 //********************************************************
@@ -227,6 +239,18 @@ pub impl ContractAddressVecToContractAddressArray of Into<
     StoragePath<StorageArrayContractAddress>, Array<ContractAddress>
 > {
     fn into(self: StoragePath<StorageArrayContractAddress>) -> Array<ContractAddress> {
+        let mut array = array![];
+        for i in 0..self.len() {
+            array.append(self[i].read());
+        };
+        array
+    }
+}
+
+pub impl MutableContractAddressVecToContractAddressArray of Into<
+    StoragePath<Mutable<StorageArrayContractAddress>>, Array<ContractAddress>
+> {
+    fn into(self: StoragePath<Mutable<StorageArrayContractAddress>>) -> Array<ContractAddress> {
         let mut array = array![];
         for i in 0..self.len() {
             array.append(self[i].read());
