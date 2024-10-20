@@ -1,18 +1,17 @@
 #[starknet::component]
 pub mod IdentityComponent {
-    #[allow(unused_imports)]
-    use onchain_id_starknet::interface::{
-        iclaim_issuer::{IClaimIssuer, IClaimIssuerDispatcher, IClaimIssuerDispatcherTrait},
-        iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait, IIdentity},
-        ierc734::{IERC734, ERC734Event}, ierc735::{IERC735, ERC735Event}, ierc734, ierc735
-    };
     use core::ecdsa::recover_public_key;
     use core::num::traits::{Bounded, Zero};
     use core::poseidon::poseidon_hash_span;
+    use onchain_id_starknet::interface::{
+        iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait, IIdentity},
+        ierc734::{IERC734, ERC734Event}, ierc735::{IERC735, ERC735Event}, ierc734, ierc735
+    };
     use onchain_id_starknet::storage::{
         storage::{
-            Felt252VecToFelt252Array, MutableStorageArrayTrait, StorageArrayTrait,
-            StorageArrayFelt252, StorageArrayFelt252IndexView, MutableStorageArrayFelt252IndexView,
+            MutableFelt252VecToFelt252Array, Felt252VecToFelt252Array, MutableStorageArrayTrait,
+            StorageArrayTrait, StorageArrayFelt252, StorageArrayFelt252IndexView,
+            MutableStorageArrayFelt252IndexView
         },
         structs::{Signature, Key, Claim, Execution, delete_key, delete_claim}
     };
@@ -30,7 +29,9 @@ pub mod IdentityComponent {
         executions: Map<felt252, Execution>,
         claims: Map<felt252, Claim>,
         claims_by_topic: Map<felt252, StorageArrayFelt252>,
+        // TODO: Decide we need this variable or not
         initialized: bool,
+        // TODO: Decide we need this variable or not
         can_interact: bool,
     }
 
@@ -84,11 +85,7 @@ pub mod IdentityComponent {
             // TODO: consider using hash required or not? Are we going to support multiple signature
             // type?
             let pub_key_hash = poseidon_hash_span(array![pub_key].span());
-            if self.key_has_purpose(pub_key_hash, 3) {
-                true
-            } else {
-                false
-            }
+            self.key_has_purpose(pub_key_hash, 3)
         }
     }
 
@@ -126,14 +123,6 @@ pub mod IdentityComponent {
             }
             self.keys_by_purpose.entry(purpose).append().write(key);
             self.emit(ERC734Event::KeyAdded(ierc734::KeyAdded { key, purpose, key_type }));
-            true
-        }
-        // TODO:
-        // NOTE: Solidity version uses msg.sender for access control and since we dont have EOAs to
-        // have same behaviour when triggered by sequencer + contract account might adopt some
-        // mechanism (AccountInterface)
-        fn approve(ref self: ComponentState<TContractState>, id: felt252, approve: bool) -> bool {
-            self.delegated_only();
             true
         }
 
@@ -186,6 +175,61 @@ pub mod IdentityComponent {
             true
         }
 
+        // TODO:
+        // NOTE: Solidity version uses msg.sender interchangebly for contract acccounts and signer
+        // pub_key
+        fn approve(
+            ref self: ComponentState<TContractState>, execution_id: felt252, approve: bool
+        ) -> bool {
+            self.delegated_only();
+            assert(
+                Into::<felt252, u256>::into(execution_id) < self.execution_nonce.read().into(),
+                Errors::NON_EXISTING_EXECUTION
+            );
+            let execution_storage_path = self.executions.entry(execution_id);
+            assert(!execution_storage_path.executed.read(), Errors::ALREADY_EXECUTED);
+            let caller_hash = poseidon_hash_span(
+                array![starknet::get_caller_address().into()].span()
+            );
+            assert(self.key_has_purpose(caller_hash, 1), Errors::NOT_HAVE_MANAGEMENT_KEY);
+            let to_address = execution_storage_path.to.read();
+            if to_address == starknet::get_contract_address() {
+                assert(self.key_has_purpose(caller_hash, 1), Errors::NOT_HAVE_MANAGEMENT_KEY);
+            } else {
+                assert(self.key_has_purpose(caller_hash, 2), Errors::NOT_HAVE_MANAGEMENT_KEY);
+            }
+            self.emit(ERC734Event::Approved(ierc734::Approved { execution_id, approved: approve }));
+            if !approve {
+                return false;
+            }
+            execution_storage_path.approved.write(true);
+            let selector = execution_storage_path.selector.read();
+            let calldata: Array<felt252> = execution_storage_path.calldata.deref().into();
+
+            match starknet::syscalls::call_contract_syscall(to_address, selector, calldata.span()) {
+                Result::Ok => {
+                    execution_storage_path.executed.write(true);
+                    self
+                        .emit(
+                            ERC734Event::Executed(
+                                ierc734::Executed { execution_id, to: to_address, data: calldata }
+                            )
+                        );
+                    true
+                },
+                Result::Err => {
+                    self
+                        .emit(
+                            ERC734Event::ExecutionFailed(
+                                ierc734::ExecutionFailed {
+                                    execution_id, to: to_address, data: calldata
+                                }
+                            )
+                        );
+                    false
+                },
+            }
+        }
         /// NOTE: Consider implementing Account interface + this so keys + ContractAddresses can
         /// call this
         fn execute(
@@ -194,7 +238,38 @@ pub mod IdentityComponent {
             selector: felt252,
             calldata: Array<felt252>
         ) -> felt252 {
-            Zero::zero()
+            self.delegated_only();
+            let execution_nonce = self.execution_nonce.read();
+            let execution_storage_path = self.executions.entry(execution_nonce);
+            execution_storage_path.to.write(to);
+            for chunk in calldata
+                .clone() {
+                    execution_storage_path.calldata.deref().append().write(chunk);
+                };
+
+            self.execution_nonce.write(execution_nonce + 1);
+
+            self
+                .emit(
+                    ERC734Event::ExecutionRequested(
+                        ierc734::ExecutionRequested {
+                            execution_id: execution_nonce, to, data: calldata
+                        }
+                    )
+                );
+
+            let caller_hash = poseidon_hash_span(
+                array![starknet::get_caller_address().into()].span()
+            );
+
+            if self.key_has_purpose(caller_hash, 1) {
+                self.approve(execution_nonce, true);
+            } else if to != starknet::get_contract_address()
+                && self.key_has_purpose(caller_hash, 2) {
+                self.approve(execution_nonce, true);
+            }
+
+            execution_nonce
         }
 
         fn get_key(
@@ -365,13 +440,32 @@ pub mod IdentityComponent {
 
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState, +Drop<TContractState>, +HasComponent<TContractState>
+        TContractState,
+        +Drop<TContractState>,
+        +HasComponent<TContractState>,
+        +VersionComponent::HasComponent<TContractState>,
     > of InternalTrait<TContractState> {
-        // TODO: ensure parameters are correct and general init mechanism satisfies the .sol
-        // behavior
+        // TODO: Finalize decision on type of key, pub_key and ContractAddress is not interchangebly
+        // used in Starknet as in EVM
         fn initialize(
-            ref self: ComponentState<TContractState>, initial_management_key: ContractAddress
-        ) {}
+            ref self: ComponentState<TContractState>, initial_management_key_hash: felt252
+        ) {
+            assert(initial_management_key_hash.is_non_zero(), Errors::ZERO_ADDRESS);
+            let key_storage_path = self.keys.entry(initial_management_key_hash);
+            key_storage_path.key.write(initial_management_key_hash);
+            key_storage_path.key_type.write(1);
+            key_storage_path.purposes.as_path().append().write(1);
+
+            self.keys_by_purpose.entry(1).append().write(initial_management_key_hash);
+            self
+                .emit(
+                    ERC734Event::KeyAdded(
+                        ierc734::KeyAdded {
+                            key: initial_management_key_hash, key_type: 1, purpose: 1
+                        }
+                    )
+                );
+        }
 
         // TODO : decide do we need this
         fn delegated_only(self: @ComponentState<TContractState>) {
@@ -380,13 +474,28 @@ pub mod IdentityComponent {
             );
         }
         // TODO: Should caller expected to be pubkey and/or ContractAddress
-        fn only_manager(
-            self: @ComponentState<TContractState>
-        ) { //assert!((starknet::get_caller_address() == starknet::get_contract_address()) ||
-        //key_has_purpose(), "Permissions: Sender does not have management key");
+        // TODO: Finalize decision on type of key, pub_key and ContractAddress is not interchangebly
+        // used in Starknet as in EVM
+        fn only_manager(self: @ComponentState<TContractState>) {
+            let caller = starknet::get_caller_address();
+            assert(
+                caller == starknet::get_contract_address()
+                    || self.key_has_purpose(poseidon_hash_span(array![caller.into()].span()), 1),
+                Errors::NOT_HAVE_MANAGEMENT_KEY
+            );
         }
-        // TODO: Should caller expected to be pubkey and/or ContractAddress
-        fn only_claim_key(self: @ComponentState<TContractState>) {}
+        // TODO: Finalize decision on type of key, pub_key and ContractAddress is not interchangebly
+        // used in Starknet as in EVM NOTE: Claim key is also represents pub_key that signs the
+        // claims and this func expects it to be ContractAddress -
+        // `starknet::get_contract_address()`
+        fn only_claim_key(self: @ComponentState<TContractState>) {
+            let caller = starknet::get_caller_address();
+            assert(
+                caller == starknet::get_contract_address()
+                    || self.key_has_purpose(poseidon_hash_span(array![caller.into()].span()), 1),
+                Errors::NOT_HAVE_CLAIM_KEY
+            );
+        }
 
         fn get_recovered_public_key(
             self: @ComponentState<TContractState>, signature: Signature, data_hash: felt252
