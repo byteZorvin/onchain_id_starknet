@@ -14,26 +14,26 @@ pub enum ERC734Event {
 #[derive(Drop, starknet::Event)]
 pub struct Approved {
     #[key]
-    execution_id: felt252,
-    approved: bool
+    pub execution_id: felt252,
+    pub approved: bool
 }
 
 #[derive(Drop, starknet::Event)]
 pub struct Executed {
     #[key]
-    execution_id: felt252,
+    pub execution_id: felt252,
     #[key]
-    to: ContractAddress,
-    data: ByteArray
+    pub to: ContractAddress,
+    pub data: Array<felt252>
 }
 
 #[derive(Drop, starknet::Event)]
 pub struct ExecutionRequested {
     #[key]
-    execution_id: felt252,
+    pub execution_id: felt252,
     #[key]
-    to: ContractAddress,
-    data: ByteArray
+    pub to: ContractAddress,
+    pub data: Array<felt252>
 }
 
 #[derive(Drop, starknet::Event)]
@@ -42,7 +42,7 @@ pub struct ExecutionFailed {
     pub execution_id: felt252,
     #[key]
     pub to: ContractAddress,
-    pub data: ByteArray
+    pub data: Array<felt252>
 }
 
 #[derive(Drop, starknet::Event)]
@@ -68,7 +68,7 @@ pub struct KeyRemoved {
 #[starknet::interface]
 pub trait IERC734<TContractState> {
     fn add_key(ref self: TContractState, key: felt252, purpose: felt252, key_type: felt252) -> bool;
-    fn approve(ref self: TContractState, id: felt252, approve: bool) -> bool;
+    fn approve(ref self: TContractState, execution_id: felt252, approve: bool) -> bool;
     fn remove_key(ref self: TContractState, key: felt252, purpose: felt252) -> bool;
     fn execute(
         ref self: TContractState, to: ContractAddress, selector: felt252, calldata: Array<felt252>
