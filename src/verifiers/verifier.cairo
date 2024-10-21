@@ -106,8 +106,10 @@ pub mod Verifier {
     }
 
 
-    #[abi(embed_v0)]
-    impl VerifierImpl<TContractState> of super::IVerifier<ComponentState<TContractState>> {
+    #[embeddable_as(VerifierImpl)]
+    impl Verifier<
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>
+    > of super::IVerifier<ComponentState<TContractState>> {
         fn verify(self: @ComponentState<TContractState>, identity: ContractAddress) -> bool {
             true
         }
@@ -129,9 +131,9 @@ pub mod Verifier {
         }
     }
 
-    #[abi(embed_v0)]
-    impl ClaimTopicsRegistryImpl<
-        TContractState
+    #[embeddable_as(ClaimTopicsRegistryImpl)]
+    impl ClaimTopicsRegistry<
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>
     > of super::IClaimTopicsRegistry<ComponentState<TContractState>> {
         fn add_claim_topic(ref self: ComponentState<TContractState>, claim_topic: felt252) {}
         fn remove_claim_topic(ref self: ComponentState<TContractState>, claim_topic: felt252) {}
@@ -140,8 +142,8 @@ pub mod Verifier {
         }
     }
 
-    #[abi(embed_v0)]
-    impl TrustedIssuerRegistryImpl<
+    #[embeddable_as(TrustedIssuerRegistryImpl)]
+    impl TrustedIssuerRegistry<
         TContractState, +HasComponent<TContractState>
     > of super::ITrustedIssuersRegistry<ComponentState<TContractState>> {
         fn add_trusted_issuer(
@@ -149,7 +151,7 @@ pub mod Verifier {
             trusted_issuer: ContractAddress,
             claim_topics: Array<felt252>
         ) {
-            assert(trusted_issuer != get_contract_address(), 'invalid argument - zero address');
+            assert(!trusted_issuer.is_zero(), 'invalid argument - zero address');
             assert(
                 self.trusted_issuer_claim_topics.as_path().entry(trusted_issuer).len() == 0,
                 'trusted Issuer already exists'
@@ -160,42 +162,63 @@ pub mod Verifier {
 
             self.trusted_issuers.as_path().append().write(trusted_issuer);
 
-            let required_claim_topics = self.required_claim_topics.as_path();
-            for claim_topic in claim_topics
-                .clone() {
-                    required_claim_topics.append().write(claim_topic);
-                };
-
             let trusted_issuer_claim_topics = self.trusted_issuer_claim_topics.as_path();
+            let claim_topics_to_trusted_issuers = self.claim_topics_to_trusted_issuers.as_path();
+
             for claim_topic in claim_topics
                 .clone() {
                     trusted_issuer_claim_topics.entry(trusted_issuer).append().write(claim_topic);
+                    claim_topics_to_trusted_issuers
+                        .entry(claim_topic)
+                        .append()
+                        .write(trusted_issuer);
                 };
             self.emit(TrustedIssuerAdded { trusted_issuer: trusted_issuer, claim_topics })
         }
         fn remove_trusted_issuer(
             ref self: ComponentState<TContractState>, trusted_issuer: ContractAddress
         ) {
-            assert(trusted_issuer != get_contract_address(), 'invalid argument - zero address');
+            assert(!trusted_issuer.is_zero(), 'invalid argument - zero address');
             assert(
                 self.trusted_issuer_claim_topics.as_path().entry(trusted_issuer).len() != 0,
                 'trusted issuer does not exist'
             );
             let total_issuers = self.trusted_issuers.as_path();
             let trusted_issuer_claim_topics = self.trusted_issuer_claim_topics.as_path();
+            let claim_topics_to_trusted_issuers = self.claim_topics_to_trusted_issuers.as_path();
             for i in 0
                 ..total_issuers
                     .len() {
-                        let m = total_issuers.at(i).read();
-                        if m == trusted_issuer {
+                        let issuer = total_issuers.at(i).read();
+                        if issuer == trusted_issuer {
                             total_issuers.delete(i);
                             for i in 0
                                 ..trusted_issuer_claim_topics
-                                    .entry(m)
+                                    .entry(issuer)
                                     .len() {
-                                        trusted_issuer_claim_topics.entry(m).delete(i);
+                                        trusted_issuer_claim_topics.entry(issuer).delete(i);
                                     };
                         };
+                    };
+            for i in 0
+                ..trusted_issuer_claim_topics
+                    .entry(trusted_issuer)
+                    .len() {
+                        for j in 0
+                            ..claim_topics_to_trusted_issuers
+                                .entry(
+                                    trusted_issuer_claim_topics.entry(trusted_issuer).at(i).read()
+                                )
+                                .len() {
+                                    claim_topics_to_trusted_issuers
+                                        .entry(
+                                            trusted_issuer_claim_topics
+                                                .entry(trusted_issuer)
+                                                .at(i)
+                                                .read()
+                                        )
+                                        .delete(j);
+                                }
                     };
             self.emit(TrustedIssuerRemoved { trusted_issuer: trusted_issuer });
         }
@@ -204,22 +227,39 @@ pub mod Verifier {
             trusted_issuer: ContractAddress,
             claim_topics: Array<felt252>
         ) {
-            assert(trusted_issuer != get_contract_address(), 'invalid argument - zero address');
+            assert(!trusted_issuer.is_zero(), 'invalid argument - zero address');
             assert(
                 self.trusted_issuer_claim_topics.entry(trusted_issuer).len() != 0,
-                'there are topics'
+                'there are no topics'
             );
             assert(claim_topics.len() > 0, 'claim_topics should > 0');
             assert(claim_topics.len() <= 15, 'max claim_topics should < 16');
-            self.trusted_issuers.as_path().append().write(trusted_issuer);
-            let required_claim_topics = self.required_claim_topics.as_path();
-            for claim_topic in claim_topics
-                .clone() {
-                    required_claim_topics.append().write(claim_topic);
-                };
+
             let trusted_issuer_claim_topics = self.trusted_issuer_claim_topics.as_path();
             let claim_topics_to_trusted_issuers = self.claim_topics_to_trusted_issuers.as_path();
+            //delete the issuer from the claim topic
+            for i in 0
+                ..trusted_issuer_claim_topics
+                    .entry(trusted_issuer)
+                    .len() {
+                        for j in 0
+                            ..claim_topics_to_trusted_issuers
+                                .entry(
+                                    trusted_issuer_claim_topics.entry(trusted_issuer).at(i).read()
+                                )
+                                .len() {
+                                    claim_topics_to_trusted_issuers
+                                        .entry(
+                                            trusted_issuer_claim_topics
+                                                .entry(trusted_issuer)
+                                                .at(i)
+                                                .read()
+                                        )
+                                        .delete(j);
+                                };
+                    };
 
+            //delete the claim topic from issuer
             for i in 0
                 ..trusted_issuer_claim_topics
                     .entry(trusted_issuer)
@@ -227,20 +267,14 @@ pub mod Verifier {
                         trusted_issuer_claim_topics.entry(trusted_issuer).delete(i);
                     };
 
+            //add the new claim topics to the trusted issuers and vise versa
             for claim_topic in claim_topics
                 .clone() {
                     trusted_issuer_claim_topics.entry(trusted_issuer).append().write(claim_topic);
-                    for i in 0
-                        ..claim_topics_to_trusted_issuers
-                            .entry(claim_topic)
-                            .len() {
-                                if trusted_issuer == claim_topics_to_trusted_issuers
-                                    .entry(claim_topic)
-                                    .at(i)
-                                    .read() {
-                                    claim_topics_to_trusted_issuers.entry(claim_topic).delete(i);
-                                }
-                            }
+                    claim_topics_to_trusted_issuers
+                        .entry(claim_topic)
+                        .append()
+                        .write(trusted_issuer);
                 };
             self.emit(TrustedIssuerAdded { trusted_issuer: trusted_issuer, claim_topics });
         }
@@ -312,9 +346,19 @@ pub mod Verifier {
         ) -> bool {
             let trusted_issuer_claim_topics = self.trusted_issuer_claim_topics.as_path();
             let mut has_claim = false;
-            if trusted_issuer_claim_topics.entry(trusted_issuer).len() > 0 {
-                has_claim = true
-            }
+
+            for i in 0
+                ..trusted_issuer_claim_topics
+                    .entry(trusted_issuer)
+                    .len() {
+                        if claim_topic == trusted_issuer_claim_topics
+                            .entry(trusted_issuer)
+                            .at(i)
+                            .read() {
+                            has_claim = true;
+                            break;
+                        };
+                    };
             has_claim
         }
     }
