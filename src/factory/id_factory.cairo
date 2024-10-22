@@ -23,13 +23,13 @@ mod IdFactory {
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]
-    impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
+    impl OwnableTwoStepImpl = OwnableComponent::OwnableTwoStepImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
         token_factories: Map<ContractAddress, bool>,
-        implementation_authority: ContractAddress, // immutable
+        implementation_authority: ContractAddress,
         salt_taken: Map<felt252, bool>,
         user_identity: Map<ContractAddress, ContractAddress>,
         wallets: Map<ContractAddress, StorageArrayContractAddress>,
@@ -130,6 +130,22 @@ mod IdFactory {
 
     #[abi(embed_v0)]
     impl IdFactoryImpl of IIdFactory<ContractState> {
+        /// This function registers an address as a token factory.
+        ///
+        /// # Arguments
+        ///
+        /// * `factory` - A 'ContractAddress' respresenting the address to be registered as token
+        /// factory.
+        ///
+        /// # Requirements
+        ///
+        /// Caller must be the factory owner.
+        /// `factory` must not be already registered as token factory.
+        ///
+        /// # Panics
+        ///
+        /// If called by any other address than factory owner.
+        /// If `factory` already registered as token factory.
         fn add_token_factory(ref self: ContractState, factory: ContractAddress) {
             self.ownable.assert_only_owner();
             assert!(factory.is_non_zero(), "token factory address zero");
@@ -139,6 +155,22 @@ mod IdFactory {
             self.emit(TokenFactoryAdded { factory });
         }
 
+        /// This function unregisters an address previously registered as token factory.
+        ///
+        /// # Arguments
+        ///
+        /// * `factory` - A 'ContractAddress' respresenting the address of token factory to be
+        /// unregistered.
+        ///
+        /// # Requirements
+        ///
+        /// Caller must be the factory owner.
+        /// `factory` must be already registered as token factory.
+        ///
+        /// # Panics
+        ///
+        /// If called by any other address than factory owner.
+        /// If `factory` not already registered as token factory.
         fn remove_token_factory(ref self: ContractState, factory: ContractAddress) {
             self.ownable.assert_only_owner();
             assert!(factory.is_non_zero(), "token factory address zero");
@@ -148,6 +180,27 @@ mod IdFactory {
             self.emit(TokenFactoryRemoved { factory });
         }
 
+        /// This function deploys a new identity from the factory
+        ///
+        /// # Arguments
+        ///
+        /// * `wallet` - A `ContractAddress` respresenting the address to be added as MANAGEMENT
+        /// key.
+        /// * `salt` - A `felt252` representing the salt used while deployment.
+        ///
+        /// # Requirements
+        ///
+        /// `wallet` must not linked to another identity.
+        /// Unique `salt` for each deployment.
+        /// Caller must be the factory owner.
+        ///
+        /// # Panics
+        ///
+        /// If called by any address other than factory owner.
+        /// If `salt` is zero.
+        /// If `wallet` is zero.
+        /// If `wallet` already linked to an existing identity.
+        /// If `salt` is already taken.
         fn create_identity(
             ref self: ContractState, wallet: ContractAddress, salt: felt252
         ) -> ContractAddress {
@@ -178,6 +231,34 @@ mod IdFactory {
             identity
         }
 
+        /// This function deploys a new identity from the factory, setting the wallet and listed
+        /// keys as MANAGEMENT keys.
+        ///
+        /// # Arguments
+        ///
+        /// * `wallet` - A `ContractAddress` respresenting the primary owner of deployed identity
+        /// contract.
+        /// * `salt` - A `felt252` representing the salt used while deployment.
+        /// * `management_keys` - A `Array<felt252>` representing the array of keys hash(poseidon
+        /// hash) to add as MANAGEMENT keys.
+        ///
+        /// # Requirements
+        ///
+        /// `wallet` must not linked to another identity.
+        /// Unique `salt` for each deployment.
+        /// Caller must be the factory owner.
+        /// Length of the `management_keys` should be greater than 0.
+        /// `wallet` must not be in `management_keys``
+        ///
+        /// # Panics
+        ///
+        /// If called by any address other than factory owner.
+        /// If `salt` is zero.
+        /// If `wallet` is zero.
+        /// If `wallet` already linked to an existing identity.
+        /// If length of `management_keys` equals to zero.
+        /// If `wallet` hash is in `management_keys`.
+        /// If `salt` is already taken.
         fn create_identity_with_management_keys(
             ref self: ContractState,
             wallet: ContractAddress,
@@ -230,6 +311,29 @@ mod IdFactory {
             identity
         }
 
+        /// This function deploys a new token identity from the factory
+        ///
+        /// # Arguments
+        ///
+        /// * `token` - A `ContractAddress` respresenting the address of the token contract.
+        /// * `token_owner` - A `ContractAddress` respresenting the address of the owner of token.
+        /// * `salt` - A `felt252` representing the salt used while deployment.
+        ///
+        /// # Requirements
+        ///
+        /// `token_owner` must not be zero address.
+        /// `token` must not linked to another identity.
+        /// Unique `salt` for each deployment.
+        /// Caller must be factory owner or registered as token_factory.
+        ///
+        /// # Panics
+        ///
+        /// If called by any address other than factory owner or token_factory.
+        /// If `salt` is zero.
+        /// If `token` is zero address.
+        /// If `token_owner` is zero address
+        /// If `token` already linked to an existing identity.
+        /// If `salt` is already taken.
         fn create_token_identity(
             ref self: ContractState,
             token: ContractAddress,
@@ -270,6 +374,29 @@ mod IdFactory {
             identity
         }
 
+        /// This function links a new wallet to existing identity of the caller.
+        ///
+        /// # Arguments
+        ///
+        /// * `new_wallet` - A 'ContractAddress' respresenting the address of wallet to link.
+        ///
+        /// # Requirements
+        ///
+        /// Caller address must be linked to an existing identity.
+        /// `new_wallet` must not be already linked to an identity.
+        /// `new_wallet` cannot be zero address.
+        /// Cannot link more than 100 wallet per identity.
+        ///
+        /// # Panics
+        ///
+        /// If caller address is not linked to the same identity as `old_wallet`.
+        /// If caller address is not linked to an existing identity.
+        /// If `new_wallet` already linked to an identity.
+        /// If `new_wallet` equals to zero address.
+        ///
+        /// # Returns
+        ///
+        /// A `ContractAddress` - representing the address of identity corresponding wallet/token.
         fn link_wallet(ref self: ContractState, new_wallet: ContractAddress) {
             assert!(new_wallet.is_non_zero(), "invalid argument - zero address");
             let caller_user_identity = self
@@ -297,6 +424,27 @@ mod IdFactory {
             self.emit(WalletLinked { wallet: new_wallet, identity: caller_user_identity });
         }
 
+        /// This function unlinks given wallet from an existing identity.
+        ///
+        /// # Arguments
+        ///
+        /// * `old_wallet` - A 'ContractAddress' respresenting the address of wallet to unlink.
+        ///
+        /// # Requirements
+        ///
+        /// Caller address to be linked to the same identity as `old_wallet`.
+        /// Caller address cannot be `old_wallet` to keep at least 1 wallet linked to any identity.
+        /// `old_wallet` cannot be zero address.
+        ///
+        /// # Panics
+        ///
+        /// If caller address is not linked to the same identity as `old_wallet`.
+        /// If caller address is equalt to `old_wallet`.
+        /// If `old_wallet` equals to zero address.
+        ///
+        /// # Returns
+        ///
+        /// A `ContractAddress` - representing the address of identity corresponding wallet/token.
         fn unlink_wallet(ref self: ContractState, old_wallet: ContractAddress) {
             assert!(old_wallet.is_non_zero(), "invalid argument - zero address");
             let caller = starknet::get_caller_address();
@@ -321,6 +469,16 @@ mod IdFactory {
             self.emit(WalletUnlinked { wallet: old_wallet, identity: old_wallet_user_identity });
         }
 
+
+        /// Returns identity for corresponding wallet/token
+        ///
+        /// # Arguments
+        ///
+        /// * `wallet` - A 'ContractAddress' respresenting the address of wallet/token to query for.
+        ///
+        /// # Returns
+        ///
+        /// A `ContractAddress` - representing the address of identity corresponding wallet/token.
         fn get_identity(self: @ContractState, wallet: ContractAddress) -> ContractAddress {
             let token_identity = self.token_identity.entry(wallet).read();
             if token_identity.is_non_zero() {
@@ -330,44 +488,102 @@ mod IdFactory {
             }
         }
 
+        /// Returns array of wallets linked to given identity
+        ///
+        /// # Arguments
+        ///
+        /// * `identity` - A 'ContractAddress' respresenting the address of identity.
+        ///
+        /// # Returns
+        ///
+        /// A `Array<ContractAddress>` - representing the addresses linked to given identity.
         fn get_wallets(self: @ContractState, identity: ContractAddress) -> Array<ContractAddress> {
             let wallet_storage_path = self.wallets.entry(identity);
             wallet_storage_path.into()
         }
 
+        /// Returns token address linked to given identity
+        ///
+        /// # Arguments
+        ///
+        /// * `identity` - A 'ContractAddress' respresenting the address of identity.
+        ///
+        /// # Returns
+        ///
+        /// A `ContractAddress` - representing the address of token linked to given identity.
         fn get_token(self: @ContractState, identity: ContractAddress) -> ContractAddress {
             self.token_address.entry(identity).read()
         }
 
+        /// Determines if given address is token factory.
+        ///
+        /// # Arguments
+        ///
+        /// * `factory` - A 'ContractAddress' respresenting the address to check.
+        ///
+        /// # Returns
+        ///
+        /// A `boolean` - representing wether given address is registered as token factory. True if
+        /// registered token factory.
         fn is_token_factory(self: @ContractState, factory: ContractAddress) -> bool {
             self.token_factories.entry(factory).read()
         }
 
+        /// Determines if given 'salt' has been taken.
+        ///
+        /// # Arguments
+        ///
+        /// * `salt` - A 'felt252' respresenting the salt to check.
+        ///
+        /// # Returns
+        ///
+        /// A `boolean` - representing wether salt is taken. True for taken.
         fn is_salt_taken(self: @ContractState, salt: felt252) -> bool {
             self.salt_taken.entry(salt).read()
         }
 
-        fn implemenatation_authority(self: @ContractState) -> ContractAddress {
+        /// Returns the implementation authority used by this factory.
+        ///
+        /// # Returns
+        ///
+        /// A `ContractAddress` - representing the implementation authority.
+        fn implementation_authority(self: @ContractState) -> ContractAddress {
             self.implementation_authority.read()
         }
     }
 
     #[generate_trait]
     impl Private of PrivateTrait {
+        /// This function deploys the identity contract referenced by the implementation authority
+        /// using custom salt.
+        ///
+        /// # Arguments
+        ///
+        /// * `salt` - A `felt252` representing the salt used while deployment.
+        /// * `implementation_authority` - A `ContractAddress` representing the address of
+        /// implementation authority to query the implementation to deploy and set as implementation
+        /// authority of identity contract.
+        /// * `wallet`- A `ContractAddress` representing the initial management key for the identity
+        /// to be deployed.
+        ///
+        /// # Returns
+        ///
+        /// A `ContractAddress` - representing the deployed identity.
         fn deploy_identity(
             ref self: ContractState,
             salt: felt252,
-            implemenatation_authority: ContractAddress,
+            implementation_authority: ContractAddress,
             wallet: ContractAddress
         ) -> ContractAddress {
-            let implementation_authority_address = self.implementation_authority.read();
             let implementation_class_hash: starknet::ClassHash =
                 IImplementationAuthorityDispatcher {
-                contract_address: implementation_authority_address
+                contract_address: implementation_authority
             }
                 .get_implementation();
-            // TODO: set constructor args
-            let mut ctor_data: Array<felt252> = array![implementation_authority_address.into()];
+
+            let mut ctor_data: Array<felt252> = array![
+                implementation_authority.into(), wallet.into()
+            ];
             let (deployed_address, _) = starknet::syscalls::deploy_syscall(
                 implementation_class_hash, salt, ctor_data.span(), false
             )
