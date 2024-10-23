@@ -16,8 +16,8 @@ pub mod interface {
     pub mod iimplementation_authority;
 }
 pub mod proxy {
-    pub mod identity_proxy;
     pub mod implementation_authority;
+    pub mod version_manager;
 }
 pub mod storage {
     pub mod storage;

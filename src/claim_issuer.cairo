@@ -63,7 +63,6 @@ mod ClaimIssuer {
     #[abi(embed_v0)]
     impl ClaimIssuerImpl of IClaimIssuer<ContractState> {
         fn revoke_claim_by_signature(ref self: ContractState, signature: Signature) {
-            self.identity.delegated_only();
             self.identity.only_manager();
             assert(!self.revoked_claims.read(signature), Errors::CLAIM_ALREADY_REVOKED);
             self.revoked_claims.write(signature, true);
@@ -74,7 +73,6 @@ mod ClaimIssuer {
         fn revoke_claim(
             ref self: ContractState, claim_id: felt252, identity: ContractAddress
         ) -> bool {
-            self.identity.delegated_only();
             self.identity.only_manager();
             let (_, _, _, signature, _, _) = IERC735Dispatcher { contract_address: identity }
                 .get_claim(claim_id);

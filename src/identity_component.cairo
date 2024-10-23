@@ -4,8 +4,12 @@ pub mod IdentityComponent {
     use core::num::traits::{Bounded, Zero};
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::interface::{
-        iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait, IIdentity},
+        iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait, IIdentity, IdentityABI},
         ierc734::{IERC734, ERC734Event}, ierc735::{IERC735, ERC735Event}, ierc734, ierc735
+    };
+    use onchain_id_starknet::proxy::version_manager::{
+        VersionManagerComponent,
+        VersionManagerComponent::InternalTrait as VersionManagerInternalTrait
     };
     use onchain_id_starknet::storage::{
         storage::{
@@ -16,9 +20,11 @@ pub mod IdentityComponent {
         structs::{Signature, Key, Claim, Execution, delete_key, delete_claim}
     };
     use onchain_id_starknet::version::version::VersionComponent;
+    use openzeppelin_upgrades::upgradeable::UpgradeableComponent;
     use starknet::ContractAddress;
     use starknet::storage::{
-        Map, StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, StorageAsPath
+        Map, StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, StoragePath,
+        Mutable
     };
 
     #[storage]
@@ -60,10 +66,7 @@ pub mod IdentityComponent {
 
     #[embeddable_as(IdentityImpl)]
     pub impl Identity<
-        TContractState,
-        +Drop<TContractState>,
-        +HasComponent<TContractState>,
-        +VersionComponent::HasComponent<TContractState>
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
     > of IIdentity<ComponentState<TContractState>> {
         fn is_claim_valid(
             self: @ComponentState<TContractState>,
@@ -91,22 +94,37 @@ pub mod IdentityComponent {
 
     #[embeddable_as(ERC734Impl)]
     pub impl ERC734<
-        TContractState,
-        +Drop<TContractState>,
-        +HasComponent<TContractState>,
-        +VersionComponent::HasComponent<TContractState>
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
     > of IERC734<ComponentState<TContractState>> {
+        /// This function adds a key to the identity with given purpose, creates the key if not
+        /// present else adds purpose
+        ///
+        /// # Arguments
+        ///
+        /// * `key` - A `felt252` representing hash of the key(public key, ContractAddress).
+        /// TODO: deciding using `MANAGEMENT` etc... as purpose since it is felt252
+        /// * `purpose` A `felt252` representing the purpose of key. For example 1 : MANAGEMENT, 2 :
+        /// ACTION, 3: CLAIM.
+        /// * `key_type` TODO: To Be Defined!
+        ///
+        /// # Requirements
+        ///
+        /// Must called by this contract or caller has MANAGEMENT key.
+        /// Key must not already have given purpose.
+        ///
+        /// # Returns
+        ///
+        /// A `boolean` indicating wether key is added succesfully or not
         fn add_key(
             ref self: ComponentState<TContractState>,
             key: felt252,
             purpose: felt252,
             key_type: felt252
         ) -> bool {
-            self.delegated_only();
             self.only_manager();
             let mut key_storage_path = self.keys.entry(key);
             if key_storage_path.key.read() == key {
-                let purposes_storage_path = key_storage_path.purposes.as_path();
+                let purposes_storage_path = key_storage_path.purposes.deref();
                 for i in 0
                     ..purposes_storage_path
                         .len() {
@@ -119,22 +137,38 @@ pub mod IdentityComponent {
             } else {
                 key_storage_path.key.write(key);
                 key_storage_path.key_type.write(key_type);
-                key_storage_path.purposes.as_path().append().write(purpose);
+                key_storage_path.purposes.deref().append().write(purpose);
             }
             self.keys_by_purpose.entry(purpose).append().write(key);
             self.emit(ERC734Event::KeyAdded(ierc734::KeyAdded { key, purpose, key_type }));
             true
         }
 
+        /// This function removes given purpose from given key of given identity.
+        ///
+        /// # Arguments
+        ///
+        /// * `key` - A `felt252` representing hash of the key(public key, ContractAddress).
+        /// TODO: deciding using `MANAGEMENT` etc... as purpose since it is felt252
+        /// * `purpose` A `felt252` representing the purpose of key. For example 1 : MANAGEMENT, 2 :
+        /// ACTION, 3: CLAIM.
+        ///
+        /// # Requirements
+        ///
+        /// Must called by this contract or caller has MANAGEMENT key.
+        /// Key should be registered and have the given purpose.
+        ///
+        /// # Returns
+        ///
+        /// A `boolean` indicating wether key is removed succesfully or not
         fn remove_key(
             ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
-            self.delegated_only();
             self.only_manager();
             let key_storage_path = self.keys.entry(key);
             assert(key_storage_path.key.read() == key, Errors::KEY_NOT_REGISTERED);
 
-            let purposes_storage_path = key_storage_path.purposes.as_path();
+            let purposes_storage_path = key_storage_path.purposes.deref();
             let purpose_size = purposes_storage_path.len();
             let mut purpose_index = Bounded::MAX;
             for i in 0
@@ -175,13 +209,20 @@ pub mod IdentityComponent {
             true
         }
 
-        // TODO:
-        // NOTE: Solidity version uses msg.sender interchangebly for contract acccounts and signer
-        // pub_key
+        /// This function approves or reject the execution with given execution_id.
+        ///
+        /// # Arguments
+        ///
+        /// * `execution_id` A `felt252` representing the identifier of execution to approve/reject.
+        /// * `approve` A `boolean` representing the status of approval. (true for approve, false
+        /// for reject).
+        ///
+        /// # Returns
+        ///
+        /// A `boolean` indicating success of approve operation.
         fn approve(
             ref self: ComponentState<TContractState>, execution_id: felt252, approve: bool
         ) -> bool {
-            self.delegated_only();
             assert(
                 Into::<felt252, u256>::into(execution_id) < self.execution_nonce.read().into(),
                 Errors::NON_EXISTING_EXECUTION
@@ -191,7 +232,7 @@ pub mod IdentityComponent {
             let caller_hash = poseidon_hash_span(
                 array![starknet::get_caller_address().into()].span()
             );
-            assert(self.key_has_purpose(caller_hash, 1), Errors::NOT_HAVE_MANAGEMENT_KEY);
+
             let to_address = execution_storage_path.to.read();
             if to_address == starknet::get_contract_address() {
                 assert(self.key_has_purpose(caller_hash, 1), Errors::NOT_HAVE_MANAGEMENT_KEY);
@@ -204,9 +245,12 @@ pub mod IdentityComponent {
             }
             execution_storage_path.approved.write(true);
             let selector = execution_storage_path.selector.read();
-            let calldata: Array<felt252> = execution_storage_path.calldata.deref().into();
+            let calldata: Span<felt252> = Into::<
+                StoragePath<Mutable<StorageArrayFelt252>>, Array<felt252>
+            >::into(execution_storage_path.calldata.deref())
+                .span();
 
-            match starknet::syscalls::call_contract_syscall(to_address, selector, calldata.span()) {
+            match starknet::syscalls::call_contract_syscall(to_address, selector, calldata) {
                 Result::Ok => {
                     execution_storage_path.executed.write(true);
                     self
@@ -230,21 +274,19 @@ pub mod IdentityComponent {
                 },
             }
         }
-        /// NOTE: Consider implementing Account interface + this so keys + ContractAddresses can
-        /// call this
+
         fn execute(
             ref self: ComponentState<TContractState>,
             to: ContractAddress,
             selector: felt252,
-            calldata: Array<felt252>
+            calldata: Span<felt252>
         ) -> felt252 {
-            self.delegated_only();
             let execution_nonce = self.execution_nonce.read();
             let execution_storage_path = self.executions.entry(execution_nonce);
             execution_storage_path.to.write(to);
             for chunk in calldata
                 .clone() {
-                    execution_storage_path.calldata.deref().append().write(chunk);
+                    execution_storage_path.calldata.deref().append().write(*chunk);
                 };
 
             self.execution_nonce.write(execution_nonce + 1);
@@ -262,37 +304,78 @@ pub mod IdentityComponent {
                 array![starknet::get_caller_address().into()].span()
             );
 
-            if self.key_has_purpose(caller_hash, 1) {
-                self.approve(execution_nonce, true);
-            } else if to != starknet::get_contract_address()
-                && self.key_has_purpose(caller_hash, 2) {
-                self.approve(execution_nonce, true);
+            if to != starknet::get_contract_address() && self.key_has_purpose(caller_hash, 2) {
+                self._approve(execution_nonce, to, selector, calldata);
+            } else if self.key_has_purpose(caller_hash, 1) {
+                self._approve(execution_nonce, to, selector, calldata);
             }
 
             execution_nonce
         }
 
+        /// Returns the full key data
+        ///
+        /// # Arguments
+        ///
+        /// * `key` A `felt252` representing key identifier (hash of public key, ContractAddress).
+        ///
+        /// # Returns
+        ///
+        /// A `Span<felt252>` representing purposes this key has.
+        /// A `felt252` representing key_type of the key.
+        /// A `felt252` representing the hashed key.
         fn get_key(
             self: @ComponentState<TContractState>, key: felt252
-        ) -> (Array<felt252>, felt252, felt252) {
+        ) -> (Span<felt252>, felt252, felt252) {
             let key_storage_path = self.keys.entry(key);
-            (
-                key_storage_path.purposes.deref().into(),
-                key_storage_path.key_type.read(),
-                key_storage_path.key.read()
-            )
+            let purposes: Array<felt252> = key_storage_path.purposes.deref().into();
+            (purposes.span(), key_storage_path.key_type.read(), key_storage_path.key.read())
         }
 
-        fn get_key_purposes(self: @ComponentState<TContractState>, key: felt252) -> Array<felt252> {
-            self.keys.entry(key).purposes.deref().into()
+        /// Returns the purposes given key has.
+        ///
+        /// # Arguments
+        ///
+        /// * `key` A `felt252` representing the key to get purposes for.
+        ///
+        /// # Returns
+        ///
+        /// A `Span<felt252>` representing the array of purposes given key has.
+        fn get_key_purposes(self: @ComponentState<TContractState>, key: felt252) -> Span<felt252> {
+            Into::<
+                StoragePath<StorageArrayFelt252>, Array<felt252>
+            >::into(self.keys.entry(key).purposes.deref())
+                .span()
         }
 
+        /// Returns the keys which has given purpose.
+        ///
+        /// # Arguments
+        ///
+        /// * `purpose` A `felt252` representing the purpose to get keys for.
+        ///
+        /// # Returns
+        ///
+        /// A `Span<felt252>` representing the array of keys which has given purpose.
         fn get_keys_by_purpose(
             self: @ComponentState<TContractState>, purpose: felt252
-        ) -> Array<felt252> {
-            self.keys_by_purpose.entry(purpose).into()
+        ) -> Span<felt252> {
+            Into::<
+                StoragePath<StorageArrayFelt252>, Array<felt252>
+            >::into(self.keys_by_purpose.entry(purpose))
+                .span()
         }
 
+        /// Determines if key has given purpose.
+        ///
+        /// # Arguments
+        ///
+        /// * `key` A `felt252` representing the key to query for.
+        /// * `purpose` A `felt252` representing the purpose to query for.
+        ///
+        /// # Returns
+        ///
+        /// A `boolean` representing the key has given purpose or not.
         fn key_has_purpose(
             self: @ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
@@ -300,7 +383,7 @@ pub mod IdentityComponent {
             if key_storage_path.key.read().is_zero() {
                 return false;
             }
-            let purposes_storage_path = key_storage_path.purposes.as_path();
+            let purposes_storage_path = key_storage_path.purposes.deref();
             let mut has_purpose = false;
             for i in 0
                 ..purposes_storage_path
@@ -317,10 +400,7 @@ pub mod IdentityComponent {
 
     #[embeddable_as(ERC735Impl)]
     pub impl ERC735<
-        TContractState,
-        +Drop<TContractState>,
-        +HasComponent<TContractState>,
-        +VersionComponent::HasComponent<TContractState>,
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
     > of IERC735<ComponentState<TContractState>> {
         fn add_claim(
             ref self: ComponentState<TContractState>,
@@ -331,7 +411,6 @@ pub mod IdentityComponent {
             data: ByteArray,
             uri: ByteArray
         ) -> felt252 {
-            self.delegated_only();
             self.only_claim_key();
             let this_address = starknet::get_contract_address();
             let is_valid_claim = IIdentityDispatcher { contract_address: issuer }
@@ -378,7 +457,6 @@ pub mod IdentityComponent {
         }
 
         fn remove_claim(ref self: ComponentState<TContractState>, claim_id: felt252) -> bool {
-            self.delegated_only();
             self.only_claim_key();
             let claim_storage_path = self.claims.entry(claim_id);
             let topic = claim_storage_path.topic.read();
@@ -438,12 +516,251 @@ pub mod IdentityComponent {
         }
     }
 
-    #[generate_trait]
-    pub impl InternalImpl<
+    #[embeddable_as(IdentityABICentralyUpgradeableImpl)]
+    impl IdentityABICentralyUpgradeable<
         TContractState,
         +Drop<TContractState>,
         +HasComponent<TContractState>,
         +VersionComponent::HasComponent<TContractState>,
+        impl VersionManagerImpl: VersionManagerComponent::HasComponent<TContractState>,
+        +UpgradeableComponent::HasComponent<TContractState>
+    > of IdentityABI<ComponentState<TContractState>> {
+        fn is_claim_valid(
+            ref self: ComponentState<TContractState>,
+            identity: ContractAddress,
+            claim_topic: felt252,
+            signature: Signature,
+            data: ByteArray
+        ) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            identity.serialize(ref serialized_calldata);
+            claim_topic.serialize(ref serialized_calldata);
+            signature.serialize(ref serialized_calldata);
+            data.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(selector!("is_claim_valid"), serialized_calldata.span());
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
+            }
+            Identity::is_claim_valid(@self, identity, claim_topic, signature, data)
+        }
+        // IERC734
+        fn add_key(
+            ref self: ComponentState<TContractState>,
+            key: felt252,
+            purpose: felt252,
+            key_type: felt252
+        ) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            key.serialize(ref serialized_calldata);
+            purpose.serialize(ref serialized_calldata);
+            key_type.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(selector!("add_key"), serialized_calldata.span());
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
+            }
+            ERC734::add_key(ref self, key, purpose, key_type)
+        }
+
+        fn remove_key(
+            ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
+        ) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            key.serialize(ref serialized_calldata);
+            purpose.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(selector!("remove_key"), serialized_calldata.span());
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
+            }
+            ERC734::remove_key(ref self, key, purpose)
+        }
+        fn approve(
+            ref self: ComponentState<TContractState>, execution_id: felt252, approve: bool
+        ) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            execution_id.serialize(ref serialized_calldata);
+            approve.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(selector!("approve"), serialized_calldata.span());
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
+            }
+            ERC734::approve(ref self, execution_id, approve)
+        }
+        fn execute(
+            ref self: ComponentState<TContractState>,
+            to: ContractAddress,
+            selector: felt252,
+            calldata: Span<felt252>
+        ) -> felt252 {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            to.serialize(ref serialized_calldata);
+            selector.serialize(ref serialized_calldata);
+            calldata.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(selector!("execute"), serialized_calldata.span());
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                return Serde::<felt252>::deserialize(ref serialized_return_data).unwrap();
+            }
+            ERC734::execute(ref self, to, selector, calldata)
+        }
+        fn get_key(
+            ref self: ComponentState<TContractState>, key: felt252
+        ) -> (Span<felt252>, felt252, felt252) {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            key.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(selector!("get_key"), serialized_calldata.span());
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                return Serde::<
+                    (Span<felt252>, felt252, felt252)
+                >::deserialize(ref serialized_return_data)
+                    .unwrap();
+            }
+            ERC734::get_key(@self, key)
+        }
+        fn get_key_purposes(
+            ref self: ComponentState<TContractState>, key: felt252
+        ) -> Span<felt252> {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            key.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(selector!("get_key_purposes"), serialized_calldata.span());
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                return Serde::<Array<felt252>>::deserialize(ref serialized_return_data)
+                    .unwrap()
+                    .span();
+            }
+            ERC734::get_key_purposes(@self, key)
+        }
+        fn get_keys_by_purpose(
+            ref self: ComponentState<TContractState>, purpose: felt252
+        ) -> Span<felt252> {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            purpose.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(
+                    selector!("get_keys_by_purpose"), serialized_calldata.span()
+                );
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                return Serde::<Array<felt252>>::deserialize(ref serialized_return_data)
+                    .unwrap()
+                    .span();
+            }
+            ERC734::get_keys_by_purpose(@self, purpose)
+        }
+        fn key_has_purpose(
+            ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
+        ) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            key.serialize(ref serialized_calldata);
+            purpose.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(selector!("key_has_purpose"), serialized_calldata.span());
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
+            }
+            ERC734::key_has_purpose(@self, key, purpose)
+        }
+        // IERC735
+        fn add_claim(
+            ref self: ComponentState<TContractState>,
+            topic: felt252,
+            scheme: felt252,
+            issuer: ContractAddress,
+            signature: Signature,
+            data: ByteArray,
+            uri: ByteArray
+        ) -> felt252 {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            topic.serialize(ref serialized_calldata);
+            scheme.serialize(ref serialized_calldata);
+            issuer.serialize(ref serialized_calldata);
+            signature.serialize(ref serialized_calldata);
+            data.serialize(ref serialized_calldata);
+            uri.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(selector!("add_claim"), serialized_calldata.span());
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                return Serde::<felt252>::deserialize(ref serialized_return_data).unwrap();
+            }
+            ERC735::add_claim(ref self, topic, scheme, issuer, signature, data, uri)
+        }
+        fn remove_claim(ref self: ComponentState<TContractState>, claim_id: felt252) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            claim_id.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(selector!("remove_claim"), serialized_calldata.span());
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
+            }
+            ERC735::remove_claim(ref self, claim_id)
+        }
+        fn get_claim(
+            ref self: ComponentState<TContractState>, claim_id: felt252
+        ) -> (felt252, felt252, ContractAddress, Signature, ByteArray, ByteArray) {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            claim_id.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(selector!("get_claim"), serialized_calldata.span());
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                Serde::<
+                    (felt252, felt252, ContractAddress, Signature, ByteArray, ByteArray)
+                >::deserialize(ref serialized_return_data)
+                    .unwrap()
+            } else {
+                ERC735::get_claim(@self, claim_id)
+            }
+        }
+        fn get_claim_ids_by_topics(
+            ref self: ComponentState<TContractState>, topic: felt252
+        ) -> Array<felt252> {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            let mut serialized_calldata: Array<felt252> = array![];
+            topic.serialize(ref serialized_calldata);
+            let (updated, return_data) = version_manager_comp
+                .check_upgrade_and_call(
+                    selector!("get_claim_ids_by_topics"), serialized_calldata.span()
+                );
+            if updated {
+                let mut serialized_return_data = return_data.unwrap();
+                Serde::<Array<felt252>>::deserialize(ref serialized_return_data).unwrap()
+            } else {
+                ERC735::get_claim_ids_by_topics(@self, topic)
+            }
+        }
+    }
+
+
+    #[generate_trait]
+    pub impl InternalImpl<
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
     > of InternalTrait<TContractState> {
         // TODO: Finalize decision on type of key, pub_key and ContractAddress is not interchangebly
         // used in Starknet as in EVM
@@ -454,7 +771,7 @@ pub mod IdentityComponent {
             let key_storage_path = self.keys.entry(initial_management_key_hash);
             key_storage_path.key.write(initial_management_key_hash);
             key_storage_path.key_type.write(1);
-            key_storage_path.purposes.as_path().append().write(1);
+            key_storage_path.purposes.deref().append().write(1);
 
             self.keys_by_purpose.entry(1).append().write(initial_management_key_hash);
             self
@@ -467,15 +784,6 @@ pub mod IdentityComponent {
                 );
         }
 
-        // TODO : decide do we need this
-        fn delegated_only(self: @ComponentState<TContractState>) {
-            assert!(
-                self.can_interact.read(), "Interacting with the library contract is forbidden."
-            );
-        }
-        // TODO: Should caller expected to be pubkey and/or ContractAddress
-        // TODO: Finalize decision on type of key, pub_key and ContractAddress is not interchangebly
-        // used in Starknet as in EVM
         fn only_manager(self: @ComponentState<TContractState>) {
             let caller = starknet::get_caller_address();
             assert(
@@ -484,15 +792,12 @@ pub mod IdentityComponent {
                 Errors::NOT_HAVE_MANAGEMENT_KEY
             );
         }
-        // TODO: Finalize decision on type of key, pub_key and ContractAddress is not interchangebly
-        // used in Starknet as in EVM NOTE: Claim key is also represents pub_key that signs the
-        // claims and this func expects it to be ContractAddress -
-        // `starknet::get_contract_address()`
+
         fn only_claim_key(self: @ComponentState<TContractState>) {
             let caller = starknet::get_caller_address();
             assert(
                 caller == starknet::get_contract_address()
-                    || self.key_has_purpose(poseidon_hash_span(array![caller.into()].span()), 1),
+                    || self.key_has_purpose(poseidon_hash_span(array![caller.into()].span()), 3),
                 Errors::NOT_HAVE_CLAIM_KEY
             );
         }
@@ -501,6 +806,42 @@ pub mod IdentityComponent {
             self: @ComponentState<TContractState>, signature: Signature, data_hash: felt252
         ) -> felt252 {
             recover_public_key(data_hash, signature.r, signature.s, signature.y_parity).unwrap()
+        }
+
+        fn _approve(
+            ref self: ComponentState<TContractState>,
+            execution_id: felt252,
+            to_address: ContractAddress,
+            selector: felt252,
+            calldata: Span<felt252>
+        ) -> bool {
+            self.emit(ERC734Event::Approved(ierc734::Approved { execution_id, approved: true }));
+            let execution_storage_path = self.executions.entry(execution_id);
+            execution_storage_path.approved.write(true);
+
+            match starknet::syscalls::call_contract_syscall(to_address, selector, calldata) {
+                Result::Ok => {
+                    execution_storage_path.executed.write(true);
+                    self
+                        .emit(
+                            ERC734Event::Executed(
+                                ierc734::Executed { execution_id, to: to_address, data: calldata }
+                            )
+                        );
+                    true
+                },
+                Result::Err => {
+                    self
+                        .emit(
+                            ERC734Event::ExecutionFailed(
+                                ierc734::ExecutionFailed {
+                                    execution_id, to: to_address, data: calldata
+                                }
+                            )
+                        );
+                    false
+                },
+            }
         }
     }
 }
