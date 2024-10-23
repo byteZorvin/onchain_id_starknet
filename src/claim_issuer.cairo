@@ -53,10 +53,8 @@ mod ClaimIssuer {
         pub const CLAIM_ALREADY_REVOKED: felt252 = 'Conflict: Claim already revoked';
     }
 
-    // TODO: ensure initialization pattern is correct.
-    // NOTE: Depends on central upgreadeability mechanism we come up with
     #[constructor]
-    fn constructor(ref self: ContractState, initial_management_key: felt252) {
+    fn constructor(ref self: ContractState, initial_management_key: ContractAddress) {
         self.identity.initialize(initial_management_key);
     }
 

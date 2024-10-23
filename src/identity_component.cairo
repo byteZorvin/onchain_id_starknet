@@ -762,12 +762,13 @@ pub mod IdentityComponent {
     pub impl InternalImpl<
         TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
     > of InternalTrait<TContractState> {
-        // TODO: Finalize decision on type of key, pub_key and ContractAddress is not interchangebly
-        // used in Starknet as in EVM
         fn initialize(
-            ref self: ComponentState<TContractState>, initial_management_key_hash: felt252
+            ref self: ComponentState<TContractState>, initial_management_key: ContractAddress
         ) {
-            assert(initial_management_key_hash.is_non_zero(), Errors::ZERO_ADDRESS);
+            assert(initial_management_key.is_non_zero(), Errors::ZERO_ADDRESS);
+            let initial_management_key_hash = poseidon_hash_span(
+                array![initial_management_key.into()].span()
+            );
             let key_storage_path = self.keys.entry(initial_management_key_hash);
             key_storage_path.key.write(initial_management_key_hash);
             key_storage_path.key_type.write(1);

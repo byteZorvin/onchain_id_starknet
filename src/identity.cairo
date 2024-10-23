@@ -58,7 +58,7 @@ mod Identity {
     fn constructor(
         ref self: ContractState,
         implementation_authority: ContractAddress,
-        initial_management_key_hash: felt252
+        initial_management_key_hash: ContractAddress
     ) {
         self.version_manager.initialize(implementation_authority);
         self.identity.initialize(initial_management_key_hash);
