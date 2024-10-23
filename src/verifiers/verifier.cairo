@@ -7,7 +7,7 @@ pub mod VerifierComponent {
     use openzeppelin_access::ownable::OwnableComponent;
     use starknet::ContractAddress;
     use starknet::storage::{Vec, Map};
-    
+
     #[storage]
     pub struct Storage {
         Verifier_required_claim_topics: Vec<felt252>,

@@ -7,7 +7,7 @@ pub trait IMockVerifier<TContractState> {
 pub mod MockVerifier {
     use onchain_id_starknet::verifiers::verifier::VerifierComponent;
     use openzeppelin_access::ownable::ownable::OwnableComponent;
-    
+
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]
@@ -27,7 +27,7 @@ pub mod MockVerifier {
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
     }
-    
+
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
@@ -37,8 +37,13 @@ pub mod MockVerifier {
         OwnableEvent: OwnableComponent::Event,
     }
 
+    #[constructor]
+    fn constructor(ref self: ContractState, owner: starknet::ContractAddress) {
+        self.ownable.initializer(owner);
+    }
+
     #[abi(embed_v0)]
-    pub impl MockVerifierImpl of super::IMockVerifier<ContractState>{
+    pub impl MockVerifierImpl of super::IMockVerifier<ContractState> {
         fn do_something(ref self: ContractState) {
             self.verifier.only_verified_sender();
         }
