@@ -14,6 +14,7 @@ pub mod interface {
     pub mod ierc735;
     pub mod iidentity;
     pub mod iimplementation_authority;
+    pub mod iverifier;
 }
 pub mod proxy {
     pub mod implementation_authority;
@@ -28,4 +29,9 @@ pub mod verifiers {
 }
 pub mod version {
     pub mod version;
+}
+
+pub mod mocks {
+    pub mod mock_account;
+    pub mod mock_verifier;
 }
