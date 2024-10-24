@@ -268,13 +268,16 @@ pub fn setup_identity() -> IdentitySetup {
     );
 
     let (r, s) = factory_setup.accounts.claim_issuer_key.sign(hashed_claim).unwrap();
-    // TODO: ensure y_parity derived correctly
-    let generator = EcPointImpl::new(stark_curve::GEN_X, stark_curve::GEN_Y).unwrap();
-    let public_key = EcPointImpl::mul(
-        generator, factory_setup.accounts.claim_issuer_key.secret_key
-    );
-    let pk_y: u256 = public_key.try_into().unwrap().y().into();
-    let y_parity = pk_y & 1_u256 == 1;
+
+    let y_parity = if core::ecdsa::recover_public_key(hashed_claim, r, s, true)
+        .unwrap() == factory_setup
+        .accounts
+        .claim_issuer_key
+        .public_key {
+        true
+    } else {
+        false
+    };
 
     let alice_claim_666 = TestClaim {
         claim_id,
