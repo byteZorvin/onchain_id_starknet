@@ -151,13 +151,12 @@ pub impl Verifier<
                         let mut claimIds: Array<felt252> = array![];
 
                         let mut claim_topic = required_claim_topics_storage_path.at(i).read();
+                        let mut claim_topics_to_trusted_issuers_storage_path = claim_topics_to_trusted_issuers_storage_path.entry(claim_topic)
                         for j in 0
                             ..claim_topics_to_trusted_issuers_storage_path
-                                .entry(claim_topic)
                                 .len() {
                                     let mut claim_issuer =
                                         claim_topics_to_trusted_issuers_storage_path
-                                        .entry(claim_topic)
                                         .at(j)
                                         .read();
                                     let mut serialized_data: Array<felt252> = array![];
@@ -228,7 +227,7 @@ pub impl Verifier<
                 ..required_claim_topics_storage_path
                     .len() {
                         assert(
-                            required_claim_topics_storage_path.at(i).read() == claim_topic,
+                            required_claim_topics_storage_path.at(i).read() != claim_topic,
                             'claim topic already exist'
                         )
                     };
@@ -244,18 +243,12 @@ pub impl Verifier<
                         if claim_topic == required_claim_topics_storage_path.at(i).read() {
                             required_claim_topics_storage_path.delete(i);
                             self.emit(ClaimTopicRemoved { claim_topic })
+                            break;
                         };
                     }
         }
         fn get_claim_topics(self: @ComponentState<TContractState>) -> Array<felt252> {
-            let mut claim_topics = ArrayTrait::<felt252>::new();
-            let required_claim_topics_storage_path = self.required_claim_topics.as_path();
-            for i in 0
-                ..required_claim_topics_storage_path
-                    .len() {
-                        claim_topics.append(required_claim_topics_storage_path.at(i).read());
-                    };
-            claim_topics
+            self.required_claim_topics.as_path().into();
         }
     }
 
@@ -286,16 +279,14 @@ pub impl Verifier<
 
             let claim_topics_to_trusted_issuers_storage_path = self
                 .claim_topics_to_trusted_issuers
-                .as_path();
-
+                .as_path().entry(claim_topic);
+            let trusted_issuer_claim_topics_storage_path=trusted_issuer_claim_topics_storage_path.entry(trusted_issuer);
             for claim_topic in claim_topics
                 .clone() {
                     trusted_issuer_claim_topics_storage_path
-                        .entry(trusted_issuer)
                         .append()
                         .write(claim_topic);
                     claim_topics_to_trusted_issuers_storage_path
-                        .entry(claim_topic)
                         .append()
                         .write(trusted_issuer);
                 };
@@ -306,27 +297,25 @@ pub impl Verifier<
         ) {
             let trusted_issuer_claim_topics_storage_path = self
                 .trusted_issuer_claim_topics
-                .as_path();
+                .as_path().entry(trusted_issuer);
             assert(!trusted_issuer.is_zero(), 'invalid argument - zero address');
             assert(
                 trusted_issuer_claim_topics_storage_path.entry(trusted_issuer).len() != 0,
                 'trusted issuer does not exist'
             );
-            let total_issuers_storage_path = self.trusted_issuers.as_path();
+            let trusted_issuers_storage_path = self.trusted_issuers.as_path();
             let claim_topics_to_trusted_issuers_storage_path = self
                 .claim_topics_to_trusted_issuers
                 .as_path();
 
             for i in 0
                 ..trusted_issuer_claim_topics_storage_path
-                    .entry(trusted_issuer)
                     .len() {
                         // get the issuer of each claim topic
                         for j in 0
                             ..claim_topics_to_trusted_issuers_storage_path
                                 .entry(
                                     trusted_issuer_claim_topics_storage_path
-                                        .entry(trusted_issuer)
                                         .at(i)
                                         .read()
                                 )
@@ -335,7 +324,6 @@ pub impl Verifier<
                                     if trusted_issuer == claim_topics_to_trusted_issuers_storage_path
                                         .entry(
                                             trusted_issuer_claim_topics_storage_path
-                                                .entry(trusted_issuer)
                                                 .at(i)
                                                 .read()
                                         )
@@ -344,7 +332,6 @@ pub impl Verifier<
                                         claim_topics_to_trusted_issuers_storage_path
                                             .entry(
                                                 trusted_issuer_claim_topics_storage_path
-                                                    .entry(trusted_issuer)
                                                     .at(i)
                                                     .read()
                                             )
@@ -352,19 +339,13 @@ pub impl Verifier<
                                     };
                                 };
                     };
-
+            
+            trusted_issuer_claim_topics_storage_path.clear();
             for i in 0
-                ..trusted_issuer_claim_topics_storage_path
-                    .entry(trusted_issuer)
+                ..trusted_issuers_storage_path
                     .len() {
-                        trusted_issuer_claim_topics_storage_path.entry(trusted_issuer).delete(i);
-                    };
-
-            for i in 0
-                ..total_issuers_storage_path
-                    .len() {
-                        if trusted_issuer == total_issuers_storage_path.at(i).read() {
-                            total_issuers_storage_path.delete(i);
+                        if trusted_issuer == trusted_issuers_storage_path.at(i).read() {
+                            trusted_issuers_storage_path.delete(i);
                             break;
                         };
                     };
@@ -377,7 +358,7 @@ pub impl Verifier<
         ) {
             let trusted_issuer_claim_topics_storage_path = self
                 .trusted_issuer_claim_topics
-                .as_path();
+                .as_path().entry(trusted_issuer);
             assert(!trusted_issuer.is_zero(), 'invalid argument - zero address');
             assert(
                 self.trusted_issuer_claim_topics.entry(trusted_issuer).len() != 0,
@@ -388,65 +369,33 @@ pub impl Verifier<
 
             let claim_topics_to_trusted_issuers_storage_path = self
                 .claim_topics_to_trusted_issuers
-                .as_path();
+                .as_path().entry(claim_topic);
             //delete the issuer from the claim topic
             for i in 0
                 ..trusted_issuer_claim_topics_storage_path
-                    .entry(trusted_issuer)
                     .len() {
-                        for j in 0
-                            ..claim_topics_to_trusted_issuers_storage_path
+                        claim_topics_to_trusted_issuers_storage_path
                                 .entry(
-                                    trusted_issuer_claim_topics_storage_path
-                                        .entry(trusted_issuer)
-                                        .at(i)
-                                        .read()
-                                )
-                                .len() {
-                                    claim_topics_to_trusted_issuers_storage_path
-                                        .entry(
-                                            trusted_issuer_claim_topics_storage_path
-                                                .entry(trusted_issuer)
-                                                .at(i)
-                                                .read()
-                                        )
-                                        .delete(j);
-                                };
+                                    trusted_issuer_claim_topics_storage_path).clear();
                     };
-
+            
             //delete the claim topic from issuer
-            for i in 0
-                ..trusted_issuer_claim_topics_storage_path
-                    .entry(trusted_issuer)
-                    .len() {
-                        trusted_issuer_claim_topics_storage_path.entry(trusted_issuer).delete(i);
-                    };
+            trusted_issuer_claim_topics_storage_path.clear();
 
             //add the new claim topics to the trusted issuers and vise versa
             for claim_topic in claim_topics
                 .clone() {
                     trusted_issuer_claim_topics_storage_path
-                        .entry(trusted_issuer)
                         .append()
                         .write(claim_topic);
                     claim_topics_to_trusted_issuers_storage_path
-                        .entry(claim_topic)
                         .append()
                         .write(trusted_issuer);
                 };
             self.emit(TrustedIssuerAdded { trusted_issuer: trusted_issuer, claim_topics });
         }
         fn get_trusted_issuers(self: @ComponentState<TContractState>) -> Array<ContractAddress> {
-            let mut issuers_array = ArrayTrait::<ContractAddress>::new();
-            let trusted_issuers_storage_path = self.trusted_issuers.as_path();
-
-            for i in 0
-                ..trusted_issuers_storage_path
-                    .len() {
-                        issuers_array.append(trusted_issuers_storage_path.at(i).read());
-                    };
-
-            issuers_array
+            self.trusted_issuers.as_path().into();
         }
         fn get_trusted_issuers_for_claim_topic(
             self: @ComponentState<TContractState>, claim_topic: felt252
@@ -454,34 +403,20 @@ pub impl Verifier<
             let mut issuers_with_topic = ArrayTrait::<ContractAddress>::new();
             let claim_topics_to_trusted_issuers_storage_path = self
                 .claim_topics_to_trusted_issuers
-                .as_path();
-            for i in 0
-                ..claim_topics_to_trusted_issuers_storage_path
-                    .entry(claim_topic)
-                    .len() {
-                        issuers_with_topic
-                            .append(
-                                claim_topics_to_trusted_issuers_storage_path
-                                    .entry(claim_topic)
-                                    .at(i)
-                                    .read()
-                            );
-                    };
-            issuers_with_topic
+                .as_path().entry(claim_topic);
+            
+            claim_topics_to_trusted_issuers_storage_path.into();
+
         }
         fn is_trusted_issuer(
             self: @ComponentState<TContractState>, issuer: ContractAddress
         ) -> bool {
             let trusted_issuers_storage_path = self.trusted_issuers.as_path();
-            let mut is_trusted = false;
-            for i in 0
-                ..trusted_issuers_storage_path
-                    .len() {
-                        if issuer == trusted_issuers_storage_path.at(i).read() {
-                            is_trusted = true;
-                            break;
-                        };
-                    };
+            let mut is_trusted=false;
+
+            if self.trusted_issuer_claim_topics.as_path().entry(issuer).len()>0{
+                is_trusted=true;
+            }
 
             is_trusted
         }
@@ -495,20 +430,7 @@ pub impl Verifier<
                 trusted_issuer_claim_topics_storage_path.entry(trusted_issuer).len() != 0,
                 'trusted issuer does not exist'
             );
-            let mut topics = ArrayTrait::<felt252>::new();
-            for i in 0
-                ..trusted_issuer_claim_topics_storage_path
-                    .entry(trusted_issuer)
-                    .len() {
-                        topics
-                            .append(
-                                trusted_issuer_claim_topics_storage_path
-                                    .entry(trusted_issuer)
-                                    .at(i)
-                                    .read()
-                            );
-                    };
-            topics
+            trusted_issuer_claim_topics_storage_path.entry(trusted_issuer).into();
         }
         fn has_claim_topic(
             self: @ComponentState<TContractState>,
@@ -519,13 +441,11 @@ pub impl Verifier<
                 .trusted_issuer_claim_topics
                 .as_path();
             let mut has_claim = false;
-
+            let trusted_issuer_claim_topics_storage_path = trusted_issuer_claim_topics_storage_path.entry(trusted_issuer);
             for i in 0
                 ..trusted_issuer_claim_topics_storage_path
-                    .entry(trusted_issuer)
                     .len() {
                         if claim_topic == trusted_issuer_claim_topics_storage_path
-                            .entry(trusted_issuer)
                             .at(i)
                             .read() {
                             has_claim = true;
@@ -685,7 +605,9 @@ pub impl Verifier<
         +OwnableComponent::HasComponent<TContractState>,
         +Drop<TContractState>
     > of InternalTrait<TContractState> {
-        fn only_verified_sender(self: @ComponentState<TContractState>) {}
+        fn only_verified_sender(self: @ComponentState<TContractState>) {
+            assert(self.verify(get_caller_address()), 'sender is not verified');
+        }
     }
 }
 
