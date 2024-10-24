@@ -2,6 +2,8 @@
 pub trait IUpgradeable<TContractState> {
     fn upgrade(ref self: TContractState) -> bool;
 }
+//! TODO: Implement time windowed upgrades to allow users to have sometime to sync their
+//! implemenation.
 #[starknet::component]
 pub mod VersionManagerComponent {
     use onchain_id_starknet::interface::iimplementation_authority::{
@@ -63,24 +65,17 @@ pub mod VersionManagerComponent {
             self.VersionManager_implementation_authority.write(implementation_authority);
             self.VersionManager_implementation_class_hash.write(ia_class_hash);
         }
-        /// TODO: might implement custom upgrade call to use lib call instead of contract call.
-        /// Cuz when contract call to self caller will be contract address which might result in
-        /// elevation of priviliges.
-        #[must_use]
-        fn check_upgrade_and_call(
-            ref self: ComponentState<TContractState>, selector: felt252, calldata: Span<felt252>
-        ) -> (bool, Option<Span<felt252>>) {
+
+        fn assert_up_to_date_implementation(ref self: ComponentState<TContractState>) {
             let ia_class_hash = IImplementationAuthorityDispatcher {
                 contract_address: self.VersionManager_implementation_authority.read()
             }
                 .get_implementation();
             let local_class_hash = self.VersionManager_implementation_class_hash.read();
-            if ia_class_hash == local_class_hash {
-                return (false, Option::None);
-            }
-            let mut upgrade_component = get_dep_component_mut!(ref self, UpgradeImpl);
-            let return_data = upgrade_component.upgrade_and_call(ia_class_hash, selector, calldata);
-            (true, Option::Some(return_data))
+            assert!(
+                ia_class_hash == local_class_hash,
+                "Identity implementation is outdated! Trigger upgrade() function to upgrade your identity to latest version"
+            );
         }
     }
 }

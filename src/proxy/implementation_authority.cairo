@@ -1,3 +1,5 @@
+//! TODO: Implement time windowed upgrades to allow users to have sometime to sync their
+//! implemenation.
 #[starknet::contract]
 mod ImplementationAuthority {
     use core::num::traits::Zero;

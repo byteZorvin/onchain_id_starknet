@@ -533,17 +533,7 @@ pub mod IdentityComponent {
             data: ByteArray
         ) -> bool {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            identity.serialize(ref serialized_calldata);
-            claim_topic.serialize(ref serialized_calldata);
-            signature.serialize(ref serialized_calldata);
-            data.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(selector!("is_claim_valid"), serialized_calldata.span());
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
-            }
+            version_manager_comp.assert_up_to_date_implementation();
             Identity::is_claim_valid(@self, identity, claim_topic, signature, data)
         }
         // IERC734
@@ -554,16 +544,7 @@ pub mod IdentityComponent {
             key_type: felt252
         ) -> bool {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            key.serialize(ref serialized_calldata);
-            purpose.serialize(ref serialized_calldata);
-            key_type.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(selector!("add_key"), serialized_calldata.span());
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
-            }
+            version_manager_comp.assert_up_to_date_implementation();
             ERC734::add_key(ref self, key, purpose, key_type)
         }
 
@@ -571,32 +552,18 @@ pub mod IdentityComponent {
             ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            key.serialize(ref serialized_calldata);
-            purpose.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(selector!("remove_key"), serialized_calldata.span());
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
-            }
+            version_manager_comp.assert_up_to_date_implementation();
             ERC734::remove_key(ref self, key, purpose)
         }
+
         fn approve(
             ref self: ComponentState<TContractState>, execution_id: felt252, approve: bool
         ) -> bool {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            execution_id.serialize(ref serialized_calldata);
-            approve.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(selector!("approve"), serialized_calldata.span());
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
-            }
+            version_manager_comp.assert_up_to_date_implementation();
             ERC734::approve(ref self, execution_id, approve)
         }
+
         fn execute(
             ref self: ComponentState<TContractState>,
             to: ContractAddress,
@@ -604,82 +571,39 @@ pub mod IdentityComponent {
             calldata: Span<felt252>
         ) -> felt252 {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            to.serialize(ref serialized_calldata);
-            selector.serialize(ref serialized_calldata);
-            calldata.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(selector!("execute"), serialized_calldata.span());
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                return Serde::<felt252>::deserialize(ref serialized_return_data).unwrap();
-            }
+            version_manager_comp.assert_up_to_date_implementation();
             ERC734::execute(ref self, to, selector, calldata)
         }
+
         fn get_key(
             ref self: ComponentState<TContractState>, key: felt252
         ) -> (Span<felt252>, felt252, felt252) {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            key.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(selector!("get_key"), serialized_calldata.span());
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                return Serde::<
-                    (Span<felt252>, felt252, felt252)
-                >::deserialize(ref serialized_return_data)
-                    .unwrap();
-            }
+            version_manager_comp.assert_up_to_date_implementation();
             ERC734::get_key(@self, key)
         }
+
         fn get_key_purposes(
             ref self: ComponentState<TContractState>, key: felt252
         ) -> Span<felt252> {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            key.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(selector!("get_key_purposes"), serialized_calldata.span());
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                return Serde::<Array<felt252>>::deserialize(ref serialized_return_data)
-                    .unwrap()
-                    .span();
-            }
+            version_manager_comp.assert_up_to_date_implementation();
             ERC734::get_key_purposes(@self, key)
         }
+
         fn get_keys_by_purpose(
             ref self: ComponentState<TContractState>, purpose: felt252
         ) -> Span<felt252> {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            purpose.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(
-                    selector!("get_keys_by_purpose"), serialized_calldata.span()
-                );
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                return Serde::<Array<felt252>>::deserialize(ref serialized_return_data)
-                    .unwrap()
-                    .span();
-            }
+            version_manager_comp.assert_up_to_date_implementation();
             ERC734::get_keys_by_purpose(@self, purpose)
         }
+
         fn key_has_purpose(
             ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            key.serialize(ref serialized_calldata);
-            purpose.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(selector!("key_has_purpose"), serialized_calldata.span());
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
-            }
+            version_manager_comp.assert_up_to_date_implementation();
             ERC734::key_has_purpose(@self, key, purpose)
         }
         // IERC735
@@ -693,70 +617,32 @@ pub mod IdentityComponent {
             uri: ByteArray
         ) -> felt252 {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            topic.serialize(ref serialized_calldata);
-            scheme.serialize(ref serialized_calldata);
-            issuer.serialize(ref serialized_calldata);
-            signature.serialize(ref serialized_calldata);
-            data.serialize(ref serialized_calldata);
-            uri.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(selector!("add_claim"), serialized_calldata.span());
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                return Serde::<felt252>::deserialize(ref serialized_return_data).unwrap();
-            }
+            version_manager_comp.assert_up_to_date_implementation();
             ERC735::add_claim(ref self, topic, scheme, issuer, signature, data, uri)
         }
+
         fn remove_claim(ref self: ComponentState<TContractState>, claim_id: felt252) -> bool {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            claim_id.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(selector!("remove_claim"), serialized_calldata.span());
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                return Serde::<bool>::deserialize(ref serialized_return_data).unwrap();
-            }
+            version_manager_comp.assert_up_to_date_implementation();
             ERC735::remove_claim(ref self, claim_id)
         }
+
         fn get_claim(
             ref self: ComponentState<TContractState>, claim_id: felt252
         ) -> (felt252, felt252, ContractAddress, Signature, ByteArray, ByteArray) {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            claim_id.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(selector!("get_claim"), serialized_calldata.span());
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                Serde::<
-                    (felt252, felt252, ContractAddress, Signature, ByteArray, ByteArray)
-                >::deserialize(ref serialized_return_data)
-                    .unwrap()
-            } else {
-                ERC735::get_claim(@self, claim_id)
-            }
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC735::get_claim(@self, claim_id)
         }
+
         fn get_claim_ids_by_topics(
             ref self: ComponentState<TContractState>, topic: felt252
         ) -> Array<felt252> {
             let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            let mut serialized_calldata: Array<felt252> = array![];
-            topic.serialize(ref serialized_calldata);
-            let (updated, return_data) = version_manager_comp
-                .check_upgrade_and_call(
-                    selector!("get_claim_ids_by_topics"), serialized_calldata.span()
-                );
-            if updated {
-                let mut serialized_return_data = return_data.unwrap();
-                Serde::<Array<felt252>>::deserialize(ref serialized_return_data).unwrap()
-            } else {
-                ERC735::get_claim_ids_by_topics(@self, topic)
-            }
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC735::get_claim_ids_by_topics(@self, topic)
         }
     }
-
 
     #[generate_trait]
     pub impl InternalImpl<
@@ -806,7 +692,8 @@ pub mod IdentityComponent {
         fn get_recovered_public_key(
             self: @ComponentState<TContractState>, signature: Signature, data_hash: felt252
         ) -> felt252 {
-            recover_public_key(data_hash, signature.r, signature.s, signature.y_parity).unwrap()
+            recover_public_key(data_hash, signature.r, signature.s, signature.y_parity)
+                .expect('Public Key Recovery Failed')
         }
 
         fn _approve(
