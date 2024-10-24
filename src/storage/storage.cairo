@@ -18,6 +18,7 @@ pub trait MutableStorageArrayTrait<T> {
     fn len(self: T) -> u64;
     fn append(self: T) -> StoragePath<Mutable<Self::ElementType>>;
     fn delete(self: T, index: u64);
+    fn clear(self: T);
 }
 //********************************************************
 //              StorageArray for felt252
@@ -93,6 +94,10 @@ pub impl MutableStorageArrayFelt252Impl of MutableStorageArrayTrait<
 
     fn len(self: StoragePath<Mutable<StorageArrayFelt252>>) -> u64 {
         self.len.read()
+    }
+
+    fn clear(self: StoragePath<Mutable<StorageArrayFelt252>>) {
+        self.len.write(0);
     }
 }
 
@@ -214,6 +219,10 @@ pub impl MutableStorageArrayContractAddressImpl of MutableStorageArrayTrait<
 
     fn len(self: StoragePath<Mutable<StorageArrayContractAddress>>) -> u64 {
         self.len.read()
+    }
+
+    fn clear(self: StoragePath<Mutable<StorageArrayContractAddress>>) {
+        self.len.write(0);
     }
 }
 
