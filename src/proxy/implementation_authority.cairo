@@ -1,3 +1,5 @@
+//! TODO: Implement time windowed upgrades to allow users to have sometime to sync their
+//! implemenation.
 #[starknet::contract]
 mod ImplementationAuthority {
     use core::num::traits::Zero;
@@ -44,6 +46,17 @@ mod ImplementationAuthority {
 
     #[abi(embed_v0)]
     impl ImplementationAuthorityImpl of IImplementationAuthority<ContractState> {
+        /// This function updates the class_hash used as implementation by contracts linked to this
+        /// implementation authority.
+        ///
+        /// # Arguments
+        ///
+        /// * `new_class_hash` - A `ClassHash` to represents the new implementation class hash.
+        ///
+        /// # Requirements
+        ///
+        /// Must be called by the owner of the implementation authority.
+        /// - `new_class_hash` must be non-zero.
         fn update_implementation(ref self: ContractState, new_class_hash: ClassHash) {
             self.ownable.assert_only_owner();
             assert!(new_class_hash.is_non_zero(), "class_hash zero");
@@ -51,6 +64,10 @@ mod ImplementationAuthority {
             self.emit(UpdatedImplementation { new_class_hash });
         }
 
+        /// Returns the current implementation class hash
+        ///
+        /// # Returns
+        /// A `ClassHash` representing the current implementation
         fn get_implementation(self: @ContractState) -> ClassHash {
             self.implementation_class_hash.read()
         }

@@ -1,25 +1,30 @@
 #[starknet::component]
 pub mod IdentityComponent {
-    #[allow(unused_imports)]
-    use onchain_id_starknet::interface::{
-        iclaim_issuer::{IClaimIssuer, IClaimIssuerDispatcher, IClaimIssuerDispatcherTrait},
-        iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait, IIdentity},
-        ierc734::{IERC734, ERC734Event}, ierc735::{IERC735, ERC735Event}, ierc734, ierc735
-    };
     use core::ecdsa::recover_public_key;
     use core::num::traits::{Bounded, Zero};
     use core::poseidon::poseidon_hash_span;
+    use onchain_id_starknet::interface::{
+        iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait, IIdentity, IdentityABI},
+        ierc734::{IERC734, ERC734Event}, ierc735::{IERC735, ERC735Event}, ierc734, ierc735
+    };
+    use onchain_id_starknet::proxy::version_manager::{
+        VersionManagerComponent,
+        VersionManagerComponent::InternalTrait as VersionManagerInternalTrait
+    };
     use onchain_id_starknet::storage::{
         storage::{
-            Felt252VecToFelt252Array, MutableStorageArrayTrait, StorageArrayTrait,
-            StorageArrayFelt252, StorageArrayFelt252IndexView, MutableStorageArrayFelt252IndexView,
+            MutableFelt252VecToFelt252Array, Felt252VecToFelt252Array, MutableStorageArrayTrait,
+            StorageArrayTrait, StorageArrayFelt252, StorageArrayFelt252IndexView,
+            MutableStorageArrayFelt252IndexView
         },
         structs::{Signature, Key, Claim, Execution, delete_key, delete_claim}
     };
     use onchain_id_starknet::version::version::VersionComponent;
+    use openzeppelin_upgrades::upgradeable::UpgradeableComponent;
     use starknet::ContractAddress;
     use starknet::storage::{
-        Map, StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, StorageAsPath
+        Map, StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, StoragePath,
+        Mutable
     };
 
     #[storage]
@@ -30,8 +35,6 @@ pub mod IdentityComponent {
         executions: Map<felt252, Execution>,
         claims: Map<felt252, Claim>,
         claims_by_topic: Map<felt252, StorageArrayFelt252>,
-        initialized: bool,
-        can_interact: bool,
     }
 
     #[event]
@@ -59,10 +62,7 @@ pub mod IdentityComponent {
 
     #[embeddable_as(IdentityImpl)]
     pub impl Identity<
-        TContractState,
-        +Drop<TContractState>,
-        +HasComponent<TContractState>,
-        +VersionComponent::HasComponent<TContractState>
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
     > of IIdentity<ComponentState<TContractState>> {
         fn is_claim_valid(
             self: @ComponentState<TContractState>,
@@ -84,32 +84,43 @@ pub mod IdentityComponent {
             // TODO: consider using hash required or not? Are we going to support multiple signature
             // type?
             let pub_key_hash = poseidon_hash_span(array![pub_key].span());
-            if self.key_has_purpose(pub_key_hash, 3) {
-                true
-            } else {
-                false
-            }
+            self.key_has_purpose(pub_key_hash, 3)
         }
     }
 
     #[embeddable_as(ERC734Impl)]
     pub impl ERC734<
-        TContractState,
-        +Drop<TContractState>,
-        +HasComponent<TContractState>,
-        +VersionComponent::HasComponent<TContractState>
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
     > of IERC734<ComponentState<TContractState>> {
+        /// This function adds a key to the identity with given purpose, creates the key if not
+        /// present else adds purpose
+        ///
+        /// # Arguments
+        ///
+        /// * `key` - A `felt252` representing hash of the key(public key, ContractAddress).
+        /// TODO: deciding using `MANAGEMENT` etc... as purpose since it is felt252
+        /// * `purpose` A `felt252` representing the purpose of key. For example 1 : MANAGEMENT, 2 :
+        /// ACTION, 3: CLAIM.
+        /// * `key_type` TODO: To Be Defined!
+        ///
+        /// # Requirements
+        ///
+        /// Must called by this contract or caller has MANAGEMENT key.
+        /// - `key` must not already have given purpose.
+        ///
+        /// # Returns
+        ///
+        /// A `boolean` indicating wether key is added succesfully or not
         fn add_key(
             ref self: ComponentState<TContractState>,
             key: felt252,
             purpose: felt252,
             key_type: felt252
         ) -> bool {
-            self.delegated_only();
             self.only_manager();
             let mut key_storage_path = self.keys.entry(key);
             if key_storage_path.key.read() == key {
-                let purposes_storage_path = key_storage_path.purposes.as_path();
+                let purposes_storage_path = key_storage_path.purposes.deref();
                 for i in 0
                     ..purposes_storage_path
                         .len() {
@@ -122,41 +133,49 @@ pub mod IdentityComponent {
             } else {
                 key_storage_path.key.write(key);
                 key_storage_path.key_type.write(key_type);
-                key_storage_path.purposes.as_path().append().write(purpose);
+                key_storage_path.purposes.deref().append().write(purpose);
             }
             self.keys_by_purpose.entry(purpose).append().write(key);
             self.emit(ERC734Event::KeyAdded(ierc734::KeyAdded { key, purpose, key_type }));
             true
         }
-        // TODO:
-        // NOTE: Solidity version uses msg.sender for access control and since we dont have EOAs to
-        // have same behaviour when triggered by sequencer + contract account might adopt some
-        // mechanism (AccountInterface)
-        fn approve(ref self: ComponentState<TContractState>, id: felt252, approve: bool) -> bool {
-            self.delegated_only();
-            true
-        }
 
+        /// This function removes given purpose from given key of given identity.
+        ///
+        /// # Arguments
+        ///
+        /// * `key` - A `felt252` representing hash of the key(public key, ContractAddress).
+        /// TODO: deciding using `MANAGEMENT` etc... as purpose since it is felt252
+        /// * `purpose` A `felt252` representing the purpose of key. For example 1 : MANAGEMENT, 2 :
+        /// ACTION, 3: CLAIM.
+        ///
+        /// # Requirements
+        ///
+        /// Must called by this contract or caller has MANAGEMENT key.
+        /// - `key` should be registered and has the given purpose.
+        ///
+        /// # Returns
+        ///
+        /// A `boolean` indicating wether key is removed succesfully or not
         fn remove_key(
             ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
-            self.delegated_only();
             self.only_manager();
-            let path_entry = self.keys.entry(key);
-            assert(path_entry.key.read() == key, Errors::KEY_NOT_REGISTERED);
+            let key_storage_path = self.keys.entry(key);
+            assert(key_storage_path.key.read() == key, Errors::KEY_NOT_REGISTERED);
 
-            let purposes = path_entry.purposes.as_path();
-            let purpose_size = purposes.len();
+            let purposes_storage_path = key_storage_path.purposes.deref();
+            let purpose_size = purposes_storage_path.len();
             let mut purpose_index = Bounded::MAX;
             for i in 0
                 ..purpose_size {
-                    if purpose == purposes[i].read() {
+                    if purpose == purposes_storage_path[i].read() {
                         purpose_index = i;
                         break;
                     }
                 };
             assert(purpose_index != Bounded::MAX, Errors::KEY_DOES_NOT_HAVE_PURPOSE);
-            purposes.delete(purpose_index);
+            purposes_storage_path.delete(purpose_index);
 
             let keys_by_purpose_key_storage_path = self.keys_by_purpose.entry(purpose);
             let mut keys_len = keys_by_purpose_key_storage_path.len();
@@ -173,51 +192,186 @@ pub mod IdentityComponent {
                     }
                 };
             keys_by_purpose_key_storage_path.delete(key_index);
-            let key_type = path_entry.key_type.read();
+            let key_type = key_storage_path.key_type.read();
 
             /// if (_purposes.length - 1 == 0) {
             ///     delete _keys[_key];
             ///}
-            if purposes.len().is_zero() {
-                delete_key(path_entry);
+            if purposes_storage_path.len().is_zero() {
+                delete_key(key_storage_path);
             }
 
             self.emit(ERC734Event::KeyRemoved(ierc734::KeyRemoved { key, purpose, key_type }));
             true
         }
 
-        /// NOTE: Consider implementing Account interface + this so keys + ContractAddresses can
-        /// call this
+        /// This function approves or reject the execution with given execution_id.
+        ///
+        /// # Arguments
+        ///
+        /// * `execution_id` A `felt252` representing the identifier of execution to approve/reject.
+        /// * `approve` A `boolean` representing the status of approval. (true for approve, false
+        /// for reject).
+        ///
+        /// # Returns
+        ///
+        /// A `boolean` indicating success of approve operation.
+        fn approve(
+            ref self: ComponentState<TContractState>, execution_id: felt252, approve: bool
+        ) -> bool {
+            assert(
+                Into::<felt252, u256>::into(execution_id) < self.execution_nonce.read().into(),
+                Errors::NON_EXISTING_EXECUTION
+            );
+            let execution_storage_path = self.executions.entry(execution_id);
+            assert(!execution_storage_path.executed.read(), Errors::ALREADY_EXECUTED);
+            let caller_hash = poseidon_hash_span(
+                array![starknet::get_caller_address().into()].span()
+            );
+
+            let to_address = execution_storage_path.to.read();
+            if to_address == starknet::get_contract_address() {
+                assert(self.key_has_purpose(caller_hash, 1), Errors::NOT_HAVE_MANAGEMENT_KEY);
+            } else {
+                assert(self.key_has_purpose(caller_hash, 2), Errors::NOT_HAVE_MANAGEMENT_KEY);
+            }
+            self.emit(ERC734Event::Approved(ierc734::Approved { execution_id, approved: approve }));
+            if !approve {
+                return false;
+            }
+            execution_storage_path.approved.write(true);
+            let selector = execution_storage_path.selector.read();
+            let calldata: Span<felt252> = Into::<
+                StoragePath<Mutable<StorageArrayFelt252>>, Array<felt252>
+            >::into(execution_storage_path.calldata.deref())
+                .span();
+
+            match starknet::syscalls::call_contract_syscall(to_address, selector, calldata) {
+                Result::Ok => {
+                    execution_storage_path.executed.write(true);
+                    self
+                        .emit(
+                            ERC734Event::Executed(
+                                ierc734::Executed { execution_id, to: to_address, data: calldata }
+                            )
+                        );
+                    true
+                },
+                Result::Err => {
+                    self
+                        .emit(
+                            ERC734Event::ExecutionFailed(
+                                ierc734::ExecutionFailed {
+                                    execution_id, to: to_address, data: calldata
+                                }
+                            )
+                        );
+                    false
+                },
+            }
+        }
+
         fn execute(
             ref self: ComponentState<TContractState>,
             to: ContractAddress,
             selector: felt252,
-            calldata: Array<felt252>
+            calldata: Span<felt252>
         ) -> felt252 {
-            Zero::zero()
+            let execution_nonce = self.execution_nonce.read();
+            let execution_storage_path = self.executions.entry(execution_nonce);
+            execution_storage_path.to.write(to);
+            for chunk in calldata
+                .clone() {
+                    execution_storage_path.calldata.deref().append().write(*chunk);
+                };
+
+            self.execution_nonce.write(execution_nonce + 1);
+
+            self
+                .emit(
+                    ERC734Event::ExecutionRequested(
+                        ierc734::ExecutionRequested {
+                            execution_id: execution_nonce, to, data: calldata
+                        }
+                    )
+                );
+
+            let caller_hash = poseidon_hash_span(
+                array![starknet::get_caller_address().into()].span()
+            );
+
+            if to != starknet::get_contract_address() && self.key_has_purpose(caller_hash, 2) {
+                self._approve(execution_nonce, to, selector, calldata);
+            } else if self.key_has_purpose(caller_hash, 1) {
+                self._approve(execution_nonce, to, selector, calldata);
+            }
+
+            execution_nonce
         }
 
+        /// Returns the full key data
+        ///
+        /// # Arguments
+        ///
+        /// * `key` A `felt252` representing key identifier (hash of public key, ContractAddress).
+        ///
+        /// # Returns
+        ///
+        /// A `Span<felt252>` representing purposes this key has.
+        /// A `felt252` representing key_type of the key.
+        /// A `felt252` representing the hashed key.
         fn get_key(
             self: @ComponentState<TContractState>, key: felt252
-        ) -> (Array<felt252>, felt252, felt252) {
+        ) -> (Span<felt252>, felt252, felt252) {
             let key_storage_path = self.keys.entry(key);
-            (
-                key_storage_path.purposes.deref().into(),
-                key_storage_path.key_type.read(),
-                key_storage_path.key.read()
-            )
+            let purposes: Array<felt252> = key_storage_path.purposes.deref().into();
+            (purposes.span(), key_storage_path.key_type.read(), key_storage_path.key.read())
         }
 
-        fn get_key_purposes(self: @ComponentState<TContractState>, key: felt252) -> Array<felt252> {
-            self.keys.entry(key).purposes.deref().into()
+        /// Returns the purposes given key has.
+        ///
+        /// # Arguments
+        ///
+        /// * `key` A `felt252` representing the key to get purposes for.
+        ///
+        /// # Returns
+        ///
+        /// A `Span<felt252>` representing the array of purposes given key has.
+        fn get_key_purposes(self: @ComponentState<TContractState>, key: felt252) -> Span<felt252> {
+            Into::<
+                StoragePath<StorageArrayFelt252>, Array<felt252>
+            >::into(self.keys.entry(key).purposes.deref())
+                .span()
         }
 
+        /// Returns the keys which has given purpose.
+        ///
+        /// # Arguments
+        ///
+        /// * `purpose` A `felt252` representing the purpose to get keys for.
+        ///
+        /// # Returns
+        ///
+        /// A `Span<felt252>` representing the array of keys which has given purpose.
         fn get_keys_by_purpose(
             self: @ComponentState<TContractState>, purpose: felt252
-        ) -> Array<felt252> {
-            self.keys_by_purpose.entry(purpose).into()
+        ) -> Span<felt252> {
+            Into::<
+                StoragePath<StorageArrayFelt252>, Array<felt252>
+            >::into(self.keys_by_purpose.entry(purpose))
+                .span()
         }
 
+        /// Determines if key has given purpose.
+        ///
+        /// # Arguments
+        ///
+        /// * `key` A `felt252` representing the key to query for.
+        /// * `purpose` A `felt252` representing the purpose to query for.
+        ///
+        /// # Returns
+        ///
+        /// A `boolean` representing the key has given purpose or not.
         fn key_has_purpose(
             self: @ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
@@ -225,7 +379,7 @@ pub mod IdentityComponent {
             if key_storage_path.key.read().is_zero() {
                 return false;
             }
-            let purposes_storage_path = key_storage_path.purposes.as_path();
+            let purposes_storage_path = key_storage_path.purposes.deref();
             let mut has_purpose = false;
             for i in 0
                 ..purposes_storage_path
@@ -242,10 +396,7 @@ pub mod IdentityComponent {
 
     #[embeddable_as(ERC735Impl)]
     pub impl ERC735<
-        TContractState,
-        +Drop<TContractState>,
-        +HasComponent<TContractState>,
-        +VersionComponent::HasComponent<TContractState>,
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
     > of IERC735<ComponentState<TContractState>> {
         fn add_claim(
             ref self: ComponentState<TContractState>,
@@ -256,11 +407,9 @@ pub mod IdentityComponent {
             data: ByteArray,
             uri: ByteArray
         ) -> felt252 {
-            self.delegated_only();
             self.only_claim_key();
             let this_address = starknet::get_contract_address();
-            let mut dispatcher = IIdentityDispatcher { contract_address: issuer };
-            let is_valid_claim = dispatcher
+            let is_valid_claim = IIdentityDispatcher { contract_address: issuer }
                 .is_claim_valid(this_address, topic, signature, data.clone());
             if issuer != this_address {
                 assert(is_valid_claim, Errors::INVALID_CLAIM);
@@ -304,17 +453,16 @@ pub mod IdentityComponent {
         }
 
         fn remove_claim(ref self: ComponentState<TContractState>, claim_id: felt252) -> bool {
-            self.delegated_only();
             self.only_claim_key();
-            let claims_path_entry = self.claims.entry(claim_id);
-            let topic = claims_path_entry.topic.read();
+            let claim_storage_path = self.claims.entry(claim_id);
+            let topic = claim_storage_path.topic.read();
             assert(topic.is_non_zero(), Errors::CLAIM_DOES_NOT_EXIST);
-            let claims_by_topic_path_entry = self.claims_by_topic.entry(topic);
+            let claims_by_topic_storage_path = self.claims_by_topic.entry(topic);
             let mut claim_index = Bounded::MAX; // TODO: Might turn into Option<index>
-            let claims_len = claims_by_topic_path_entry.len();
+            let claims_len = claims_by_topic_storage_path.len();
             for i in 0
                 ..claims_len {
-                    if claims_by_topic_path_entry[i].read() == claim_id {
+                    if claims_by_topic_storage_path[i].read() == claim_id {
                         claim_index = i;
                         break;
                     }
@@ -323,7 +471,7 @@ pub mod IdentityComponent {
                 claim_index == Bounded::MAX, Errors::CLAIM_DOES_NOT_EXIST
             ); // NOTE: this check might not be necessary due to above assertion we might assume claim_id will always be there
 
-            claims_by_topic_path_entry.delete(claim_index);
+            claims_by_topic_storage_path.delete(claim_index);
 
             self
                 .emit(
@@ -331,15 +479,15 @@ pub mod IdentityComponent {
                         ierc735::ClaimRemoved {
                             claim_id,
                             topic,
-                            scheme: claims_path_entry.scheme.read(),
-                            issuer: claims_path_entry.issuer.read(),
-                            signature: claims_path_entry.signature.read(),
-                            data: claims_path_entry.data.read(),
-                            uri: claims_path_entry.uri.read()
+                            scheme: claim_storage_path.scheme.read(),
+                            issuer: claim_storage_path.issuer.read(),
+                            signature: claim_storage_path.signature.read(),
+                            data: claim_storage_path.data.read(),
+                            uri: claim_storage_path.uri.read()
                         }
                     )
                 );
-            delete_claim(claims_path_entry);
+            delete_claim(claim_storage_path);
             true
         }
 
@@ -364,35 +512,220 @@ pub mod IdentityComponent {
         }
     }
 
+    #[embeddable_as(IdentityABICentralyUpgradeableImpl)]
+    impl IdentityABICentralyUpgradeable<
+        TContractState,
+        +Drop<TContractState>,
+        +HasComponent<TContractState>,
+        +VersionComponent::HasComponent<TContractState>,
+        impl VersionManagerImpl: VersionManagerComponent::HasComponent<TContractState>,
+        +UpgradeableComponent::HasComponent<TContractState>
+    > of IdentityABI<ComponentState<TContractState>> {
+        fn is_claim_valid(
+            ref self: ComponentState<TContractState>,
+            identity: ContractAddress,
+            claim_topic: felt252,
+            signature: Signature,
+            data: ByteArray
+        ) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            Identity::is_claim_valid(@self, identity, claim_topic, signature, data)
+        }
+        // IERC734
+        fn add_key(
+            ref self: ComponentState<TContractState>,
+            key: felt252,
+            purpose: felt252,
+            key_type: felt252
+        ) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC734::add_key(ref self, key, purpose, key_type)
+        }
+
+        fn remove_key(
+            ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
+        ) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC734::remove_key(ref self, key, purpose)
+        }
+
+        fn approve(
+            ref self: ComponentState<TContractState>, execution_id: felt252, approve: bool
+        ) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC734::approve(ref self, execution_id, approve)
+        }
+
+        fn execute(
+            ref self: ComponentState<TContractState>,
+            to: ContractAddress,
+            selector: felt252,
+            calldata: Span<felt252>
+        ) -> felt252 {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC734::execute(ref self, to, selector, calldata)
+        }
+
+        fn get_key(
+            ref self: ComponentState<TContractState>, key: felt252
+        ) -> (Span<felt252>, felt252, felt252) {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC734::get_key(@self, key)
+        }
+
+        fn get_key_purposes(
+            ref self: ComponentState<TContractState>, key: felt252
+        ) -> Span<felt252> {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC734::get_key_purposes(@self, key)
+        }
+
+        fn get_keys_by_purpose(
+            ref self: ComponentState<TContractState>, purpose: felt252
+        ) -> Span<felt252> {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC734::get_keys_by_purpose(@self, purpose)
+        }
+
+        fn key_has_purpose(
+            ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
+        ) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC734::key_has_purpose(@self, key, purpose)
+        }
+        // IERC735
+        fn add_claim(
+            ref self: ComponentState<TContractState>,
+            topic: felt252,
+            scheme: felt252,
+            issuer: ContractAddress,
+            signature: Signature,
+            data: ByteArray,
+            uri: ByteArray
+        ) -> felt252 {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC735::add_claim(ref self, topic, scheme, issuer, signature, data, uri)
+        }
+
+        fn remove_claim(ref self: ComponentState<TContractState>, claim_id: felt252) -> bool {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC735::remove_claim(ref self, claim_id)
+        }
+
+        fn get_claim(
+            ref self: ComponentState<TContractState>, claim_id: felt252
+        ) -> (felt252, felt252, ContractAddress, Signature, ByteArray, ByteArray) {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC735::get_claim(@self, claim_id)
+        }
+
+        fn get_claim_ids_by_topics(
+            ref self: ComponentState<TContractState>, topic: felt252
+        ) -> Array<felt252> {
+            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
+            version_manager_comp.assert_up_to_date_implementation();
+            ERC735::get_claim_ids_by_topics(@self, topic)
+        }
+    }
+
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState, +Drop<TContractState>, +HasComponent<TContractState>
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
     > of InternalTrait<TContractState> {
-        // TODO: ensure parameters are correct and general init mechanism satisfies the .sol
-        // behavior
         fn initialize(
             ref self: ComponentState<TContractState>, initial_management_key: ContractAddress
-        ) {}
+        ) {
+            assert(initial_management_key.is_non_zero(), Errors::ZERO_ADDRESS);
+            let initial_management_key_hash = poseidon_hash_span(
+                array![initial_management_key.into()].span()
+            );
+            let key_storage_path = self.keys.entry(initial_management_key_hash);
+            key_storage_path.key.write(initial_management_key_hash);
+            key_storage_path.key_type.write(1);
+            key_storage_path.purposes.deref().append().write(1);
 
-        // TODO : decide do we need this
-        fn delegated_only(self: @ComponentState<TContractState>) {
-            assert!(
-                self.can_interact.read(), "Interacting with the library contract is forbidden."
+            self.keys_by_purpose.entry(1).append().write(initial_management_key_hash);
+            self
+                .emit(
+                    ERC734Event::KeyAdded(
+                        ierc734::KeyAdded {
+                            key: initial_management_key_hash, key_type: 1, purpose: 1
+                        }
+                    )
+                );
+        }
+
+        fn only_manager(self: @ComponentState<TContractState>) {
+            let caller = starknet::get_caller_address();
+            assert(
+                caller == starknet::get_contract_address()
+                    || self.key_has_purpose(poseidon_hash_span(array![caller.into()].span()), 1),
+                Errors::NOT_HAVE_MANAGEMENT_KEY
             );
         }
-        // TODO: Should caller expected to be pubkey and/or ContractAddress
-        fn only_manager(
-            self: @ComponentState<TContractState>
-        ) { //assert!((starknet::get_caller_address() == starknet::get_contract_address()) ||
-        //key_has_purpose(), "Permissions: Sender does not have management key");
+
+        fn only_claim_key(self: @ComponentState<TContractState>) {
+            let caller = starknet::get_caller_address();
+            assert(
+                caller == starknet::get_contract_address()
+                    || self.key_has_purpose(poseidon_hash_span(array![caller.into()].span()), 3),
+                Errors::NOT_HAVE_CLAIM_KEY
+            );
         }
-        // TODO: Should caller expected to be pubkey and/or ContractAddress
-        fn only_claim_key(self: @ComponentState<TContractState>) {}
 
         fn get_recovered_public_key(
             self: @ComponentState<TContractState>, signature: Signature, data_hash: felt252
         ) -> felt252 {
-            recover_public_key(data_hash, signature.r, signature.s, signature.y_parity).unwrap()
+            recover_public_key(data_hash, signature.r, signature.s, signature.y_parity)
+                .expect('Public Key Recovery Failed')
+        }
+
+        fn _approve(
+            ref self: ComponentState<TContractState>,
+            execution_id: felt252,
+            to_address: ContractAddress,
+            selector: felt252,
+            calldata: Span<felt252>
+        ) -> bool {
+            self.emit(ERC734Event::Approved(ierc734::Approved { execution_id, approved: true }));
+            let execution_storage_path = self.executions.entry(execution_id);
+            execution_storage_path.approved.write(true);
+
+            match starknet::syscalls::call_contract_syscall(to_address, selector, calldata) {
+                Result::Ok => {
+                    execution_storage_path.executed.write(true);
+                    self
+                        .emit(
+                            ERC734Event::Executed(
+                                ierc734::Executed { execution_id, to: to_address, data: calldata }
+                            )
+                        );
+                    true
+                },
+                Result::Err => {
+                    self
+                        .emit(
+                            ERC734Event::ExecutionFailed(
+                                ierc734::ExecutionFailed {
+                                    execution_id, to: to_address, data: calldata
+                                }
+                            )
+                        );
+                    false
+                },
+            }
         }
     }
 }

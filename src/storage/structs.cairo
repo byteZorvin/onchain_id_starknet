@@ -13,7 +13,8 @@ pub struct Key {
 #[starknet::storage_node]
 pub struct Execution {
     pub to: ContractAddress,
-    pub data: ByteArray,
+    pub calldata: StorageArrayFelt252,
+    pub selector: felt252,
     pub approved: bool,
     pub executed: bool
 }

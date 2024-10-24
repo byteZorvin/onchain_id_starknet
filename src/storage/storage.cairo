@@ -18,6 +18,7 @@ pub trait MutableStorageArrayTrait<T> {
     fn len(self: T) -> u64;
     fn append(self: T) -> StoragePath<Mutable<Self::ElementType>>;
     fn delete(self: T, index: u64);
+    fn clear(self: T);
 }
 //********************************************************
 //              StorageArray for felt252
@@ -94,6 +95,10 @@ pub impl MutableStorageArrayFelt252Impl of MutableStorageArrayTrait<
     fn len(self: StoragePath<Mutable<StorageArrayFelt252>>) -> u64 {
         self.len.read()
     }
+
+    fn clear(self: StoragePath<Mutable<StorageArrayFelt252>>) {
+        self.len.write(0);
+    }
 }
 
 pub impl StorageArrayFelt252IndexView of core::ops::IndexView<
@@ -116,6 +121,18 @@ pub impl MutableStorageArrayFelt252IndexView of core::ops::IndexView<
 
 pub impl Felt252VecToFelt252Array of Into<StoragePath<StorageArrayFelt252>, Array<felt252>> {
     fn into(self: StoragePath<StorageArrayFelt252>) -> Array<felt252> {
+        let mut array = array![];
+        for i in 0..self.len() {
+            array.append(self[i].read());
+        };
+        array
+    }
+}
+
+pub impl MutableFelt252VecToFelt252Array of Into<
+    StoragePath<Mutable<StorageArrayFelt252>>, Array<felt252>
+> {
+    fn into(self: StoragePath<Mutable<StorageArrayFelt252>>) -> Array<felt252> {
         let mut array = array![];
         for i in 0..self.len() {
             array.append(self[i].read());
@@ -203,6 +220,10 @@ pub impl MutableStorageArrayContractAddressImpl of MutableStorageArrayTrait<
     fn len(self: StoragePath<Mutable<StorageArrayContractAddress>>) -> u64 {
         self.len.read()
     }
+
+    fn clear(self: StoragePath<Mutable<StorageArrayContractAddress>>) {
+        self.len.write(0);
+    }
 }
 
 pub impl StorageArrayContractAddressIndexView of core::ops::IndexView<
@@ -227,6 +248,18 @@ pub impl ContractAddressVecToContractAddressArray of Into<
     StoragePath<StorageArrayContractAddress>, Array<ContractAddress>
 > {
     fn into(self: StoragePath<StorageArrayContractAddress>) -> Array<ContractAddress> {
+        let mut array = array![];
+        for i in 0..self.len() {
+            array.append(self[i].read());
+        };
+        array
+    }
+}
+
+pub impl MutableContractAddressVecToContractAddressArray of Into<
+    StoragePath<Mutable<StorageArrayContractAddress>>, Array<ContractAddress>
+> {
+    fn into(self: StoragePath<Mutable<StorageArrayContractAddress>>) -> Array<ContractAddress> {
         let mut array = array![];
         for i in 0..self.len() {
             array.append(self[i].read());

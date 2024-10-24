@@ -26,5 +26,5 @@ pub trait IIdFactory<TContractState> {
     fn get_token(self: @TContractState, identity: ContractAddress) -> ContractAddress;
     fn is_token_factory(self: @TContractState, factory: ContractAddress) -> bool;
     fn is_salt_taken(self: @TContractState, salt: felt252) -> bool;
-    fn implemenatation_authority(self: @TContractState) -> ContractAddress;
+    fn implementation_authority(self: @TContractState) -> ContractAddress;
 }
