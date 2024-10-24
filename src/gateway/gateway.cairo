@@ -185,12 +185,6 @@ mod Gateway {
         /// Must be called by gateway owner.
         /// `signer` must not be zero.
         /// `signer` must not be already approved.
-        ///
-        /// # Panics
-        ///
-        /// If called by any caller other than gateway owner.
-        /// If `signer` is zero.
-        /// If `signer` is already approved signer.
         fn approve_signer(ref self: ContractState, signer: felt252) {
             self.ownable.assert_only_owner();
             if signer.is_zero() {
@@ -215,12 +209,6 @@ mod Gateway {
         /// Must be called by gateway owner.
         /// `signer` must not be zero.
         /// `signer` must be already approved.
-        ///
-        /// # Panics
-        ///
-        /// If called by any caller other than gateway owner.
-        /// If `signer` is zero.
-        /// If `signer` is not an approved signer.
         fn revoke_signer(ref self: ContractState, signer: felt252) {
             self.ownable.assert_only_owner();
             if signer.is_zero() {
@@ -251,18 +239,11 @@ mod Gateway {
         ///
         /// # Requirements
         ///
-        /// `identity_owner` must be non-zero.
-        /// Signature must be signed by approved signer.
-        /// Signature must not expired already.
-        /// Signature must not revoked.
-        ///
-        /// # Panics
-        ///
-        /// If `identity_owner` is zero.
-        /// If `salt` is already taken.
-        /// If signature does not corresponds to approved signer.
-        /// If signature is already expired.
-        /// If signature is revoked.
+        /// - `identity_owner` must be non-zero.
+        /// - `signature` must be signed by approved signer.
+        /// - `signature`  must not expired already.
+        /// - `signature`  must not revoked.
+        /// - `salt` must be non-zero and not taken.
         ///
         /// # Returns
         ///
@@ -328,20 +309,12 @@ mod Gateway {
         ///
         /// # Requirements
         ///
-        /// `identity_owner` must be non-zero.
-        /// Signature must be signed by approved signer.
-        /// Signature must not expired already.
-        /// Signature must not revoked.
-        /// Length of the `management_keys` should be greater than 0.
-        /// Unique `salt` for each deployment.
-        ///
-        /// # Panics
-        ///
-        /// If `identity_owner` is zero.
-        /// If `salt` is already taken.
-        /// If signature does not corresponds to approved signer.
-        /// If signature is already expired.
-        /// If signature is revoked.
+        /// - `identity_owner` must be non-zero.
+        /// - `signature` must be signed by approved signer.
+        /// - `signature` must not expired already.
+        /// - `signature` must not revoked.
+        /// - `management_keys` length should be greater than 0.
+        /// - `salt` must be non-zero and not taken.
         ///
         /// # Returns
         ///
@@ -398,12 +371,8 @@ mod Gateway {
         ///
         /// # Requirements
         ///
-        /// `identity_owner` must be non-zero.
-        ///
-        /// # Panics
-        ///
-        /// If `identity_owner` is zero.
-        /// If `identity_owner` is used as a salt before.
+        /// - `identity_owner` must be non-zero.
+        /// - `identity_owner must not already deployed identity via this function`
         ///
         /// # Returns
         ///
@@ -431,12 +400,7 @@ mod Gateway {
         /// # Requirements
         ///
         /// Must be called by gateway owner.
-        /// `signature` must not be already revoked.
-        ///
-        /// # Panics
-        ///
-        /// If called by any caller other than gateway owner.
-        /// If `signature` is already revoked.
+        /// - `signature` must not be already revoked.
         fn revoke_signature(ref self: ContractState, signature: Signature) {
             self.ownable.assert_only_owner();
             let revoked_signature_storage_path = self.revoked_signatures.entry(signature);
@@ -456,12 +420,7 @@ mod Gateway {
         /// # Requirements
         ///
         /// Must be called by gateway owner.
-        /// `signature` must already revoked.
-        ///
-        /// # Panics
-        ///
-        /// If called by any caller other than gateway owner.
-        /// If `signature` is not already revoked.
+        /// - `signature` must already revoked.
         fn approve_signature(ref self: ContractState, signature: Signature) {
             self.ownable.assert_only_owner();
             let revoked_signature_storage_path = self.revoked_signatures.entry(signature);
@@ -481,10 +440,6 @@ mod Gateway {
         /// # Requirements
         ///
         /// Must called by gateway owner.
-        ///
-        /// # Panics
-        ///
-        /// If called by any other address than gateway owner.
         fn transfer_factory_ownership(ref self: ContractState, new_owner: ContractAddress) {
             self.ownable.assert_only_owner();
             IOwnableDispatcher { contract_address: self.id_factory.read() }
@@ -502,11 +457,6 @@ mod Gateway {
         /// # Requirements
         ///
         /// Must be called by gateway owner.
-        ///
-        /// # Panics
-        ///
-        /// If called by any other address than gateway owner.
-        /// If call made to the factory fails.
         fn call_factory(ref self: ContractState, selector: felt252, calldata: Span<felt252>) {
             self.ownable.assert_only_owner();
             starknet::syscalls::call_contract_syscall(self.id_factory.read(), selector, calldata)

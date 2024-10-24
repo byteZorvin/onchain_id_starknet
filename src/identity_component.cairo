@@ -35,10 +35,6 @@ pub mod IdentityComponent {
         executions: Map<felt252, Execution>,
         claims: Map<felt252, Claim>,
         claims_by_topic: Map<felt252, StorageArrayFelt252>,
-        // TODO: Decide we need this variable or not
-        initialized: bool,
-        // TODO: Decide we need this variable or not
-        can_interact: bool,
     }
 
     #[event]
@@ -110,7 +106,7 @@ pub mod IdentityComponent {
         /// # Requirements
         ///
         /// Must called by this contract or caller has MANAGEMENT key.
-        /// Key must not already have given purpose.
+        /// - `key` must not already have given purpose.
         ///
         /// # Returns
         ///
@@ -156,7 +152,7 @@ pub mod IdentityComponent {
         /// # Requirements
         ///
         /// Must called by this contract or caller has MANAGEMENT key.
-        /// Key should be registered and have the given purpose.
+        /// - `key` should be registered and has the given purpose.
         ///
         /// # Returns
         ///

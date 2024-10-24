@@ -56,12 +56,7 @@ mod ImplementationAuthority {
         /// # Requirements
         ///
         /// Must be called by the owner of the implementation authority.
-        /// `new_class_hash` must be non-zero.
-        ///
-        /// # Panics
-        ///
-        /// If `new_class_hash` is zero.
-        /// If caller is any address other than the owner.
+        /// - `new_class_hash` must be non-zero.
         fn update_implementation(ref self: ContractState, new_class_hash: ClassHash) {
             self.ownable.assert_only_owner();
             assert!(new_class_hash.is_non_zero(), "class_hash zero");

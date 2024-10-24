@@ -141,11 +141,6 @@ mod IdFactory {
         ///
         /// Caller must be the factory owner.
         /// `factory` must not be already registered as token factory.
-        ///
-        /// # Panics
-        ///
-        /// If called by any other address than factory owner.
-        /// If `factory` already registered as token factory.
         fn add_token_factory(ref self: ContractState, factory: ContractAddress) {
             self.ownable.assert_only_owner();
             assert!(factory.is_non_zero(), "token factory address zero");
@@ -166,11 +161,6 @@ mod IdFactory {
         ///
         /// Caller must be the factory owner.
         /// `factory` must be already registered as token factory.
-        ///
-        /// # Panics
-        ///
-        /// If called by any other address than factory owner.
-        /// If `factory` not already registered as token factory.
         fn remove_token_factory(ref self: ContractState, factory: ContractAddress) {
             self.ownable.assert_only_owner();
             assert!(factory.is_non_zero(), "token factory address zero");
@@ -190,17 +180,10 @@ mod IdFactory {
         ///
         /// # Requirements
         ///
-        /// `wallet` must not linked to another identity.
-        /// Unique `salt` for each deployment.
+        /// - `wallet` must not linked to another identity.
+        /// - `wallet` must not be zero address.
+        /// - `salt` must be non-zero and not taken.
         /// Caller must be the factory owner.
-        ///
-        /// # Panics
-        ///
-        /// If called by any address other than factory owner.
-        /// If `salt` is zero.
-        /// If `wallet` is zero.
-        /// If `wallet` already linked to an existing identity.
-        /// If `salt` is already taken.
         fn create_identity(
             ref self: ContractState, wallet: ContractAddress, salt: felt252
         ) -> ContractAddress {
@@ -244,21 +227,11 @@ mod IdFactory {
         ///
         /// # Requirements
         ///
-        /// `wallet` must not linked to another identity.
-        /// Unique `salt` for each deployment.
+        /// - `wallet` must not linked to another identity.
+        /// - `wallet` must not be in `management_keys`
+        /// - `salt` must be non-zero and not taken.
         /// Caller must be the factory owner.
-        /// Length of the `management_keys` should be greater than 0.
-        /// `wallet` must not be in `management_keys``
-        ///
-        /// # Panics
-        ///
-        /// If called by any address other than factory owner.
-        /// If `salt` is zero.
-        /// If `wallet` is zero.
-        /// If `wallet` already linked to an existing identity.
-        /// If length of `management_keys` equals to zero.
-        /// If `wallet` hash is in `management_keys`.
-        /// If `salt` is already taken.
+        /// - `management_keys` length should be greater than 0.
         fn create_identity_with_management_keys(
             ref self: ContractState,
             wallet: ContractAddress,
@@ -321,19 +294,15 @@ mod IdFactory {
         ///
         /// # Requirements
         ///
-        /// `token_owner` must not be zero address.
-        /// `token` must not linked to another identity.
-        /// Unique `salt` for each deployment.
+        /// - `token_owner` must not be zero address.
+        /// - `token` must not linked to another identity.
+        /// - `token` must not be zero address.
+        /// - `salt` must be non-zero and not taken.
         /// Caller must be factory owner or registered as token_factory.
         ///
-        /// # Panics
+        /// # Returns
         ///
-        /// If called by any address other than factory owner or token_factory.
-        /// If `salt` is zero.
-        /// If `token` is zero address.
-        /// If `token_owner` is zero address
-        /// If `token` already linked to an existing identity.
-        /// If `salt` is already taken.
+        /// A `ContractAddress` representing the address of deployed identity.
         fn create_token_identity(
             ref self: ContractState,
             token: ContractAddress,
@@ -383,20 +352,9 @@ mod IdFactory {
         /// # Requirements
         ///
         /// Caller address must be linked to an existing identity.
-        /// `new_wallet` must not be already linked to an identity.
-        /// `new_wallet` cannot be zero address.
         /// Cannot link more than 100 wallet per identity.
-        ///
-        /// # Panics
-        ///
-        /// If caller address is not linked to the same identity as `old_wallet`.
-        /// If caller address is not linked to an existing identity.
-        /// If `new_wallet` already linked to an identity.
-        /// If `new_wallet` equals to zero address.
-        ///
-        /// # Returns
-        ///
-        /// A `ContractAddress` - representing the address of identity corresponding wallet/token.
+        /// - `new_wallet` must not be already linked to an identity.
+        /// - `new_wallet` must not be zero address.
         fn link_wallet(ref self: ContractState, new_wallet: ContractAddress) {
             assert!(new_wallet.is_non_zero(), "invalid argument - zero address");
             let caller_user_identity = self
@@ -435,16 +393,6 @@ mod IdFactory {
         /// Caller address to be linked to the same identity as `old_wallet`.
         /// Caller address cannot be `old_wallet` to keep at least 1 wallet linked to any identity.
         /// `old_wallet` cannot be zero address.
-        ///
-        /// # Panics
-        ///
-        /// If caller address is not linked to the same identity as `old_wallet`.
-        /// If caller address is equalt to `old_wallet`.
-        /// If `old_wallet` equals to zero address.
-        ///
-        /// # Returns
-        ///
-        /// A `ContractAddress` - representing the address of identity corresponding wallet/token.
         fn unlink_wallet(ref self: ContractState, old_wallet: ContractAddress) {
             assert!(old_wallet.is_non_zero(), "invalid argument - zero address");
             let caller = starknet::get_caller_address();
@@ -524,7 +472,7 @@ mod IdFactory {
         /// # Returns
         ///
         /// A `boolean` - representing wether given address is registered as token factory. True if
-        /// registered token factory.
+        /// registered as token factory.
         fn is_token_factory(self: @ContractState, factory: ContractAddress) -> bool {
             self.token_factories.entry(factory).read()
         }
