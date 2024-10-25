@@ -23,3 +23,8 @@ pub mod verifiers {
     pub mod verifier_test;
     pub mod verifier_user_test;
 }
+
+pub mod proxy {
+    pub mod implementation_authority_test;
+    pub mod version_manager_test;
+}
