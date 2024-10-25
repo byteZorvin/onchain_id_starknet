@@ -106,7 +106,7 @@ pub mod IdFactory {
         pub const WALLET_ALREADY_LINKED: felt252 = 'wallet already linked';
         pub const WALLET_NOT_LINKED: felt252 = 'wallet not linked to identity';
         pub const MAX_WALLET_PER_IDENTITY: felt252 = 'max wallets per ID exceeded';
-        pub const WALLET_ALREADY_LINKED_TOKEN: felt252 = 'wallet already linked token oid';
+        pub const ADDRESS_ALREADY_LINKED_TOKEN: felt252 = 'address already linked token';
         pub const NOT_FACTORY_NOR_OWNER: felt252 = 'only factory or owner can call';
         pub const SALT_TAKEN: felt252 = 'salt already taken';
         pub const SALT_IS_ZERO: felt252 = 'salt cannot be zero';
@@ -196,7 +196,7 @@ pub mod IdFactory {
             assert(user_identity_storage_path.read().is_zero(), Errors::WALLET_ALREADY_LINKED);
             assert(
                 self.token_identity.entry(wallet).read().is_zero(),
-                Errors::WALLET_ALREADY_LINKED_TOKEN
+                Errors::ADDRESS_ALREADY_LINKED_TOKEN
             ); // solidity does not have this check ensure required
             let identity = self
                 .deploy_identity(oid_salt, self.implementation_authority.read(), wallet);
@@ -243,7 +243,7 @@ pub mod IdFactory {
             assert(user_identity_storage_path.read().is_zero(), Errors::WALLET_ALREADY_LINKED);
             assert(
                 self.token_identity.entry(wallet).read().is_zero(),
-                Errors::WALLET_ALREADY_LINKED_TOKEN
+                Errors::ADDRESS_ALREADY_LINKED_TOKEN
             ); // solidity does not have this check ensure required
             assert(management_keys.len() > 0, Errors::MANAGEMENT_KEYS_EMPTY);
 
@@ -314,13 +314,14 @@ pub mod IdFactory {
             assert(!salt_taken_storage_path.read(), Errors::SALT_TAKEN);
             let token_identity_storage_path = self.token_identity.entry(token);
             assert(
-                token_identity_storage_path.read().is_zero(), Errors::WALLET_ALREADY_LINKED_TOKEN
+                token_identity_storage_path.read().is_zero(), Errors::ADDRESS_ALREADY_LINKED_TOKEN
             ); // solidity does not have this check ensure required
             assert(self.user_identity.entry(token).read().is_zero(), Errors::WALLET_ALREADY_LINKED);
             let identity = self
                 .deploy_identity(token_salt, self.implementation_authority.read(), token_owner);
             salt_taken_storage_path.write(true);
             token_identity_storage_path.write(identity);
+            self.token_address.entry(identity).write(token);
             self.wallets.entry(identity).append().write(token);
             self.emit(TokenLinked { token, identity });
             identity
@@ -352,7 +353,7 @@ pub mod IdFactory {
             );
             assert(
                 self.token_identity.entry(new_wallet).read().is_zero(),
-                Errors::WALLET_ALREADY_LINKED_TOKEN
+                Errors::ADDRESS_ALREADY_LINKED_TOKEN
             );
             let caller_user_identity_wallets_storage_path = self
                 .wallets

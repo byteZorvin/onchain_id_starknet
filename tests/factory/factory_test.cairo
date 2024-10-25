@@ -1,7 +1,7 @@
 pub mod constructor {
     use core::num::traits::Zero;
     use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
-    use super::super::super::common::{setup_factory};
+    use super::super::super::common::setup_factory;
     #[test]
     #[should_panic]
     fn test_should_panic_when_deployment_when_implementation_authority_zero_address() {
@@ -268,7 +268,7 @@ pub mod link_unlink_wallet {
         }
 
         #[test]
-        #[should_panic(expected: 'wallet already linked token oid')]
+        #[should_panic(expected: 'address already linked token')]
         fn test_should_revert_when_new_wallet_already_linked_to_token_identity() {
             let setup = setup_identity();
 
