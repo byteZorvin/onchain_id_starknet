@@ -1,4 +1,3 @@
-use core::ec::{EcPointTrait, EcPointImpl, stark_curve};
 use core::poseidon::poseidon_hash_span;
 use onchain_id_starknet::factory::iid_factory::{IIdFactoryDispatcher, IIdFactoryDispatcherTrait};
 use onchain_id_starknet::interface::{
@@ -12,7 +11,7 @@ use snforge_std::{
     declare, DeclareResultTrait, ContractClassTrait, start_cheat_caller_address,
     stop_cheat_caller_address,
     signature::{
-        KeyPairTrait, SignerTrait, KeyPair, VerifierTrait,
+        KeyPairTrait, SignerTrait, KeyPair,
         stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
     },
 };
