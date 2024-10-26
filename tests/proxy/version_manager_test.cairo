@@ -45,9 +45,7 @@ pub fn setup_version_manager() -> (
 #[should_panic]
 fn test_initialization_should_panic_when_implementation_address_zero() {
     let mock_version_manager_contract = declare("MockWithVersionManager").unwrap().contract_class();
-    mock_version_manager_contract
-        .deploy(@array![Zero::zero()])
-        .unwrap();
+    mock_version_manager_contract.deploy(@array![Zero::zero()]).unwrap();
 }
 
 #[test]
