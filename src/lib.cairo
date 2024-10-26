@@ -40,4 +40,5 @@ pub mod version {
 pub mod mocks {
     pub mod mock_account;
     pub mod mock_verifier;
+    pub mod mock_with_version_manager;
 }

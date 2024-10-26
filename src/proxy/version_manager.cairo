@@ -6,6 +6,7 @@ pub trait IUpgradeable<TContractState> {
 //! implemenation.
 #[starknet::component]
 pub mod VersionManagerComponent {
+    use core::num::traits::Zero;
     use onchain_id_starknet::interface::iimplementation_authority::{
         IImplementationAuthorityDispatcher, IImplementationAuthorityDispatcherTrait
     };
@@ -18,6 +19,7 @@ pub mod VersionManagerComponent {
 
     #[storage]
     pub struct Storage {
+        // TODO: use get_class_hash_at_syscall instead
         VersionManager_implementation_class_hash: ClassHash,
         VersionManager_implementation_authority: ContractAddress
     }
@@ -58,6 +60,9 @@ pub mod VersionManagerComponent {
         fn initialize(
             ref self: ComponentState<TContractState>, implementation_authority: ContractAddress
         ) {
+            assert!(
+                implementation_authority.is_non_zero(), "implementation authority address zero"
+            );
             let ia_class_hash = IImplementationAuthorityDispatcher {
                 contract_address: implementation_authority
             }
@@ -66,7 +71,7 @@ pub mod VersionManagerComponent {
             self.VersionManager_implementation_class_hash.write(ia_class_hash);
         }
 
-        fn assert_up_to_date_implementation(ref self: ComponentState<TContractState>) {
+        fn assert_up_to_date_implementation(self: @ComponentState<TContractState>) {
             let ia_class_hash = IImplementationAuthorityDispatcher {
                 contract_address: self.VersionManager_implementation_authority.read()
             }
