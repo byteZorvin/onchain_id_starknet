@@ -23,7 +23,7 @@ pub mod IdFactory {
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]
-    impl OwnableTwoStepImpl = OwnableComponent::OwnableTwoStepImpl<ContractState>;
+    impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
     #[storage]
@@ -456,7 +456,7 @@ pub mod IdFactory {
         ///
         /// # Returns
         ///
-        /// A `boolean` - representing wether given address is registered as token factory. True if
+        /// A `bool` - representing wether given address is registered as token factory. True if
         /// registered as token factory.
         fn is_token_factory(self: @ContractState, factory: ContractAddress) -> bool {
             self.token_factories.entry(factory).read()
@@ -470,7 +470,7 @@ pub mod IdFactory {
         ///
         /// # Returns
         ///
-        /// A `boolean` - representing wether salt is taken. True for taken.
+        /// A `bool` - representing wether salt is taken. True for taken.
         fn is_salt_taken(self: @ContractState, salt: felt252) -> bool {
             self.salt_taken.entry(salt).read()
         }

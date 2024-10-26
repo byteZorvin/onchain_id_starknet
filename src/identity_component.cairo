@@ -110,7 +110,7 @@ pub mod IdentityComponent {
         ///
         /// # Returns
         ///
-        /// A `boolean` indicating wether key is added succesfully or not
+        /// A `bool` indicating wether key is added succesfully or not
         fn add_key(
             ref self: ComponentState<TContractState>,
             key: felt252,
@@ -156,7 +156,7 @@ pub mod IdentityComponent {
         ///
         /// # Returns
         ///
-        /// A `boolean` indicating wether key is removed succesfully or not
+        /// A `bool` indicating wether key is removed succesfully or not
         fn remove_key(
             ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
@@ -210,12 +210,12 @@ pub mod IdentityComponent {
         /// # Arguments
         ///
         /// * `execution_id` A `felt252` representing the identifier of execution to approve/reject.
-        /// * `approve` A `boolean` representing the status of approval. (true for approve, false
+        /// * `approve` A `bool` representing the status of approval. (true for approve, false
         /// for reject).
         ///
         /// # Returns
         ///
-        /// A `boolean` indicating success of approve operation.
+        /// A `bool` indicating success of approve operation.
         fn approve(
             ref self: ComponentState<TContractState>, execution_id: felt252, approve: bool
         ) -> bool {
@@ -371,7 +371,7 @@ pub mod IdentityComponent {
         ///
         /// # Returns
         ///
-        /// A `boolean` representing the key has given purpose or not.
+        /// A `bool` representing the key has given purpose or not.
         fn key_has_purpose(
             self: @ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
