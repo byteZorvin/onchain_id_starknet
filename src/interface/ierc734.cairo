@@ -24,6 +24,8 @@ pub struct Executed {
     pub execution_id: felt252,
     #[key]
     pub to: ContractAddress,
+    #[key]
+    pub selector: felt252,
     pub data: Span<felt252>
 }
 
@@ -33,6 +35,8 @@ pub struct ExecutionRequested {
     pub execution_id: felt252,
     #[key]
     pub to: ContractAddress,
+    #[key]
+    pub selector: felt252,
     pub data: Span<felt252>
 }
 
@@ -42,6 +46,8 @@ pub struct ExecutionFailed {
     pub execution_id: felt252,
     #[key]
     pub to: ContractAddress,
+    #[key]
+    pub selector: felt252,
     pub data: Span<felt252>
 }
 

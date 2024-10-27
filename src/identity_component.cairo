@@ -228,12 +228,11 @@ pub mod IdentityComponent {
             let caller_hash = poseidon_hash_span(
                 array![starknet::get_caller_address().into()].span()
             );
-
             let to_address = execution_storage_path.to.read();
             if to_address == starknet::get_contract_address() {
                 assert(self.key_has_purpose(caller_hash, 1), Errors::NOT_HAVE_MANAGEMENT_KEY);
             } else {
-                assert(self.key_has_purpose(caller_hash, 2), Errors::NOT_HAVE_MANAGEMENT_KEY);
+                assert(self.key_has_purpose(caller_hash, 2), Errors::NOT_HAVE_ACTION_KEY);
             }
             self.emit(ERC734Event::Approved(ierc734::Approved { execution_id, approved: approve }));
             if !approve {
@@ -252,7 +251,9 @@ pub mod IdentityComponent {
                     self
                         .emit(
                             ERC734Event::Executed(
-                                ierc734::Executed { execution_id, to: to_address, data: calldata }
+                                ierc734::Executed {
+                                    execution_id, to: to_address, selector, data: calldata
+                                }
                             )
                         );
                     true
@@ -262,7 +263,7 @@ pub mod IdentityComponent {
                         .emit(
                             ERC734Event::ExecutionFailed(
                                 ierc734::ExecutionFailed {
-                                    execution_id, to: to_address, data: calldata
+                                    execution_id, to: to_address, selector, data: calldata
                                 }
                             )
                         );
@@ -280,10 +281,11 @@ pub mod IdentityComponent {
             let execution_nonce = self.execution_nonce.read();
             let execution_storage_path = self.executions.entry(execution_nonce);
             execution_storage_path.to.write(to);
-            for chunk in calldata
-                .clone() {
-                    execution_storage_path.calldata.deref().append().write(*chunk);
-                };
+            execution_storage_path.selector.write(selector);
+            let calldata_storage_path = execution_storage_path.calldata.deref();
+            for chunk in calldata.clone() {
+                calldata_storage_path.append().write(*chunk);
+            };
 
             self.execution_nonce.write(execution_nonce + 1);
 
@@ -291,7 +293,7 @@ pub mod IdentityComponent {
                 .emit(
                     ERC734Event::ExecutionRequested(
                         ierc734::ExecutionRequested {
-                            execution_id: execution_nonce, to, data: calldata
+                            execution_id: execution_nonce, to, selector, data: calldata
                         }
                     )
                 );
@@ -695,21 +697,23 @@ pub mod IdentityComponent {
         fn _approve(
             ref self: ComponentState<TContractState>,
             execution_id: felt252,
-            to_address: ContractAddress,
+            to: ContractAddress,
             selector: felt252,
-            calldata: Span<felt252>
+            data: Span<felt252>
         ) -> bool {
             self.emit(ERC734Event::Approved(ierc734::Approved { execution_id, approved: true }));
             let execution_storage_path = self.executions.entry(execution_id);
             execution_storage_path.approved.write(true);
-
-            match starknet::syscalls::call_contract_syscall(to_address, selector, calldata) {
+            // see
+            // {https://book.cairo-lang.org/appendix-08-system-calls.html?highlight=call_con#call_contract}
+            // TODO: remove failing path since we caannot handle gracefully
+            match starknet::syscalls::call_contract_syscall(to, selector, data) {
                 Result::Ok => {
                     execution_storage_path.executed.write(true);
                     self
                         .emit(
                             ERC734Event::Executed(
-                                ierc734::Executed { execution_id, to: to_address, data: calldata }
+                                ierc734::Executed { execution_id, to, selector, data }
                             )
                         );
                     true
@@ -718,9 +722,7 @@ pub mod IdentityComponent {
                     self
                         .emit(
                             ERC734Event::ExecutionFailed(
-                                ierc734::ExecutionFailed {
-                                    execution_id, to: to_address, data: calldata
-                                }
+                                ierc734::ExecutionFailed { execution_id, to, selector, data }
                             )
                         );
                     false
