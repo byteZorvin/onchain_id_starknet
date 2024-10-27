@@ -47,7 +47,7 @@ pub mod IdentityComponent {
     }
 
     pub mod Errors {
-        pub const KEY_ALREADY_HAS_PURPOSE: felt252 = 'Key already has purpose';
+        pub const KEY_ALREADY_HAS_PURPOSE: felt252 = 'Key already has given purpose';
         pub const KEY_DOES_NOT_HAVE_PURPOSE: felt252 = 'Key doesnt have such purpose';
         pub const CLAIM_DOES_NOT_EXIST: felt252 = 'There is no claim with this ID';
         pub const INVALID_CLAIM: felt252 = 'Invalid claim';
