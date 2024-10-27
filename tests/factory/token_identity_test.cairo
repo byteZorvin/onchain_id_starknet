@@ -2,10 +2,10 @@ pub mod add_remove_token_factory {
     use core::num::traits::Zero;
     use onchain_id_starknet::factory::id_factory::IdFactory;
     use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
+    use onchain_id_starknet_tests::common::setup_factory;
     use snforge_std::{
         start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
     };
-    use super::super::super::common::setup_factory;
 
     #[test]
     #[should_panic(expected: 'Caller is not the owner')]
@@ -147,10 +147,10 @@ pub mod create_token_identity {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::factory::id_factory::IdFactory;
     use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
+    use onchain_id_starknet_tests::common::setup_factory;
     use snforge_std::{
         start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
     };
-    use super::super::super::common::setup_factory;
 
     #[test]
     #[should_panic(expected: 'only factory or owner can call')]
