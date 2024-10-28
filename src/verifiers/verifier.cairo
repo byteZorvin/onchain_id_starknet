@@ -145,7 +145,7 @@ pub mod VerifierComponent {
                 .claim_topics_to_trusted_issuers
                 .as_path();
             if (required_claim_topics_storage_path.len() == 0) {
-                return true;
+                return false;
             };
 
             for i in 0
