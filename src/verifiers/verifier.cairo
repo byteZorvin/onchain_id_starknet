@@ -139,13 +139,13 @@ pub mod VerifierComponent {
         +Drop<TContractState>
     > of IVerifier<ComponentState<TContractState>> {
         fn verify(self: @ComponentState<TContractState>, identity: ContractAddress) -> bool {
-            let mut verified = false;
+            let mut verified = true;
             let required_claim_topics_storage_path = self.required_claim_topics.as_path();
             let claim_topics_to_trusted_issuers_storage_path = self
                 .claim_topics_to_trusted_issuers
                 .as_path();
             if (required_claim_topics_storage_path.len() == 0) {
-                verified = true;
+                return true;
             };
 
             for i in 0
@@ -160,6 +160,7 @@ pub mod VerifierComponent {
                             .entry(claim_topic);
                         if claim_topics_to_trusted_issuers_storage_path.len() == 0 {
                             verified = false;
+                            break;
                         };
                         for j in 0
                             ..claim_topics_to_trusted_issuers_storage_path
@@ -168,42 +169,38 @@ pub mod VerifierComponent {
                                         claim_topics_to_trusted_issuers_storage_path
                                         .at(j)
                                         .read();
-                                    let mut serialized_data: Array<felt252> = array![];
-                                    identity.serialize(ref serialized_data);
-                                    serialized_data.append(claim_topic);
-                                    serialized_data.append(claim_issuer.into());
-                                    claimIds.append(poseidon_hash_span(serialized_data.span()));
+                                    claimIds
+                                        .append(
+                                            poseidon_hash_span(
+                                                array![claim_issuer.into(), claim_topic].span()
+                                            )
+                                        );
                                 };
 
-                        for mut j in 0
-                            ..claimIds
-                                .len() {
-                                    let dispatcher = IERC735Dispatcher {
-                                        contract_address: identity
-                                    };
-                                    let (foundClaimTopic, scheme, issuer, sig, data, uri) =
-                                        dispatcher
-                                        .get_claim(*claimIds.at(j));
-                                    if foundClaimTopic == claim_topic {
-                                        let dispatcher2 = IIdentityDispatcher {
-                                            contract_address: identity
-                                        };
-                                        let _validity = dispatcher2
-                                            .is_claim_valid(issuer, foundClaimTopic, sig, data);
+                        let mut j = 0;
+                        while j < claimIds.len() {
+                            let dispatcher = IERC735Dispatcher { contract_address: identity };
+                            let (foundClaimTopic, scheme, issuer, sig, data, uri) = dispatcher
+                                .get_claim(*claimIds.at(j));
+                            if foundClaimTopic == claim_topic {
+                                let dispatcher2 = IIdentityDispatcher { contract_address: issuer };
+                                let _validity = dispatcher2
+                                    .is_claim_valid(identity, foundClaimTopic, sig, data);
 
-                                        if _validity {
-                                            j = claimIds.len();
-                                        }
-
-                                        if !_validity && j == claimIds.len() - 1 {
-                                            verified = false;
-                                        }
-                                    } else {
-                                        if j == claimIds.len() {
-                                            verified = false;
-                                        }
-                                    };
+                                if _validity {
+                                    j = claimIds.len();
                                 }
+
+                                if !_validity && j == claimIds.len() - 1 {
+                                    verified = false;
+                                }
+                            } else {
+                                if j == claimIds.len() {
+                                    verified = false;
+                                }
+                            };
+                            j += 1;
+                        }
                     };
 
             verified
@@ -337,6 +334,7 @@ pub mod VerifierComponent {
                                         claim_topics_to_trusted_issuers_storage_path
                                             .entry(trusted_issuer_claim_topics_storage_path_at_i)
                                             .delete(j);
+                                        break;
                                     };
                                 };
                     };
@@ -377,17 +375,18 @@ pub mod VerifierComponent {
                             trusted_issuer_claim_topics_storage_path
                             .at(i)
                             .read();
+                        let mut claim_topics_to_trusted_issuers_storage_path_entry =
+                            claim_topics_to_trusted_issuers_storage_path
+                            .entry(trusted_issuer_claim_topics_storage_path_at_i);
                         for j in 0
-                            ..claim_topics_to_trusted_issuers_storage_path
-                                .entry(trusted_issuer_claim_topics_storage_path_at_i)
+                            ..claim_topics_to_trusted_issuers_storage_path_entry
                                 .len() {
-                                    if trusted_issuer == claim_topics_to_trusted_issuers_storage_path
-                                        .entry(trusted_issuer_claim_topics_storage_path_at_i)
+                                    if trusted_issuer == claim_topics_to_trusted_issuers_storage_path_entry
                                         .at(j)
                                         .read() {
-                                        claim_topics_to_trusted_issuers_storage_path
-                                            .entry(trusted_issuer_claim_topics_storage_path_at_i)
+                                        claim_topics_to_trusted_issuers_storage_path_entry
                                             .delete(j);
+                                        break;
                                     }
                                 }
                     };
@@ -417,13 +416,7 @@ pub mod VerifierComponent {
         fn is_trusted_issuer(
             self: @ComponentState<TContractState>, issuer: ContractAddress
         ) -> bool {
-            let mut is_trusted = false;
-
-            if self.trusted_issuer_claim_topics.as_path().entry(issuer).len() > 0 {
-                is_trusted = true;
-            }
-
-            is_trusted
+            self.trusted_issuer_claim_topics.as_path().entry(issuer).len() > 0
         }
         fn get_trusted_issuer_claim_topics(
             self: @ComponentState<TContractState>, trusted_issuer: ContractAddress
