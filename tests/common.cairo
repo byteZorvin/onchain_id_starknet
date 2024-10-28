@@ -6,7 +6,7 @@ use onchain_id_starknet::interface::{
     iclaim_issuer::{ClaimIssuerABIDispatcher, ClaimIssuerABIDispatcherTrait},
     iverifier::{VerifierABIDispatcher, VerifierABIDispatcherTrait},
 };
-use onchain_id_starknet::storage::structs::Signature;
+use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
 use snforge_std::{
     declare, DeclareResultTrait, ContractClassTrait, start_cheat_caller_address,
     stop_cheat_caller_address,
@@ -268,12 +268,12 @@ pub fn setup_identity() -> IdentitySetup {
 
     let (r, s) = factory_setup.accounts.claim_issuer_key.sign(hashed_claim).unwrap();
 
-    let y_parity = core::ecdsa::recover_public_key(hashed_claim, r, s, true)
-        .unwrap() == factory_setup
-        .accounts
-        .claim_issuer_key
-        .public_key;
-
+    //let y_parity = core::ecdsa::recover_public_key(hashed_claim, r, s, true)
+    //    .unwrap() == factory_setup
+    //    .accounts
+    //    .claim_issuer_key
+    //    .public_key;
+    //
     let alice_claim_666 = TestClaim {
         claim_id,
         identity: alice_identity.contract_address,
@@ -281,7 +281,9 @@ pub fn setup_identity() -> IdentitySetup {
         topic: claim_topic,
         scheme: 1,
         data: claim_data,
-        signature: Signature { r, s, y_parity },
+        signature: Signature::StarkSignature(
+            StarkSignature { r, s, public_key: factory_setup.accounts.claim_issuer_key.public_key }
+        ),
         uri: "https://example.com"
     };
     alice_identity

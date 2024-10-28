@@ -249,11 +249,10 @@ pub mod deploy_identity_with_salt {
     use onchain_id_starknet::factory::{
         id_factory::IdFactory, iid_factory::IIdFactoryDispatcherTrait
     };
-    use onchain_id_starknet::gateway::gateway::IGatewayDispatcherTrait;
+    use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Signature};
     use onchain_id_starknet::interface::iidentity::{
         IdentityABIDispatcher, IdentityABIDispatcherTrait
     };
-    use onchain_id_starknet::storage::structs::Signature;
     use snforge_std::{
         spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address,
         start_cheat_block_timestamp_global, stop_cheat_block_timestamp_global,
@@ -555,11 +554,10 @@ pub mod deploy_identity_with_salt_and_management_keys {
     use onchain_id_starknet::factory::{
         id_factory::IdFactory, iid_factory::IIdFactoryDispatcherTrait
     };
-    use onchain_id_starknet::gateway::gateway::IGatewayDispatcherTrait;
+    use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Signature};
     use onchain_id_starknet::interface::iidentity::{
         IdentityABIDispatcher, IdentityABIDispatcherTrait
     };
-    use onchain_id_starknet::storage::structs::Signature;
     use snforge_std::{
         spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address,
         start_cheat_block_timestamp_global, stop_cheat_block_timestamp_global,
@@ -1138,8 +1136,7 @@ pub mod transfer_factory_ownership {
 }
 pub mod revoke_signature {
     use core::poseidon::poseidon_hash_span;
-    use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Gateway};
-    use onchain_id_starknet::storage::structs::Signature;
+    use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Gateway, Signature};
     use snforge_std::{
         spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address,
         signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl},},
@@ -1254,8 +1251,7 @@ pub mod revoke_signature {
 }
 pub mod approve_signature {
     use core::poseidon::poseidon_hash_span;
-    use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Gateway};
-    use onchain_id_starknet::storage::structs::Signature;
+    use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Gateway, Signature};
     use snforge_std::{
         spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address,
         signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl},},

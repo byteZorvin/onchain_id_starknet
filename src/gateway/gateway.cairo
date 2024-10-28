@@ -1,5 +1,11 @@
-use onchain_id_starknet::storage::structs::Signature;
 use starknet::ContractAddress;
+
+#[derive(Copy, Debug, Drop, Serde, Hash)]
+pub struct Signature {
+    pub r: felt252,
+    pub s: felt252,
+    pub y_parity: bool
+}
 
 #[starknet::interface]
 pub trait IGateway<TContractState> {
@@ -41,7 +47,6 @@ pub mod Gateway {
     use onchain_id_starknet::factory::iid_factory::{
         IIdFactoryDispatcher, IIdFactoryDispatcherTrait
     };
-    use onchain_id_starknet::storage::structs::Signature;
     use openzeppelin_access::ownable::{
         ownable::OwnableComponent, interface::{IOwnableDispatcher, IOwnableDispatcherTrait},
     };
@@ -49,6 +54,7 @@ pub mod Gateway {
     use starknet::storage::{
         StoragePointerReadAccess, StoragePointerWriteAccess, Map, StoragePathEntry
     };
+    use super::Signature;
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 

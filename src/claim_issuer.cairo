@@ -6,10 +6,12 @@ mod ClaimIssuer {
         iclaim_issuer::IClaimIssuer, iidentity::IIdentity,
         ierc735::{IERC735Dispatcher, IERC735DispatcherTrait},
     };
-    use onchain_id_starknet::storage::structs::Signature;
+    use onchain_id_starknet::storage::structs::{Signature, is_valid_signature, get_public_key_hash};
     use onchain_id_starknet::version::version::VersionComponent;
     use starknet::ContractAddress;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess
+    };
 
     component!(path: IdentityComponent, storage: identity, event: IdentityEvent);
 
@@ -62,8 +64,9 @@ mod ClaimIssuer {
     impl ClaimIssuerImpl of IClaimIssuer<ContractState> {
         fn revoke_claim_by_signature(ref self: ContractState, signature: Signature) {
             self.identity.only_manager();
-            assert(!self.revoked_claims.read(signature), Errors::CLAIM_ALREADY_REVOKED);
-            self.revoked_claims.write(signature, true);
+            let revoked_claim_storage_path = self.revoked_claims.entry(signature);
+            assert(!revoked_claim_storage_path.read(), Errors::CLAIM_ALREADY_REVOKED);
+            revoked_claim_storage_path.write(true);
             self.emit(ClaimRevoked { signature });
         }
         // NOTE: Deprecated - see
@@ -74,15 +77,15 @@ mod ClaimIssuer {
             self.identity.only_manager();
             let (_, _, _, signature, _, _) = IERC735Dispatcher { contract_address: identity }
                 .get_claim(claim_id);
-
-            assert(!self.revoked_claims.read(signature), Errors::CLAIM_ALREADY_REVOKED);
-            self.revoked_claims.write(signature, true);
+            let revoked_claim_storage_path = self.revoked_claims.entry(signature);
+            assert(!revoked_claim_storage_path.read(), Errors::CLAIM_ALREADY_REVOKED);
+            revoked_claim_storage_path.write(true);
             self.emit(ClaimRevoked { signature });
             true
         }
 
         fn is_claim_revoked(self: @ContractState, signature: Signature) -> bool {
-            self.revoked_claims.read(signature)
+            self.revoked_claims.entry(signature).read()
         }
     }
 
@@ -95,6 +98,10 @@ mod ClaimIssuer {
             signature: Signature,
             data: ByteArray
         ) -> bool {
+            let pub_key_hash = get_public_key_hash(signature);
+            if !self.key_has_purpose(pub_key_hash, 3) || self.is_claim_revoked(signature) {
+                return false;
+            }
             // NOTE: How about comply with SNIP12
             let mut seralized_claim: Array<felt252> = array![];
             identity.serialize(ref seralized_claim);
@@ -104,15 +111,7 @@ mod ClaimIssuer {
             let data_hash = poseidon_hash_span(
                 array!['Starknet Message', poseidon_hash_span(seralized_claim.span())].span()
             );
-            let pub_key = self.identity.get_recovered_public_key(signature, data_hash);
-            // NOTE: consider using hash required or not? Are we going to support multiple signature
-            // type?
-            let pub_key_hash = poseidon_hash_span(array![pub_key].span());
-            if self.key_has_purpose(pub_key_hash, 3) && !self.is_claim_revoked(signature) {
-                true
-            } else {
-                false
-            }
+            is_valid_signature(data_hash, signature)
         }
     }
 }

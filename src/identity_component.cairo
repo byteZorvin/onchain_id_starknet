@@ -1,7 +1,6 @@
 #[starknet::component]
 pub mod IdentityComponent {
-    use core::ecdsa::recover_public_key;
-    use core::num::traits::{Bounded, Zero};
+    use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::interface::{
         iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait, IIdentity, IdentityABI},
@@ -17,7 +16,10 @@ pub mod IdentityComponent {
             StorageArrayTrait, StorageArrayFelt252, StorageArrayFelt252IndexView,
             MutableStorageArrayFelt252IndexView
         },
-        structs::{Signature, Key, Claim, Execution, delete_key, delete_claim}
+        structs::{
+            Signature, Key, Claim, Execution, delete_key, delete_claim, is_valid_signature,
+            get_public_key_hash
+        }
     };
     use onchain_id_starknet::version::version::VersionComponent;
     use openzeppelin_upgrades::upgradeable::UpgradeableComponent;
@@ -71,6 +73,10 @@ pub mod IdentityComponent {
             signature: Signature,
             data: ByteArray
         ) -> bool {
+            let pub_key_hash = get_public_key_hash(signature);
+            if !self.key_has_purpose(pub_key_hash, 3) {
+                return false;
+            }
             // NOTE: How about comply with SNIP12
             let mut seralized_claim: Array<felt252> = array![];
             identity.serialize(ref seralized_claim);
@@ -80,11 +86,8 @@ pub mod IdentityComponent {
             let data_hash = poseidon_hash_span(
                 array!['Starknet Message', poseidon_hash_span(seralized_claim.span())].span()
             );
-            let pub_key = self.get_recovered_public_key(signature, data_hash);
-            // TODO: consider using hash required or not? Are we going to support multiple signature
-            // type?
-            let pub_key_hash = poseidon_hash_span(array![pub_key].span());
-            self.key_has_purpose(pub_key_hash, 3)
+
+            is_valid_signature(data_hash, signature)
         }
     }
 
@@ -166,16 +169,16 @@ pub mod IdentityComponent {
 
             let purposes_storage_path = key_storage_path.purposes.deref();
             let purpose_size = purposes_storage_path.len();
-            let mut purpose_index = Bounded::MAX;
+            let mut purpose_index = Option::None;
             for i in 0
                 ..purpose_size {
                     if purpose == purposes_storage_path[i].read() {
-                        purpose_index = i;
+                        purpose_index = Option::Some(i);
                         break;
                     }
                 };
-            assert(purpose_index != Bounded::MAX, Errors::KEY_DOES_NOT_HAVE_PURPOSE);
-            purposes_storage_path.delete(purpose_index);
+            assert(purpose_index != Option::None, Errors::KEY_DOES_NOT_HAVE_PURPOSE);
+            purposes_storage_path.delete(purpose_index.unwrap());
 
             let keys_by_purpose_key_storage_path = self.keys_by_purpose.entry(purpose);
             let mut keys_len = keys_by_purpose_key_storage_path.len();
@@ -411,9 +414,10 @@ pub mod IdentityComponent {
         ) -> felt252 {
             self.only_claim_key();
             let this_address = starknet::get_contract_address();
-            let is_valid_claim = IIdentityDispatcher { contract_address: issuer }
-                .is_claim_valid(this_address, topic, signature, data.clone());
+
             if issuer != this_address {
+                let is_valid_claim = IIdentityDispatcher { contract_address: issuer }
+                    .is_claim_valid(this_address, topic, signature, data.clone());
                 assert(is_valid_claim, Errors::INVALID_CLAIM);
             }
 
@@ -425,6 +429,7 @@ pub mod IdentityComponent {
             let claim_storage_path = self.claims.entry(claim_id);
             claim_storage_path.topic.write(topic);
             claim_storage_path.scheme.write(scheme);
+            ///TODO: if convert Signature to Array felt to support multiple verification schemes
             claim_storage_path.signature.write(signature);
             claim_storage_path.data.write(data.clone());
             claim_storage_path.uri.write(uri.clone());
@@ -460,20 +465,20 @@ pub mod IdentityComponent {
             let topic = claim_storage_path.topic.read();
             assert(topic.is_non_zero(), Errors::CLAIM_DOES_NOT_EXIST);
             let claims_by_topic_storage_path = self.claims_by_topic.entry(topic);
-            let mut claim_index = Bounded::MAX; // TODO: Might turn into Option<index>
+            let mut claim_index = Option::None; // TODO: Might turn into Option<index>
             let claims_len = claims_by_topic_storage_path.len();
             for i in 0
                 ..claims_len {
                     if claims_by_topic_storage_path[i].read() == claim_id {
-                        claim_index = i;
+                        claim_index = Option::Some(i);
                         break;
                     }
                 };
             assert(
-                claim_index == Bounded::MAX, Errors::CLAIM_DOES_NOT_EXIST
+                claim_index != Option::None, Errors::CLAIM_DOES_NOT_EXIST
             ); // NOTE: this check might not be necessary due to above assertion we might assume claim_id will always be there
 
-            claims_by_topic_storage_path.delete(claim_index);
+            claims_by_topic_storage_path.delete(claim_index.unwrap());
 
             self
                 .emit(
@@ -687,12 +692,12 @@ pub mod IdentityComponent {
             );
         }
 
-        fn get_recovered_public_key(
-            self: @ComponentState<TContractState>, signature: Signature, data_hash: felt252
-        ) -> felt252 {
-            recover_public_key(data_hash, signature.r, signature.s, signature.y_parity)
-                .expect('Public Key Recovery Failed')
-        }
+        //fn get_recovered_public_key(
+        //    self: @ComponentState<TContractState>, signature: Signature, data_hash: felt252
+        //) -> felt252 {
+        //    recover_public_key(data_hash, signature.r, signature.s, signature.y_parity)
+        //        .expect('Public Key Recovery Failed')
+        //}
 
         fn _approve(
             ref self: ComponentState<TContractState>,
