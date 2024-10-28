@@ -1,7 +1,6 @@
 #[starknet::component]
 pub mod IdentityComponent {
-    use core::ecdsa::recover_public_key;
-    use core::num::traits::{Bounded, Zero};
+    use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::interface::{
         iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait, IIdentity, IdentityABI},
@@ -17,7 +16,10 @@ pub mod IdentityComponent {
             StorageArrayTrait, StorageArrayFelt252, StorageArrayFelt252IndexView,
             MutableStorageArrayFelt252IndexView
         },
-        structs::{Signature, Key, Claim, Execution, delete_key, delete_claim}
+        structs::{
+            Signature, Key, Claim, Execution, delete_key, delete_claim, is_valid_signature,
+            get_public_key_hash
+        }
     };
     use onchain_id_starknet::version::version::VersionComponent;
     use openzeppelin_upgrades::upgradeable::UpgradeableComponent;
@@ -47,7 +49,7 @@ pub mod IdentityComponent {
     }
 
     pub mod Errors {
-        pub const KEY_ALREADY_HAS_PURPOSE: felt252 = 'Key already has purpose';
+        pub const KEY_ALREADY_HAS_PURPOSE: felt252 = 'Key already has given purpose';
         pub const KEY_DOES_NOT_HAVE_PURPOSE: felt252 = 'Key doesnt have such purpose';
         pub const CLAIM_DOES_NOT_EXIST: felt252 = 'There is no claim with this ID';
         pub const INVALID_CLAIM: felt252 = 'Invalid claim';
@@ -71,6 +73,10 @@ pub mod IdentityComponent {
             signature: Signature,
             data: ByteArray
         ) -> bool {
+            let pub_key_hash = get_public_key_hash(signature);
+            if !self.key_has_purpose(pub_key_hash, 3) {
+                return false;
+            }
             // NOTE: How about comply with SNIP12
             let mut seralized_claim: Array<felt252> = array![];
             identity.serialize(ref seralized_claim);
@@ -80,11 +86,8 @@ pub mod IdentityComponent {
             let data_hash = poseidon_hash_span(
                 array!['Starknet Message', poseidon_hash_span(seralized_claim.span())].span()
             );
-            let pub_key = self.get_recovered_public_key(signature, data_hash);
-            // TODO: consider using hash required or not? Are we going to support multiple signature
-            // type?
-            let pub_key_hash = poseidon_hash_span(array![pub_key].span());
-            self.key_has_purpose(pub_key_hash, 3)
+
+            is_valid_signature(data_hash, signature)
         }
     }
 
@@ -110,7 +113,7 @@ pub mod IdentityComponent {
         ///
         /// # Returns
         ///
-        /// A `boolean` indicating wether key is added succesfully or not
+        /// A `bool` indicating wether key is added succesfully or not
         fn add_key(
             ref self: ComponentState<TContractState>,
             key: felt252,
@@ -156,7 +159,7 @@ pub mod IdentityComponent {
         ///
         /// # Returns
         ///
-        /// A `boolean` indicating wether key is removed succesfully or not
+        /// A `bool` indicating wether key is removed succesfully or not
         fn remove_key(
             ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
@@ -166,16 +169,16 @@ pub mod IdentityComponent {
 
             let purposes_storage_path = key_storage_path.purposes.deref();
             let purpose_size = purposes_storage_path.len();
-            let mut purpose_index = Bounded::MAX;
+            let mut purpose_index = Option::None;
             for i in 0
                 ..purpose_size {
                     if purpose == purposes_storage_path[i].read() {
-                        purpose_index = i;
+                        purpose_index = Option::Some(i);
                         break;
                     }
                 };
-            assert(purpose_index != Bounded::MAX, Errors::KEY_DOES_NOT_HAVE_PURPOSE);
-            purposes_storage_path.delete(purpose_index);
+            assert(purpose_index != Option::None, Errors::KEY_DOES_NOT_HAVE_PURPOSE);
+            purposes_storage_path.delete(purpose_index.unwrap());
 
             let keys_by_purpose_key_storage_path = self.keys_by_purpose.entry(purpose);
             let mut keys_len = keys_by_purpose_key_storage_path.len();
@@ -210,12 +213,12 @@ pub mod IdentityComponent {
         /// # Arguments
         ///
         /// * `execution_id` A `felt252` representing the identifier of execution to approve/reject.
-        /// * `approve` A `boolean` representing the status of approval. (true for approve, false
+        /// * `approve` A `bool` representing the status of approval. (true for approve, false
         /// for reject).
         ///
         /// # Returns
         ///
-        /// A `boolean` indicating success of approve operation.
+        /// A `bool` indicating success of approve operation.
         fn approve(
             ref self: ComponentState<TContractState>, execution_id: felt252, approve: bool
         ) -> bool {
@@ -228,12 +231,11 @@ pub mod IdentityComponent {
             let caller_hash = poseidon_hash_span(
                 array![starknet::get_caller_address().into()].span()
             );
-
             let to_address = execution_storage_path.to.read();
             if to_address == starknet::get_contract_address() {
                 assert(self.key_has_purpose(caller_hash, 1), Errors::NOT_HAVE_MANAGEMENT_KEY);
             } else {
-                assert(self.key_has_purpose(caller_hash, 2), Errors::NOT_HAVE_MANAGEMENT_KEY);
+                assert(self.key_has_purpose(caller_hash, 2), Errors::NOT_HAVE_ACTION_KEY);
             }
             self.emit(ERC734Event::Approved(ierc734::Approved { execution_id, approved: approve }));
             if !approve {
@@ -252,7 +254,9 @@ pub mod IdentityComponent {
                     self
                         .emit(
                             ERC734Event::Executed(
-                                ierc734::Executed { execution_id, to: to_address, data: calldata }
+                                ierc734::Executed {
+                                    execution_id, to: to_address, selector, data: calldata
+                                }
                             )
                         );
                     true
@@ -262,7 +266,7 @@ pub mod IdentityComponent {
                         .emit(
                             ERC734Event::ExecutionFailed(
                                 ierc734::ExecutionFailed {
-                                    execution_id, to: to_address, data: calldata
+                                    execution_id, to: to_address, selector, data: calldata
                                 }
                             )
                         );
@@ -280,10 +284,11 @@ pub mod IdentityComponent {
             let execution_nonce = self.execution_nonce.read();
             let execution_storage_path = self.executions.entry(execution_nonce);
             execution_storage_path.to.write(to);
-            for chunk in calldata
-                .clone() {
-                    execution_storage_path.calldata.deref().append().write(*chunk);
-                };
+            execution_storage_path.selector.write(selector);
+            let calldata_storage_path = execution_storage_path.calldata.deref();
+            for chunk in calldata.clone() {
+                calldata_storage_path.append().write(*chunk);
+            };
 
             self.execution_nonce.write(execution_nonce + 1);
 
@@ -291,7 +296,7 @@ pub mod IdentityComponent {
                 .emit(
                     ERC734Event::ExecutionRequested(
                         ierc734::ExecutionRequested {
-                            execution_id: execution_nonce, to, data: calldata
+                            execution_id: execution_nonce, to, selector, data: calldata
                         }
                     )
                 );
@@ -371,7 +376,7 @@ pub mod IdentityComponent {
         ///
         /// # Returns
         ///
-        /// A `boolean` representing the key has given purpose or not.
+        /// A `bool` representing the key has given purpose or not.
         fn key_has_purpose(
             self: @ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
@@ -409,9 +414,10 @@ pub mod IdentityComponent {
         ) -> felt252 {
             self.only_claim_key();
             let this_address = starknet::get_contract_address();
-            let is_valid_claim = IIdentityDispatcher { contract_address: issuer }
-                .is_claim_valid(this_address, topic, signature, data.clone());
+
             if issuer != this_address {
+                let is_valid_claim = IIdentityDispatcher { contract_address: issuer }
+                    .is_claim_valid(this_address, topic, signature, data.clone());
                 assert(is_valid_claim, Errors::INVALID_CLAIM);
             }
 
@@ -423,6 +429,7 @@ pub mod IdentityComponent {
             let claim_storage_path = self.claims.entry(claim_id);
             claim_storage_path.topic.write(topic);
             claim_storage_path.scheme.write(scheme);
+            ///TODO: if convert Signature to Array felt to support multiple verification schemes
             claim_storage_path.signature.write(signature);
             claim_storage_path.data.write(data.clone());
             claim_storage_path.uri.write(uri.clone());
@@ -458,20 +465,20 @@ pub mod IdentityComponent {
             let topic = claim_storage_path.topic.read();
             assert(topic.is_non_zero(), Errors::CLAIM_DOES_NOT_EXIST);
             let claims_by_topic_storage_path = self.claims_by_topic.entry(topic);
-            let mut claim_index = Bounded::MAX; // TODO: Might turn into Option<index>
+            let mut claim_index = Option::None; // TODO: Might turn into Option<index>
             let claims_len = claims_by_topic_storage_path.len();
             for i in 0
                 ..claims_len {
                     if claims_by_topic_storage_path[i].read() == claim_id {
-                        claim_index = i;
+                        claim_index = Option::Some(i);
                         break;
                     }
                 };
             assert(
-                claim_index == Bounded::MAX, Errors::CLAIM_DOES_NOT_EXIST
+                claim_index != Option::None, Errors::CLAIM_DOES_NOT_EXIST
             ); // NOTE: this check might not be necessary due to above assertion we might assume claim_id will always be there
 
-            claims_by_topic_storage_path.delete(claim_index);
+            claims_by_topic_storage_path.delete(claim_index.unwrap());
 
             self
                 .emit(
@@ -685,31 +692,33 @@ pub mod IdentityComponent {
             );
         }
 
-        fn get_recovered_public_key(
-            self: @ComponentState<TContractState>, signature: Signature, data_hash: felt252
-        ) -> felt252 {
-            recover_public_key(data_hash, signature.r, signature.s, signature.y_parity)
-                .expect('Public Key Recovery Failed')
-        }
+        //fn get_recovered_public_key(
+        //    self: @ComponentState<TContractState>, signature: Signature, data_hash: felt252
+        //) -> felt252 {
+        //    recover_public_key(data_hash, signature.r, signature.s, signature.y_parity)
+        //        .expect('Public Key Recovery Failed')
+        //}
 
         fn _approve(
             ref self: ComponentState<TContractState>,
             execution_id: felt252,
-            to_address: ContractAddress,
+            to: ContractAddress,
             selector: felt252,
-            calldata: Span<felt252>
+            data: Span<felt252>
         ) -> bool {
             self.emit(ERC734Event::Approved(ierc734::Approved { execution_id, approved: true }));
             let execution_storage_path = self.executions.entry(execution_id);
             execution_storage_path.approved.write(true);
-
-            match starknet::syscalls::call_contract_syscall(to_address, selector, calldata) {
+            // see
+            // {https://book.cairo-lang.org/appendix-08-system-calls.html?highlight=call_con#call_contract}
+            // TODO: remove failing path since we caannot handle gracefully
+            match starknet::syscalls::call_contract_syscall(to, selector, data) {
                 Result::Ok => {
                     execution_storage_path.executed.write(true);
                     self
                         .emit(
                             ERC734Event::Executed(
-                                ierc734::Executed { execution_id, to: to_address, data: calldata }
+                                ierc734::Executed { execution_id, to, selector, data }
                             )
                         );
                     true
@@ -718,9 +727,7 @@ pub mod IdentityComponent {
                     self
                         .emit(
                             ERC734Event::ExecutionFailed(
-                                ierc734::ExecutionFailed {
-                                    execution_id, to: to_address, data: calldata
-                                }
+                                ierc734::ExecutionFailed { execution_id, to, selector, data }
                             )
                         );
                     false

@@ -1,7 +1,7 @@
 //! TODO: Implement time windowed upgrades to allow users to have sometime to sync their
 //! implemenation.
 #[starknet::contract]
-mod ImplementationAuthority {
+pub mod ImplementationAuthority {
     use core::num::traits::Zero;
     use onchain_id_starknet::interface::iimplementation_authority::IImplementationAuthority;
     use openzeppelin_access::ownable::ownable::OwnableComponent;
@@ -22,7 +22,7 @@ mod ImplementationAuthority {
     }
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event {
+    pub enum Event {
         UpdatedImplementation: UpdatedImplementation,
         #[flat]
         OwnableEvent: OwnableComponent::Event
@@ -30,15 +30,18 @@ mod ImplementationAuthority {
 
 
     #[derive(Drop, starknet::Event)]
-    struct UpdatedImplementation {
-        new_class_hash: ClassHash,
+    pub struct UpdatedImplementation {
+        pub new_class_hash: ClassHash,
     }
 
+    pub mod Errors {
+        pub const CLASS_HASH_ZERO: felt252 = 'class hash zero';
+    }
     #[constructor]
     fn constructor(
         ref self: ContractState, implementation_class_hash: ClassHash, owner: ContractAddress
     ) {
-        assert!(implementation_class_hash.is_non_zero(), "class_hash zero");
+        assert(implementation_class_hash.is_non_zero(), Errors::CLASS_HASH_ZERO);
         self.ownable.initializer(owner);
         self.implementation_class_hash.write(implementation_class_hash);
         self.emit(UpdatedImplementation { new_class_hash: implementation_class_hash });
@@ -59,15 +62,16 @@ mod ImplementationAuthority {
         /// - `new_class_hash` must be non-zero.
         fn update_implementation(ref self: ContractState, new_class_hash: ClassHash) {
             self.ownable.assert_only_owner();
-            assert!(new_class_hash.is_non_zero(), "class_hash zero");
+            assert(new_class_hash.is_non_zero(), Errors::CLASS_HASH_ZERO);
             self.implementation_class_hash.write(new_class_hash);
             self.emit(UpdatedImplementation { new_class_hash });
         }
 
-        /// Returns the current implementation class hash
+        /// Returns the current implementation class hash.
         ///
         /// # Returns
-        /// A `ClassHash` representing the current implementation
+        ///
+        /// A `ClassHash` representing the current implementation class hash.
         fn get_implementation(self: @ContractState) -> ClassHash {
             self.implementation_class_hash.read()
         }

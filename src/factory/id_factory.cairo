@@ -1,5 +1,5 @@
 #[starknet::contract]
-mod IdFactory {
+pub mod IdFactory {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::factory::iid_factory::IIdFactory;
@@ -23,7 +23,7 @@ mod IdFactory {
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]
-    impl OwnableTwoStepImpl = OwnableComponent::OwnableTwoStepImpl<ContractState>;
+    impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
     #[storage]
@@ -55,75 +55,72 @@ mod IdFactory {
     #[derive(Drop, starknet::Event)]
     pub struct Deployed {
         #[key]
-        addr: ContractAddress,
+        pub deployed_address: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct WalletLinked {
         #[key]
-        wallet: ContractAddress,
+        pub wallet: ContractAddress,
         #[key]
-        identity: ContractAddress,
+        pub identity: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct WalletUnlinked {
         #[key]
-        wallet: ContractAddress,
+        pub wallet: ContractAddress,
         #[key]
-        identity: ContractAddress,
+        pub identity: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenLinked {
         #[key]
-        token: ContractAddress,
+        pub token: ContractAddress,
         #[key]
-        identity: ContractAddress,
+        pub identity: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenFactoryAdded {
         #[key]
-        factory: ContractAddress,
+        pub factory: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenFactoryRemoved {
         #[key]
-        factory: ContractAddress,
+        pub factory: ContractAddress,
     }
 
     pub mod Errors {
-        pub fn ZERO_ADDRESS(variable_name: felt252) {
-            panic!("{} : address zero", variable_name);
-        }
+        pub const TOKEN_FACTORY_IS_ZERO_ADDRESS: felt252 = 'token factory address zero';
+        pub const TOKEN_IS_ZERO_ADDRESS: felt252 = 'token address zero';
+        pub const TOKEN_OWNER_IS_ZERO_ADDRESS: felt252 = 'token owner address zero';
+        pub const OWNER_IS_ZERO_ADDRESS: felt252 = 'owner is zero address';
+        pub const IMPLEMENTATION_AUTH_ZERO_ADDRESS: felt252 = 'impl. auth. zero address';
+        pub const WALLET_IS_ZERO_ADDRES: felt252 = 'wallet is zero address';
         pub const ALREADY_FACTORY: felt252 = 'already a factory';
         pub const NOT_FACTORY: felt252 = 'not a factory';
-        pub fn NEW_WALLET_ALREADY_LINKED() {
-            panic!("new wallet already linked");
-        }
-        pub fn WALLET_NOT_LINKED() {
-            panic!("wallet not linked to an identity");
-        }
-        pub fn MAX_WALLET_PER_IDENTITY() {
-            panic!("max amount of wallets per ID exceeded");
-        }
-        pub fn NEW_WALLET_IS_ALREADY_TOKEN() {
-            panic!("invalid argument - token address");
-        }
-        pub fn NOT_FACTORY_NOR_OWNER() {
-            panic!("only Factory or owner can call");
-        }
+        pub const WALLET_ALREADY_LINKED: felt252 = 'wallet already linked';
+        pub const WALLET_NOT_LINKED: felt252 = 'wallet not linked to identity';
+        pub const MAX_WALLET_PER_IDENTITY: felt252 = 'max wallets per ID exceeded';
+        pub const ADDRESS_ALREADY_LINKED_TOKEN: felt252 = 'address already linked token';
+        pub const NOT_FACTORY_NOR_OWNER: felt252 = 'only factory or owner can call';
         pub const SALT_TAKEN: felt252 = 'salt already taken';
+        pub const SALT_IS_ZERO: felt252 = 'salt cannot be zero';
+        pub const MANAGEMENT_KEYS_EMPTY: felt252 = 'empty list of managent keys';
+        pub const CANNOT_REMOVE_CALLER: felt252 = 'cant remove caller address';
+        pub const ONLY_LINKED_WALLET_CAN_UNLINK: felt252 = 'only linked wallet can unlink';
     }
 
     #[constructor]
     fn constructor(
         ref self: ContractState, implementation_authority: ContractAddress, owner: ContractAddress
     ) {
-        assert!(implementation_authority.is_non_zero(), "implementation authority zero address");
-        assert!(owner.is_non_zero(), "owner is zero address");
+        assert(implementation_authority.is_non_zero(), Errors::IMPLEMENTATION_AUTH_ZERO_ADDRESS);
+        assert(owner.is_non_zero(), Errors::OWNER_IS_ZERO_ADDRESS);
         self.implementation_authority.write(implementation_authority);
         self.ownable.initializer(owner);
     }
@@ -143,9 +140,9 @@ mod IdFactory {
         /// `factory` must not be already registered as token factory.
         fn add_token_factory(ref self: ContractState, factory: ContractAddress) {
             self.ownable.assert_only_owner();
-            assert!(factory.is_non_zero(), "token factory address zero");
+            assert(factory.is_non_zero(), Errors::TOKEN_FACTORY_IS_ZERO_ADDRESS);
             let token_factory_storage_path = self.token_factories.entry(factory);
-            assert!(!token_factory_storage_path.read(), "already a factory");
+            assert(!token_factory_storage_path.read(), Errors::ALREADY_FACTORY);
             token_factory_storage_path.write(true);
             self.emit(TokenFactoryAdded { factory });
         }
@@ -163,9 +160,9 @@ mod IdFactory {
         /// `factory` must be already registered as token factory.
         fn remove_token_factory(ref self: ContractState, factory: ContractAddress) {
             self.ownable.assert_only_owner();
-            assert!(factory.is_non_zero(), "token factory address zero");
+            assert(factory.is_non_zero(), Errors::TOKEN_FACTORY_IS_ZERO_ADDRESS);
             let token_factory_storage_path = self.token_factories.entry(factory);
-            assert!(token_factory_storage_path.read(), "not a factory");
+            assert(token_factory_storage_path.read(), Errors::NOT_FACTORY);
             token_factory_storage_path.write(false);
             self.emit(TokenFactoryRemoved { factory });
         }
@@ -188,22 +185,18 @@ mod IdFactory {
             ref self: ContractState, wallet: ContractAddress, salt: felt252
         ) -> ContractAddress {
             self.ownable.assert_only_owner();
-            if wallet.is_zero() {
-                Errors::ZERO_ADDRESS('wallet');
-            }
-            assert!(
-                salt.is_non_zero(), "salt cannot be zero"
+            assert(wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRES);
+            assert(
+                salt.is_non_zero(), Errors::SALT_IS_ZERO
             ); // decide felt252 ok for salt or ByteArray needed
             let oid_salt = poseidon_hash_span(array!['OID', salt].span());
             let salt_taken_storage_path = self.salt_taken.entry(oid_salt);
             assert(!salt_taken_storage_path.read(), Errors::SALT_TAKEN);
             let user_identity_storage_path = self.user_identity.entry(wallet);
-            assert!(
-                user_identity_storage_path.read().is_zero(), "wallet already linked to identity"
-            );
-            assert!(
+            assert(user_identity_storage_path.read().is_zero(), Errors::WALLET_ALREADY_LINKED);
+            assert(
                 self.token_identity.entry(wallet).read().is_zero(),
-                "wallet already linked to token identity"
+                Errors::ADDRESS_ALREADY_LINKED_TOKEN
             ); // solidity does not have this check ensure required
             let identity = self
                 .deploy_identity(oid_salt, self.implementation_authority.read(), wallet);
@@ -239,24 +232,20 @@ mod IdFactory {
             management_keys: Array<felt252>
         ) -> ContractAddress {
             self.ownable.assert_only_owner();
-            if wallet.is_zero() {
-                Errors::ZERO_ADDRESS('wallet');
-            }
-            assert!(
-                salt.is_non_zero(), "salt cannot be zero"
+            assert(wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRES);
+            assert(
+                salt.is_non_zero(), Errors::SALT_IS_ZERO
             ); // decide felt252 ok for salt or ByteArray needed
             let oid_salt = poseidon_hash_span(array!['OID', salt].span());
             let salt_taken_storage_path = self.salt_taken.entry(oid_salt);
             assert(!salt_taken_storage_path.read(), Errors::SALT_TAKEN);
             let user_identity_storage_path = self.user_identity.entry(wallet);
-            assert!(
-                user_identity_storage_path.read().is_zero(), "wallet already linked to identity"
-            );
-            assert!(
+            assert(user_identity_storage_path.read().is_zero(), Errors::WALLET_ALREADY_LINKED);
+            assert(
                 self.token_identity.entry(wallet).read().is_zero(),
-                "wallet already linked to token identity"
+                Errors::ADDRESS_ALREADY_LINKED_TOKEN
             ); // solidity does not have this check ensure required
-            assert!(management_keys.len() > 0, "invalid argument - empty list of keys");
+            assert(management_keys.len() > 0, Errors::MANAGEMENT_KEYS_EMPTY);
 
             let identity = self
                 .deploy_identity(
@@ -269,7 +258,7 @@ mod IdFactory {
                 // will not be initial key but will be linked wallet?
                 assert!(
                     key != poseidon_hash_span(array![wallet.into()].span()),
-                    "invalid argument - wallet is also listed in management keys"
+                    "wallet is also listed in management keys"
                 );
                 identity_dispatcher.add_key(key, 1, 1);
             };
@@ -309,35 +298,30 @@ mod IdFactory {
             token_owner: ContractAddress,
             salt: felt252
         ) -> ContractAddress {
-            if !self.is_token_factory(starknet::get_caller_address())
-                && self.ownable.owner() != starknet::get_caller_address() {
-                Errors::NOT_FACTORY_NOR_OWNER();
-            }
-            if token.is_zero() {
-                Errors::ZERO_ADDRESS('token');
-            }
-            if token_owner.is_zero() {
-                Errors::ZERO_ADDRESS('token_owner');
-            }
-            assert!(
-                salt.is_non_zero(), "salt cannot be zero"
+            assert(
+                self.is_token_factory(starknet::get_caller_address())
+                    || self.ownable.owner() == starknet::get_caller_address(),
+                Errors::NOT_FACTORY_NOR_OWNER
+            );
+
+            assert(token.is_non_zero(), Errors::TOKEN_IS_ZERO_ADDRESS);
+            assert(token_owner.is_non_zero(), Errors::TOKEN_OWNER_IS_ZERO_ADDRESS);
+            assert(
+                salt.is_non_zero(), Errors::SALT_IS_ZERO
             ); // decide felt252 ok for salt or ByteArray needed
             let token_salt = poseidon_hash_span(array!['Token', salt].span());
             let salt_taken_storage_path = self.salt_taken.entry(token_salt);
             assert(!salt_taken_storage_path.read(), Errors::SALT_TAKEN);
             let token_identity_storage_path = self.token_identity.entry(token);
-            assert!(
-                token_identity_storage_path.read().is_zero(),
-                "wallet already linked to token identity"
+            assert(
+                token_identity_storage_path.read().is_zero(), Errors::ADDRESS_ALREADY_LINKED_TOKEN
             ); // solidity does not have this check ensure required
-            assert!(
-                self.user_identity.entry(token).read().is_zero(),
-                "wallet already linked to identity"
-            );
+            assert(self.user_identity.entry(token).read().is_zero(), Errors::WALLET_ALREADY_LINKED);
             let identity = self
                 .deploy_identity(token_salt, self.implementation_authority.read(), token_owner);
             salt_taken_storage_path.write(true);
             token_identity_storage_path.write(identity);
+            self.token_address.entry(identity).write(token);
             self.wallets.entry(identity).append().write(token);
             self.emit(TokenLinked { token, identity });
             identity
@@ -356,26 +340,27 @@ mod IdFactory {
         /// - `new_wallet` must not be already linked to an identity.
         /// - `new_wallet` must not be zero address.
         fn link_wallet(ref self: ContractState, new_wallet: ContractAddress) {
-            assert!(new_wallet.is_non_zero(), "invalid argument - zero address");
+            assert(new_wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRES);
             let caller_user_identity = self
                 .user_identity
                 .entry(starknet::get_caller_address())
                 .read();
-            assert!(caller_user_identity.is_non_zero(), "wallet not linked to an identity");
+            assert(caller_user_identity.is_non_zero(), Errors::WALLET_NOT_LINKED);
             let new_wallet_user_identity_storage_path = self.user_identity.entry(new_wallet);
-            assert!(
-                new_wallet_user_identity_storage_path.read().is_zero(), "new wallet already linked"
+            assert(
+                new_wallet_user_identity_storage_path.read().is_zero(),
+                Errors::WALLET_ALREADY_LINKED
             );
-            assert!(
+            assert(
                 self.token_identity.entry(new_wallet).read().is_zero(),
-                "new wallet already linked token"
+                Errors::ADDRESS_ALREADY_LINKED_TOKEN
             );
             let caller_user_identity_wallets_storage_path = self
                 .wallets
                 .entry(caller_user_identity);
-            assert!(
+            assert(
                 caller_user_identity_wallets_storage_path.len() < 101,
-                "max amount of wallets per ID exceeded"
+                Errors::MAX_WALLET_PER_IDENTITY
             );
             new_wallet_user_identity_storage_path.write(caller_user_identity);
             caller_user_identity_wallets_storage_path.append().write(new_wallet);
@@ -394,14 +379,14 @@ mod IdFactory {
         /// Caller address cannot be `old_wallet` to keep at least 1 wallet linked to any identity.
         /// `old_wallet` cannot be zero address.
         fn unlink_wallet(ref self: ContractState, old_wallet: ContractAddress) {
-            assert!(old_wallet.is_non_zero(), "invalid argument - zero address");
+            assert(old_wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRES);
             let caller = starknet::get_caller_address();
-            assert!(old_wallet != caller, "cannot be called on sender address");
+            assert(old_wallet != caller, Errors::CANNOT_REMOVE_CALLER);
             let old_wallet_user_identity_storage_path = self.user_identity.entry(old_wallet);
             let old_wallet_user_identity = old_wallet_user_identity_storage_path.read();
-            assert!(
+            assert(
                 self.user_identity.entry(caller).read() == old_wallet_user_identity,
-                "only a linked wallet can unlink"
+                Errors::ONLY_LINKED_WALLET_CAN_UNLINK
             );
 
             old_wallet_user_identity_storage_path.write(Zero::zero());
@@ -471,7 +456,7 @@ mod IdFactory {
         ///
         /// # Returns
         ///
-        /// A `boolean` - representing wether given address is registered as token factory. True if
+        /// A `bool` - representing wether given address is registered as token factory. True if
         /// registered as token factory.
         fn is_token_factory(self: @ContractState, factory: ContractAddress) -> bool {
             self.token_factories.entry(factory).read()
@@ -485,7 +470,7 @@ mod IdFactory {
         ///
         /// # Returns
         ///
-        /// A `boolean` - representing wether salt is taken. True for taken.
+        /// A `bool` - representing wether salt is taken. True for taken.
         fn is_salt_taken(self: @ContractState, salt: felt252) -> bool {
             self.salt_taken.entry(salt).read()
         }
@@ -536,7 +521,7 @@ mod IdFactory {
                 implementation_class_hash, salt, ctor_data.span(), false
             )
                 .unwrap();
-            self.emit(Deployed { addr: deployed_address });
+            self.emit(Deployed { deployed_address });
             deployed_address
         }
     }
