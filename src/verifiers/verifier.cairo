@@ -189,18 +189,23 @@ pub mod VerifierComponent {
 
                                 if _validity {
                                     j = claimIds.len();
-                                }
+                                };
 
                                 if !_validity && j == claimIds.len() - 1 {
                                     verified = false;
+                                    break;
                                 }
                             } else {
-                                if j == claimIds.len() {
+                                if j == claimIds.len() - 1 {
                                     verified = false;
+                                    break;
                                 }
                             };
                             j += 1;
-                        }
+                        };
+                        if !verified {
+                            break;
+                        };
                     };
 
             verified
