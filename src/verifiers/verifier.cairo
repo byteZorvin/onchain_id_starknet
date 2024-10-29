@@ -1,53 +1,11 @@
-use starknet::ContractAddress;
-#[starknet::interface]
-pub trait ITrustedIssuersRegistry<TContractState> {
-    fn add_trusted_issuer(
-        ref self: TContractState, trusted_issuer: ContractAddress, claim_topics: Array<felt252>
-    );
-    fn remove_trusted_issuer(ref self: TContractState, trusted_issuer: ContractAddress);
-    fn update_issuer_claim_topics(
-        ref self: TContractState, trusted_issuer: ContractAddress, claim_topics: Array<felt252>
-    );
-    fn get_trusted_issuers(self: @TContractState) -> Array<ContractAddress>;
-    fn get_trusted_issuers_for_claim_topic(
-        self: @TContractState, claim_topic: felt252
-    ) -> Array<ContractAddress>;
-    fn is_trusted_issuer(self: @TContractState, issuer: ContractAddress) -> bool;
-    fn get_trusted_issuer_claim_topics(
-        self: @TContractState, trusted_issuer: ContractAddress
-    ) -> Array<felt252>;
-    fn has_claim_topic(
-        self: @TContractState, trusted_issuer: ContractAddress, claim_topic: felt252
-    ) -> bool;
-}
-
-#[starknet::interface]
-pub trait IClaimTopicsRegistry<TContractState> {
-    fn add_claim_topic(ref self: TContractState, claim_topic: felt252);
-    fn remove_claim_topic(ref self: TContractState, claim_topic: felt252);
-    fn get_claim_topics(self: @TContractState) -> Array<felt252>;
-}
-
-#[starknet::interface]
-pub trait IVerifier<TContractState> {
-    fn verify(self: @TContractState, contract_address: ContractAddress) -> bool;
-    fn is_claim_topic_required(self: @TContractState, claim_topic: felt252) -> bool;
-}
-
 #[starknet::component]
 pub mod VerifierComponent {
-    use core::hash::{HashStateTrait, HashStateExTrait};
-    use core::iter::IntoIterator;
     use core::num::traits::Zero;
-    use core::poseidon::PoseidonTrait;
     use core::poseidon::poseidon_hash_span;
-    use onchain_id_starknet::interface::iclaim_issuer::IClaimIssuerDispatcher;
+    use onchain_id_starknet::interface::ierc735::{IERC735Dispatcher, IERC735DispatcherTrait};
+    use onchain_id_starknet::interface::iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait};
     use onchain_id_starknet::interface::iverifier::{
         ITrustedIssuersRegistry, IClaimTopicsRegistry, IVerifier, VerifierABI
-    };
-    use onchain_id_starknet::interface::{
-        iclaim_issuer::IClaimIssuer, iidentity::IIdentity,
-        ierc735::{IERC735Dispatcher, IERC735DispatcherTrait},
     };
 
     use onchain_id_starknet::storage::{
@@ -60,13 +18,9 @@ pub mod VerifierComponent {
     };
     use openzeppelin_access::ownable::OwnableComponent;
     use starknet::ContractAddress;
-    use starknet::event::EventEmitter;
     use starknet::storage::{
-        Vec, StoragePath, Mutable, VecTrait, StoragePathEntry, StorageAsPath, Map,
-        StoragePointerReadAccess, StoragePointerWriteAccess
+        StoragePathEntry, StorageAsPath, Map, StoragePointerReadAccess, StoragePointerWriteAccess
     };
-    use starknet::{get_contract_address};
-    use super::super::super::interface::iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait};
 
     #[storage]
     pub struct Storage {
@@ -153,7 +107,7 @@ pub mod VerifierComponent {
                     .len() {
                         let mut claim_topic = required_claim_topics_storage_path.at(i).read();
 
-                        let mut claimIds: Array<felt252> = array![];
+                        let mut claim_ids: Array<felt252> = array![];
 
                         let mut claim_topics_to_trusted_issuers_storage_path =
                             claim_topics_to_trusted_issuers_storage_path
@@ -169,7 +123,7 @@ pub mod VerifierComponent {
                                         claim_topics_to_trusted_issuers_storage_path
                                         .at(j)
                                         .read();
-                                    claimIds
+                                    claim_ids
                                         .append(
                                             poseidon_hash_span(
                                                 array![claim_issuer.into(), claim_topic].span()
@@ -178,25 +132,25 @@ pub mod VerifierComponent {
                                 };
 
                         let mut j = 0;
-                        while j < claimIds.len() {
+                        while j < claim_ids.len() {
                             let dispatcher = IERC735Dispatcher { contract_address: identity };
-                            let (foundClaimTopic, scheme, issuer, sig, data, uri) = dispatcher
-                                .get_claim(*claimIds.at(j));
-                            if foundClaimTopic == claim_topic {
+                            let (found_claim_topic, _, issuer, sig, data, _) = dispatcher
+                                .get_claim(*claim_ids.at(j));
+                            if found_claim_topic == claim_topic {
                                 let dispatcher2 = IIdentityDispatcher { contract_address: issuer };
                                 let _validity = dispatcher2
-                                    .is_claim_valid(identity, foundClaimTopic, sig, data);
+                                    .is_claim_valid(identity, found_claim_topic, sig, data);
 
                                 if _validity {
-                                    j = claimIds.len();
+                                    j = claim_ids.len();
                                 };
 
-                                if !_validity && j == claimIds.len() - 1 {
+                                if !_validity && j == claim_ids.len() - 1 {
                                     verified = false;
                                     break;
                                 }
                             } else {
-                                if j == claimIds.len() - 1 {
+                                if j == claim_ids.len() - 1 {
                                     verified = false;
                                     break;
                                 }
@@ -231,7 +185,7 @@ pub mod VerifierComponent {
     #[embeddable_as(ClaimTopicsRegistryImpl)]
     impl ClaimTopicsRegistry<
         TContractState, +Drop<TContractState>, +HasComponent<TContractState>
-    > of super::IClaimTopicsRegistry<ComponentState<TContractState>> {
+    > of IClaimTopicsRegistry<ComponentState<TContractState>> {
         fn add_claim_topic(ref self: ComponentState<TContractState>, claim_topic: felt252) {
             let required_claim_topics_storage_path = self.required_claim_topics.as_path();
             assert(
@@ -270,7 +224,7 @@ pub mod VerifierComponent {
     #[embeddable_as(TrustedIssuerRegistryImpl)]
     impl TrustedIssuerRegistry<
         TContractState, +HasComponent<TContractState>
-    > of super::ITrustedIssuersRegistry<ComponentState<TContractState>> {
+    > of ITrustedIssuersRegistry<ComponentState<TContractState>> {
         fn add_trusted_issuer(
             ref self: ComponentState<TContractState>,
             trusted_issuer: ContractAddress,
@@ -437,14 +391,12 @@ pub mod VerifierComponent {
             trusted_issuer_claim_topics_storage_path.into()
         }
         fn has_claim_topic(
-            self: @ComponentState<TContractState>,
-            trusted_issuer: ContractAddress,
-            claim_topic: felt252
+            self: @ComponentState<TContractState>, issuer: ContractAddress, claim_topic: felt252
         ) -> bool {
             let mut has_claim = false;
             let trusted_issuer_claim_topics_storage_path = self
                 .trusted_issuer_claim_topics
-                .entry(trusted_issuer);
+                .entry(issuer);
             for i in 0
                 ..trusted_issuer_claim_topics_storage_path
                     .len() {
