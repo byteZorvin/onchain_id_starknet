@@ -1,5 +1,5 @@
 #[starknet::contract]
-mod ClaimIssuer {
+pub mod ClaimIssuer {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::identity_component::IdentityComponent;
     use onchain_id_starknet::interface::{
@@ -37,7 +37,7 @@ mod ClaimIssuer {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event {
+    pub enum Event {
         #[flat]
         IdentityEvent: IdentityComponent::Event,
         #[flat]
@@ -48,11 +48,11 @@ mod ClaimIssuer {
     #[derive(Drop, starknet::Event)]
     pub struct ClaimRevoked {
         #[key]
-        signature: Signature,
+        pub signature: Signature,
     }
 
     pub mod Errors {
-        pub const CLAIM_ALREADY_REVOKED: felt252 = 'Conflict: Claim already revoked';
+        pub const CLAIM_ALREADY_REVOKED: felt252 = 'Claim already revoked';
     }
 
     #[constructor]

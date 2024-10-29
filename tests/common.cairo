@@ -377,3 +377,34 @@ pub fn setup_verifier() -> VerifierSetup {
         alice_claim_666: alice_claim_666
     }
 }
+
+pub fn get_test_claim(setup: @IdentitySetup) -> TestClaim {
+    let identity = *setup.alice_identity.contract_address;
+    let issuer = *setup.claim_issuer.contract_address;
+    let claim_topic = 42_felt252;
+    let claim_data = "0x0042";
+    let claim_id = poseidon_hash_span(array![issuer.into(), claim_topic].span());
+
+    let mut serialized_claim_to_sign: Array<felt252> = array![];
+    identity.serialize(ref serialized_claim_to_sign);
+    claim_topic.serialize(ref serialized_claim_to_sign);
+    claim_data.serialize(ref serialized_claim_to_sign);
+
+    let hashed_claim = poseidon_hash_span(
+        array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span()
+    );
+
+    let (r, s) = (*setup.accounts.claim_issuer_key).sign(hashed_claim).unwrap();
+    TestClaim {
+        claim_id,
+        identity,
+        issuer,
+        topic: claim_topic,
+        scheme: 1,
+        data: claim_data,
+        signature: Signature::StarkSignature(
+            StarkSignature { r, s, public_key: *setup.accounts.claim_issuer_key.public_key }
+        ),
+        uri: "https://example.com"
+    }
+}

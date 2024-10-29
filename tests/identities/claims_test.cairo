@@ -1,41 +1,3 @@
-use core::poseidon::poseidon_hash_span;
-use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
-use onchain_id_starknet_tests::common::{TestClaim, IdentitySetup};
-use snforge_std::{
-    signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl},},
-};
-
-fn get_test_claim(setup: @IdentitySetup) -> TestClaim {
-    let identity = *setup.alice_identity.contract_address;
-    let issuer = *setup.claim_issuer.contract_address;
-    let claim_topic = 42_felt252;
-    let claim_data = "0x0042";
-    let claim_id = poseidon_hash_span(array![issuer.into(), claim_topic].span());
-
-    let mut serialized_claim_to_sign: Array<felt252> = array![];
-    identity.serialize(ref serialized_claim_to_sign);
-    claim_topic.serialize(ref serialized_claim_to_sign);
-    claim_data.serialize(ref serialized_claim_to_sign);
-
-    let hashed_claim = poseidon_hash_span(
-        array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span()
-    );
-
-    let (r, s) = (*setup.accounts.claim_issuer_key).sign(hashed_claim).unwrap();
-    TestClaim {
-        claim_id,
-        identity,
-        issuer,
-        topic: claim_topic,
-        scheme: 1,
-        data: claim_data,
-        signature: Signature::StarkSignature(
-            StarkSignature { r, s, public_key: *setup.accounts.claim_issuer_key.public_key }
-        ),
-        uri: "https://example.com"
-    }
-}
-
 pub mod add_claim {
     pub mod when_self_attested_claim {
         use core::poseidon::poseidon_hash_span;
@@ -288,7 +250,7 @@ pub mod add_claim {
         use core::poseidon::poseidon_hash_span;
         use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
         use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
-        use onchain_id_starknet_tests::common::{setup_identity};
+        use onchain_id_starknet_tests::common::{setup_identity, get_test_claim};
         use snforge_std::{
             start_cheat_caller_address, stop_cheat_caller_address, spy_events,
             EventSpyAssertionsTrait,
@@ -297,7 +259,6 @@ pub mod add_claim {
                 stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
             },
         };
-        use super::super::get_test_claim;
 
         #[test]
         #[should_panic(expected: 'Invalid claim')]
@@ -495,7 +456,7 @@ pub mod update_claim {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
     use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
-    use onchain_id_starknet_tests::common::{setup_identity, TestClaim};
+    use onchain_id_starknet_tests::common::{setup_identity, TestClaim, get_test_claim};
     use snforge_std::{
         start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
         signature::{
@@ -503,7 +464,6 @@ pub mod update_claim {
             stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
         },
     };
-    use super::get_test_claim;
 
     #[test]
     fn test_should_replace_existing_claim() {
@@ -613,11 +573,10 @@ pub mod update_claim {
 pub mod remove_claim {
     use core::num::traits::Zero;
     use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
-    use onchain_id_starknet_tests::common::setup_identity;
+    use onchain_id_starknet_tests::common::{setup_identity, get_test_claim};
     use snforge_std::{
         start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
     };
-    use super::get_test_claim;
 
     #[test]
     fn test_should_remove_existing_claim_when_caller_is_identity_contract() {
