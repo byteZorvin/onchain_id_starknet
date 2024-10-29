@@ -17,13 +17,13 @@ pub mod VerifierComponent {
             MutableContractAddressVecToContractAddressArray
         }
     };
-    use starknet::ContractAddress;
-    use starknet::storage::{
-        StoragePathEntry, StorageAsPath, Map, StoragePointerReadAccess, StoragePointerWriteAccess
-    };
 
     use openzeppelin_access::ownable::{
         ownable::OwnableComponent, interface::{IOwnableDispatcher, IOwnableDispatcherTrait},
+    };
+    use starknet::ContractAddress;
+    use starknet::storage::{
+        StoragePathEntry, StorageAsPath, Map, StoragePointerReadAccess, StoragePointerWriteAccess
     };
 
     #[storage]
@@ -188,7 +188,10 @@ pub mod VerifierComponent {
 
     #[embeddable_as(ClaimTopicsRegistryImpl)]
     impl ClaimTopicsRegistry<
-        TContractState, +Drop<TContractState>, +HasComponent<TContractState>, impl Owner: OwnableComponent::HasComponent<TContractState>
+        TContractState,
+        +Drop<TContractState>,
+        +HasComponent<TContractState>,
+        impl Owner: OwnableComponent::HasComponent<TContractState>
     > of IClaimTopicsRegistry<ComponentState<TContractState>> {
         fn add_claim_topic(ref self: ComponentState<TContractState>, claim_topic: felt252) {
             let ownable_comp = get_dep_component!(@self, Owner);
@@ -231,7 +234,9 @@ pub mod VerifierComponent {
 
     #[embeddable_as(TrustedIssuerRegistryImpl)]
     impl TrustedIssuerRegistry<
-        TContractState, +HasComponent<TContractState>, impl Owner: OwnableComponent::HasComponent<TContractState>
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Owner: OwnableComponent::HasComponent<TContractState>
     > of ITrustedIssuersRegistry<ComponentState<TContractState>> {
         fn add_trusted_issuer(
             ref self: ComponentState<TContractState>,
@@ -329,7 +334,7 @@ pub mod VerifierComponent {
         ) {
             let ownable_comp = get_dep_component!(@self, Owner);
             ownable_comp.assert_only_owner();
-            
+
             let trusted_issuer_claim_topics_storage_path = self
                 .trusted_issuer_claim_topics
                 .as_path()
