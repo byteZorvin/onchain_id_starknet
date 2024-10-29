@@ -225,6 +225,11 @@ pub fn setup_identity() -> IdentitySetup {
     start_cheat_caller_address(
         alice_identity.contract_address, factory_setup.accounts.alice_account.contract_address
     );
+    // register alice pub key as management key
+    alice_identity
+        .add_key(
+            poseidon_hash_span(array![factory_setup.accounts.alice_key.public_key].span()), 1, 1
+        );
     // register carol pub key + contract address as claim key
     alice_identity
         .add_key(
@@ -252,10 +257,10 @@ pub fn setup_identity() -> IdentitySetup {
             poseidon_hash_span(array![factory_setup.accounts.david_key.public_key].span()), 2, 1
         );
 
-    let claim_topic = 666;
-    let issuer = factory_setup.accounts.claim_issuer_key.public_key;
-    let claim_data = "0x0042";
-    let claim_id = poseidon_hash_span(array![issuer, claim_topic.into()].span());
+    let claim_topic = 666_felt252;
+    let issuer = claim_issuer_address;
+    let claim_data = "0x00666";
+    let claim_id = poseidon_hash_span(array![issuer.into(), claim_topic].span());
 
     let mut serialized_claim_to_sign: Array<felt252> = array![];
     alice_identity.contract_address.serialize(ref serialized_claim_to_sign);
@@ -268,12 +273,6 @@ pub fn setup_identity() -> IdentitySetup {
 
     let (r, s) = factory_setup.accounts.claim_issuer_key.sign(hashed_claim).unwrap();
 
-    //let y_parity = core::ecdsa::recover_public_key(hashed_claim, r, s, true)
-    //    .unwrap() == factory_setup
-    //    .accounts
-    //    .claim_issuer_key
-    //    .public_key;
-    //
     let alice_claim_666 = TestClaim {
         claim_id,
         identity: alice_identity.contract_address,
@@ -286,6 +285,7 @@ pub fn setup_identity() -> IdentitySetup {
         ),
         uri: "https://example.com"
     };
+
     alice_identity
         .add_claim(
             alice_claim_666.topic,

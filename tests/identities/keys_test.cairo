@@ -31,9 +31,13 @@ pub mod read_key_methods {
         let alice_address_hash = poseidon_hash_span(
             array![setup.accounts.alice_account.contract_address.into()].span()
         );
+        let alice_pubkey_hash = poseidon_hash_span(
+            array![setup.accounts.alice_key.public_key].span()
+        );
         let keys = setup.alice_identity.get_keys_by_purpose(1);
         assert!(
-            keys == array![alice_address_hash].span(), "returned keys for purpose does not match"
+            keys == array![alice_address_hash, alice_pubkey_hash].span(),
+            "returned keys for purpose does not match"
         );
     }
 

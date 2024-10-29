@@ -70,6 +70,7 @@ pub fn delete_claim(self: StoragePath<Mutable<Claim>>) {
     self.topic.write(Default::default());
     self.scheme.write(Default::default());
     self.issuer.write(Zero::zero());
+    // TODO: Clear signature from storage
     //self.signature.write(Default::default());
     self.data.write(Default::default());
     self.uri.write(Default::default());

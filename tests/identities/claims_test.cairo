@@ -1,73 +1,852 @@
+use core::poseidon::poseidon_hash_span;
+use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
+use onchain_id_starknet_tests::common::{TestClaim, IdentitySetup};
+use snforge_std::{
+    signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl},},
+};
+
+fn get_test_claim(setup: @IdentitySetup) -> TestClaim {
+    let identity = *setup.alice_identity.contract_address;
+    let issuer = *setup.claim_issuer.contract_address;
+    let claim_topic = 42_felt252;
+    let claim_data = "0x0042";
+    let claim_id = poseidon_hash_span(array![issuer.into(), claim_topic].span());
+
+    let mut serialized_claim_to_sign: Array<felt252> = array![];
+    identity.serialize(ref serialized_claim_to_sign);
+    claim_topic.serialize(ref serialized_claim_to_sign);
+    claim_data.serialize(ref serialized_claim_to_sign);
+
+    let hashed_claim = poseidon_hash_span(
+        array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span()
+    );
+
+    let (r, s) = (*setup.accounts.claim_issuer_key).sign(hashed_claim).unwrap();
+    TestClaim {
+        claim_id,
+        identity,
+        issuer,
+        topic: claim_topic,
+        scheme: 1,
+        data: claim_data,
+        signature: Signature::StarkSignature(
+            StarkSignature { r, s, public_key: *setup.accounts.claim_issuer_key.public_key }
+        ),
+        uri: "https://example.com"
+    }
+}
+
 pub mod add_claim {
-    #[test]
-    fn test_should_add_claim_when_self_attested_when_claim_not_valid() {
-        assert(true, '');
+    pub mod when_self_attested_claim {
+        use core::poseidon::poseidon_hash_span;
+        use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
+        use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
+        use onchain_id_starknet_tests::common::{setup_identity, TestClaim, IdentitySetup};
+        use snforge_std::{
+            start_cheat_caller_address, stop_cheat_caller_address, spy_events,
+            EventSpyAssertionsTrait,
+            signature::{
+                SignerTrait,
+                stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
+            },
+        };
+
+        fn get_self_attested_claim(setup: @IdentitySetup) -> TestClaim {
+            let identity = *setup.alice_identity.contract_address;
+            let issuer = identity;
+            let claim_topic = 42_felt252;
+            let claim_data = "0x0042";
+            let claim_id = poseidon_hash_span(array![issuer.into(), claim_topic].span());
+
+            let mut serialized_claim_to_sign: Array<felt252> = array![];
+            identity.serialize(ref serialized_claim_to_sign);
+            claim_topic.serialize(ref serialized_claim_to_sign);
+            claim_data.serialize(ref serialized_claim_to_sign);
+
+            let hashed_claim = poseidon_hash_span(
+                array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())]
+                    .span()
+            );
+
+            let (r, s) = (*setup.accounts.alice_key).sign(hashed_claim).unwrap();
+            TestClaim {
+                claim_id,
+                identity,
+                issuer: identity,
+                topic: claim_topic,
+                scheme: 1,
+                data: claim_data,
+                signature: Signature::StarkSignature(
+                    StarkSignature { r, s, public_key: *setup.accounts.alice_key.public_key }
+                ),
+                uri: "https://example.com"
+            }
+        }
+
+        #[test]
+        fn test_should_add_claim_when_claim_not_valid() {
+            let setup = setup_identity();
+            let identity = setup.alice_identity.contract_address;
+            let claim_topic = 42_felt252;
+            let claim_id = poseidon_hash_span(array![identity.into(), claim_topic].span());
+
+            let self_attested_claim = TestClaim {
+                claim_id,
+                identity,
+                issuer: identity,
+                topic: claim_topic,
+                scheme: 1,
+                data: "0xC0FFEE",
+                signature: Signature::StarkSignature(
+                    StarkSignature {
+                        r: '', s: '', public_key: setup.accounts.claim_issuer_key.public_key
+                    }
+                ),
+                uri: "https://example.com"
+            };
+            let mut spy = spy_events();
+
+            start_cheat_caller_address(
+                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            );
+            setup
+                .alice_identity
+                .add_claim(
+                    self_attested_claim.topic,
+                    self_attested_claim.scheme,
+                    self_attested_claim.issuer,
+                    self_attested_claim.signature,
+                    self_attested_claim.data.clone(),
+                    self_attested_claim.uri.clone()
+                );
+            stop_cheat_caller_address(setup.alice_identity.contract_address);
+
+            spy
+                .assert_emitted(
+                    @array![
+                        (
+                            setup.alice_identity.contract_address,
+                            ierc735::ERC735Event::ClaimAdded(
+                                ierc735::ClaimAdded {
+                                    claim_id: self_attested_claim.claim_id,
+                                    topic: self_attested_claim.topic,
+                                    scheme: self_attested_claim.scheme,
+                                    issuer: self_attested_claim.issuer,
+                                    signature: self_attested_claim.signature,
+                                    data: self_attested_claim.data,
+                                    uri: self_attested_claim.uri
+                                }
+                            )
+                        )
+                    ]
+                );
+        }
+
+        #[test]
+        fn test_should_add_claim_when_claim_valid_when_caller_is_identity() {
+            let setup = setup_identity();
+            let self_attested_claim = get_self_attested_claim(@setup);
+
+            let mut calldata = array![
+                self_attested_claim.topic,
+                self_attested_claim.scheme,
+                self_attested_claim.issuer.into()
+            ];
+            self_attested_claim.signature.serialize(ref calldata);
+            self_attested_claim.data.serialize(ref calldata);
+            self_attested_claim.uri.serialize(ref calldata);
+
+            start_cheat_caller_address(
+                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+            );
+            let execution_id = setup
+                .alice_identity
+                .execute(
+                    setup.alice_identity.contract_address, selector!("add_claim"), calldata.span()
+                );
+            stop_cheat_caller_address(setup.alice_identity.contract_address);
+
+            let mut spy = spy_events();
+
+            start_cheat_caller_address(
+                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            );
+            setup.alice_identity.approve(execution_id, true);
+            stop_cheat_caller_address(setup.alice_identity.contract_address);
+
+            assert!(
+                setup
+                    .alice_identity
+                    .is_claim_valid(
+                        self_attested_claim.identity,
+                        self_attested_claim.topic,
+                        self_attested_claim.signature,
+                        self_attested_claim.data.clone()
+                    ),
+                "Claim not added"
+            );
+            spy
+                .assert_emitted(
+                    @array![
+                        (
+                            setup.alice_identity.contract_address,
+                            ierc735::ERC735Event::ClaimAdded(
+                                ierc735::ClaimAdded {
+                                    claim_id: self_attested_claim.claim_id,
+                                    topic: self_attested_claim.topic,
+                                    scheme: self_attested_claim.scheme,
+                                    issuer: self_attested_claim.issuer,
+                                    signature: self_attested_claim.signature,
+                                    data: self_attested_claim.data,
+                                    uri: self_attested_claim.uri
+                                }
+                            )
+                        )
+                    ]
+                );
+        }
+
+        #[test]
+        fn test_should_add_claim_when_claim_valid_when_caller_is_claim_or_management_key() {
+            let setup = setup_identity();
+            let self_attested_claim = get_self_attested_claim(@setup);
+
+            let mut spy = spy_events();
+
+            start_cheat_caller_address(
+                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            );
+            setup
+                .alice_identity
+                .add_claim(
+                    self_attested_claim.topic,
+                    self_attested_claim.scheme,
+                    self_attested_claim.issuer,
+                    self_attested_claim.signature,
+                    self_attested_claim.data.clone(),
+                    self_attested_claim.uri.clone()
+                );
+            stop_cheat_caller_address(setup.alice_identity.contract_address);
+
+            assert!(
+                setup
+                    .alice_identity
+                    .is_claim_valid(
+                        self_attested_claim.identity,
+                        self_attested_claim.topic,
+                        self_attested_claim.signature,
+                        self_attested_claim.data.clone()
+                    ),
+                "Claim not added"
+            );
+
+            spy
+                .assert_emitted(
+                    @array![
+                        (
+                            setup.alice_identity.contract_address,
+                            ierc735::ERC735Event::ClaimAdded(
+                                ierc735::ClaimAdded {
+                                    claim_id: self_attested_claim.claim_id,
+                                    topic: self_attested_claim.topic,
+                                    scheme: self_attested_claim.scheme,
+                                    issuer: self_attested_claim.issuer,
+                                    signature: self_attested_claim.signature,
+                                    data: self_attested_claim.data,
+                                    uri: self_attested_claim.uri
+                                }
+                            )
+                        )
+                    ]
+                );
+        }
+
+        #[test]
+        #[should_panic(expected: 'Sender not have claim key')]
+        fn test_should_panic_if_caller_is_not_claim_key() {
+            let setup = setup_identity();
+            let self_attested_claim = get_self_attested_claim(@setup);
+
+            start_cheat_caller_address(
+                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+            );
+            setup
+                .alice_identity
+                .add_claim(
+                    self_attested_claim.topic,
+                    self_attested_claim.scheme,
+                    self_attested_claim.issuer,
+                    self_attested_claim.signature,
+                    self_attested_claim.data.clone(),
+                    self_attested_claim.uri.clone()
+                );
+            stop_cheat_caller_address(setup.alice_identity.contract_address);
+        }
     }
 
-    #[test]
-    fn test_should_add_claim_when_self_attested_when_claim_valid_when_caller_is_identity() {
-        assert(true, '');
-    }
+    pub mod when_issued_by_claim_issuer {
+        use core::poseidon::poseidon_hash_span;
+        use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
+        use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
+        use onchain_id_starknet_tests::common::{setup_identity};
+        use snforge_std::{
+            start_cheat_caller_address, stop_cheat_caller_address, spy_events,
+            EventSpyAssertionsTrait,
+            signature::{
+                SignerTrait,
+                stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
+            },
+        };
+        use super::super::get_test_claim;
 
-    #[test]
-    fn test_should_add_claim_when_self_attested_when_claim_valid_when_caller_is_claim_or_management_key() {
-        assert(true, '');
-    }
+        #[test]
+        #[should_panic(expected: 'Invalid claim')]
+        fn test_should_panic_when_invalid_claim() {
+            let setup = setup_identity();
+            let mut test_claim = get_test_claim(@setup);
 
-    #[test]
-    #[should_panic]
-    fn test_should_panic_if_caller_is_not_claim_key() {
-        panic!("");
+            let mut serialized_claim_to_sign: Array<felt252> = array![];
+            test_claim.identity.serialize(ref serialized_claim_to_sign);
+            test_claim.topic.serialize(ref serialized_claim_to_sign);
+            let claim_data: ByteArray = "0xBadBabe0000";
+            claim_data.serialize(ref serialized_claim_to_sign);
+            let hashed_invalid_claim = poseidon_hash_span(
+                array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())]
+                    .span()
+            );
+            let (r, s) = setup.accounts.claim_issuer_key.sign(hashed_invalid_claim).unwrap();
+
+            start_cheat_caller_address(
+                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            );
+            setup
+                .alice_identity
+                .add_claim(
+                    test_claim.topic,
+                    test_claim.scheme,
+                    test_claim.issuer,
+                    Signature::StarkSignature(
+                        StarkSignature {
+                            r, s, public_key: setup.accounts.claim_issuer_key.public_key
+                        }
+                    ),
+                    test_claim.data.clone(),
+                    test_claim.uri.clone()
+                );
+            stop_cheat_caller_address(setup.alice_identity.contract_address);
+        }
+
+        #[test]
+        fn test_should_add_claim_when_caller_identity() {
+            let setup = setup_identity();
+            let test_claim = get_test_claim(@setup);
+
+            let mut calldata = array![
+                test_claim.topic, test_claim.scheme, test_claim.issuer.into()
+            ];
+            test_claim.signature.serialize(ref calldata);
+            test_claim.data.serialize(ref calldata);
+            test_claim.uri.serialize(ref calldata);
+            start_cheat_caller_address(
+                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+            );
+            let execution_id = setup
+                .alice_identity
+                .execute(
+                    setup.alice_identity.contract_address, selector!("add_claim"), calldata.span()
+                );
+            stop_cheat_caller_address(setup.alice_identity.contract_address);
+            let mut spy = spy_events();
+
+            start_cheat_caller_address(
+                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            );
+            setup.alice_identity.approve(execution_id, true);
+            stop_cheat_caller_address(setup.alice_identity.contract_address);
+            let (topic, scheme, issuer, signature, data, uri) = setup
+                .alice_identity
+                .get_claim(test_claim.claim_id);
+
+            assert!(topic == test_claim.topic, "Stored claim topic does not match");
+            assert!(scheme == test_claim.scheme, "Stored scheme does not match");
+            assert!(issuer == test_claim.issuer, "Stored issuer does not match");
+            if let Signature::StarkSignature(stored_sig) = signature {
+                if let Signature::StarkSignature(actual_sig) = test_claim.signature {
+                    assert!(
+                        stored_sig.r == actual_sig.r
+                            && stored_sig.s == actual_sig.s
+                            && stored_sig.public_key == actual_sig.public_key,
+                        "Stored signature does not match"
+                    );
+                }
+            }
+            assert!(data == test_claim.data.clone(), "Stored data does not match");
+            assert!(uri == test_claim.uri.clone(), "Stored uri does not match");
+
+            spy
+                .assert_emitted(
+                    @array![
+                        (
+                            setup.alice_identity.contract_address,
+                            ierc735::ERC735Event::ClaimAdded(
+                                ierc735::ClaimAdded {
+                                    claim_id: test_claim.claim_id,
+                                    topic: test_claim.topic,
+                                    scheme: test_claim.scheme,
+                                    issuer: test_claim.issuer,
+                                    signature: test_claim.signature,
+                                    data: test_claim.data,
+                                    uri: test_claim.uri
+                                }
+                            )
+                        )
+                    ]
+                );
+        }
+
+        #[test]
+        fn test_should_add_claim_when_caller_management_or_claim_key() {
+            let setup = setup_identity();
+            let test_claim = get_test_claim(@setup);
+
+            let mut spy = spy_events();
+
+            start_cheat_caller_address(
+                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            );
+            setup
+                .alice_identity
+                .add_claim(
+                    test_claim.topic,
+                    test_claim.scheme,
+                    test_claim.issuer,
+                    test_claim.signature,
+                    test_claim.data.clone(),
+                    test_claim.uri.clone()
+                );
+            stop_cheat_caller_address(setup.alice_identity.contract_address);
+
+            let (topic, scheme, issuer, signature, data, uri) = setup
+                .alice_identity
+                .get_claim(test_claim.claim_id);
+
+            assert!(topic == test_claim.topic, "Stored claim topic does not match");
+            assert!(scheme == test_claim.scheme, "Stored scheme does not match");
+            assert!(issuer == test_claim.issuer, "Stored issuer does not match");
+            if let Signature::StarkSignature(stored_sig) = signature {
+                if let Signature::StarkSignature(actual_sig) = test_claim.signature {
+                    assert!(
+                        stored_sig.r == actual_sig.r
+                            && stored_sig.s == actual_sig.s
+                            && stored_sig.public_key == actual_sig.public_key,
+                        "Stored signature does not match"
+                    );
+                }
+            }
+            assert!(data == test_claim.data.clone(), "Stored data does not match");
+            assert!(uri == test_claim.uri.clone(), "Stored uri does not match");
+
+            spy
+                .assert_emitted(
+                    @array![
+                        (
+                            setup.alice_identity.contract_address,
+                            ierc735::ERC735Event::ClaimAdded(
+                                ierc735::ClaimAdded {
+                                    claim_id: test_claim.claim_id,
+                                    topic: test_claim.topic,
+                                    scheme: test_claim.scheme,
+                                    issuer: test_claim.issuer,
+                                    signature: test_claim.signature,
+                                    data: test_claim.data,
+                                    uri: test_claim.uri
+                                }
+                            )
+                        )
+                    ]
+                );
+        }
+
+        #[test]
+        #[should_panic(expected: 'Sender not have claim key')]
+        fn test_should_panic_if_caller_is_not_claim_key() {
+            let setup = setup_identity();
+            let test_claim = get_test_claim(@setup);
+
+            start_cheat_caller_address(
+                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+            );
+            setup
+                .alice_identity
+                .add_claim(
+                    test_claim.topic,
+                    test_claim.scheme,
+                    test_claim.issuer,
+                    test_claim.signature,
+                    test_claim.data.clone(),
+                    test_claim.uri.clone()
+                );
+            stop_cheat_caller_address(setup.alice_identity.contract_address);
+        }
     }
 }
 
 pub mod update_claim {
+    use core::poseidon::poseidon_hash_span;
+    use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
+    use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
+    use onchain_id_starknet_tests::common::{setup_identity, TestClaim};
+    use snforge_std::{
+        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
+        signature::{
+            SignerTrait,
+            stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
+        },
+    };
+    use super::get_test_claim;
+
     #[test]
     fn test_should_replace_existing_claim() {
-        assert(true, '');
+        let setup = setup_identity();
+        let test_claim = get_test_claim(@setup);
+
+        start_cheat_caller_address(
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+        );
+        setup
+            .alice_identity
+            .add_claim(
+                test_claim.topic,
+                test_claim.scheme,
+                test_claim.issuer,
+                test_claim.signature,
+                test_claim.data.clone(),
+                test_claim.uri.clone()
+            );
+        stop_cheat_caller_address(setup.alice_identity.contract_address);
+
+        /// Second time adding with same topic and issuer should change existing claim
+        let new_data: ByteArray = "0xBadCafe";
+        let mut serialized_claim_to_sign: Array<felt252> = array![];
+        test_claim.identity.serialize(ref serialized_claim_to_sign);
+        test_claim.topic.serialize(ref serialized_claim_to_sign);
+        new_data.serialize(ref serialized_claim_to_sign);
+
+        let hashed_claim = poseidon_hash_span(
+            array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span()
+        );
+
+        let (r, s) = setup.accounts.claim_issuer_key.sign(hashed_claim).unwrap();
+
+        let test_claim_updated = TestClaim {
+            claim_id: test_claim.claim_id,
+            identity: test_claim.identity,
+            issuer: test_claim.issuer,
+            topic: test_claim.topic,
+            scheme: test_claim.scheme,
+            data: new_data,
+            signature: Signature::StarkSignature(
+                StarkSignature { r, s, public_key: setup.accounts.claim_issuer_key.public_key }
+            ),
+            uri: "https://example.com"
+        };
+
+        let mut spy = spy_events();
+
+        start_cheat_caller_address(
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+        );
+        setup
+            .alice_identity
+            .add_claim(
+                test_claim_updated.topic,
+                test_claim_updated.scheme,
+                test_claim_updated.issuer,
+                test_claim_updated.signature,
+                test_claim_updated.data.clone(),
+                test_claim_updated.uri.clone()
+            );
+        stop_cheat_caller_address(setup.alice_identity.contract_address);
+
+        let (topic, scheme, issuer, signature, data, uri) = setup
+            .alice_identity
+            .get_claim(test_claim.claim_id);
+
+        assert!(topic == test_claim_updated.topic, "Stored claim topic does not match");
+        assert!(scheme == test_claim_updated.scheme, "Stored scheme does not match");
+        assert!(issuer == test_claim_updated.issuer, "Stored issuer does not match");
+        if let Signature::StarkSignature(stored_sig) = signature {
+            if let Signature::StarkSignature(actual_sig) = test_claim_updated.signature {
+                assert!(
+                    stored_sig.r == actual_sig.r
+                        && stored_sig.s == actual_sig.s
+                        && stored_sig.public_key == actual_sig.public_key,
+                    "Stored signature does not match"
+                );
+            }
+        }
+        assert!(data == test_claim_updated.data.clone(), "Stored data does not match");
+        assert!(uri == test_claim_updated.uri.clone(), "Stored uri does not match");
+
+        spy
+            .assert_emitted(
+                @array![
+                    (
+                        setup.alice_identity.contract_address,
+                        ierc735::ERC735Event::ClaimChanged(
+                            ierc735::ClaimChanged {
+                                claim_id: test_claim.claim_id,
+                                topic: test_claim.topic,
+                                scheme: test_claim.scheme,
+                                issuer: test_claim.issuer,
+                                signature: test_claim_updated.signature,
+                                data: test_claim_updated.data,
+                                uri: test_claim.uri
+                            }
+                        )
+                    )
+                ]
+            );
     }
 }
 
 pub mod remove_claim {
+    use core::num::traits::Zero;
+    use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
+    use onchain_id_starknet_tests::common::setup_identity;
+    use snforge_std::{
+        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
+    };
+    use super::get_test_claim;
+
     #[test]
     fn test_should_remove_existing_claim_when_caller_is_identity_contract() {
-        assert(true, '');
+        let setup = setup_identity();
+        let test_claim = get_test_claim(@setup);
+
+        start_cheat_caller_address(
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+        );
+        setup
+            .alice_identity
+            .add_claim(
+                test_claim.topic,
+                test_claim.scheme,
+                test_claim.issuer,
+                test_claim.signature,
+                test_claim.data.clone(),
+                test_claim.uri.clone()
+            );
+
+        let mut spy = spy_events();
+
+        setup
+            .alice_identity
+            .execute(
+                setup.alice_identity.contract_address,
+                selector!("remove_claim"),
+                array![test_claim.claim_id].span()
+            );
+        // Remove claim
+        stop_cheat_caller_address(setup.alice_identity.contract_address);
+
+        let (topic, scheme, issuer, _, data, uri) = setup
+            .alice_identity
+            .get_claim(test_claim.claim_id);
+
+        assert!(topic == Zero::zero(), "Stored claim topic not cleaned");
+        assert!(scheme == Zero::zero(), "Stored scheme not cleaned");
+        assert!(issuer == Zero::zero(), "Stored issuer not cleaned");
+        // TODO: Clear signature from storage
+        //if let Signature::StarkSignature(stored_sig) = signature {
+        //        assert!(
+        //            stored_sig.r == Zero::zero()
+        //                && stored_sig.s == Zero::zero()
+        //                && stored_sig.public_key == Zero::zero(),
+        //            "Stored signature not cleaned"
+        //        );
+        //}
+        assert!(data == Default::default(), "Stored data not cleaned");
+        assert!(uri == Default::default(), "Stored uri not cleaned");
+
+        spy
+            .assert_emitted(
+                @array![
+                    (
+                        setup.alice_identity.contract_address,
+                        ierc735::ERC735Event::ClaimRemoved(
+                            ierc735::ClaimRemoved {
+                                claim_id: test_claim.claim_id,
+                                topic: test_claim.topic,
+                                scheme: test_claim.scheme,
+                                issuer: test_claim.issuer,
+                                signature: test_claim.signature,
+                                data: test_claim.data,
+                                uri: test_claim.uri
+                            }
+                        )
+                    )
+                ]
+            );
     }
+
     #[test]
-    #[should_panic]
+    #[should_panic(expected: 'Sender not have claim key')]
     fn test_should_panic_when_caller_is_not_a_claim_key() {
-        panic!("");
+        let setup = setup_identity();
+        let test_claim = get_test_claim(@setup);
+
+        start_cheat_caller_address(
+            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+        );
+        setup.alice_identity.remove_claim(test_claim.claim_id);
+        stop_cheat_caller_address(setup.alice_identity.contract_address);
     }
+
     #[test]
-    #[should_panic]
+    #[should_panic(expected: 'There is no claim with this ID')]
     fn test_should_panic_when_claim_does_not_exist() {
-        panic!("");
+        let setup = setup_identity();
+        let test_claim = get_test_claim(@setup);
+
+        start_cheat_caller_address(
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+        );
+        setup.alice_identity.remove_claim(test_claim.claim_id);
+        stop_cheat_caller_address(setup.alice_identity.contract_address);
     }
+
     #[test]
     fn test_should_remove_claim_when_caller_has_claim_or_management_key() {
-        assert(true, '');
+        let setup = setup_identity();
+        let test_claim = get_test_claim(@setup);
+
+        start_cheat_caller_address(
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+        );
+        setup
+            .alice_identity
+            .add_claim(
+                test_claim.topic,
+                test_claim.scheme,
+                test_claim.issuer,
+                test_claim.signature,
+                test_claim.data.clone(),
+                test_claim.uri.clone()
+            );
+
+        let mut spy = spy_events();
+        setup.alice_identity.remove_claim(test_claim.claim_id);
+        // Remove claim
+        stop_cheat_caller_address(setup.alice_identity.contract_address);
+
+        let (topic, scheme, issuer, _, data, uri) = setup
+            .alice_identity
+            .get_claim(test_claim.claim_id);
+
+        assert!(topic == Zero::zero(), "Stored claim topic not cleaned");
+        assert!(scheme == Zero::zero(), "Stored scheme not cleaned");
+        assert!(issuer == Zero::zero(), "Stored issuer not cleaned");
+        // TODO: Clear signature from storage
+        //if let Signature::StarkSignature(stored_sig) = signature {
+        //        assert!(
+        //            stored_sig.r == Zero::zero()
+        //                && stored_sig.s == Zero::zero()
+        //                && stored_sig.public_key == Zero::zero(),
+        //            "Stored signature not cleaned"
+        //        );
+        //}
+        assert!(data == Default::default(), "Stored data not cleaned");
+        assert!(uri == Default::default(), "Stored uri not cleaned");
+
+        spy
+            .assert_emitted(
+                @array![
+                    (
+                        setup.alice_identity.contract_address,
+                        ierc735::ERC735Event::ClaimRemoved(
+                            ierc735::ClaimRemoved {
+                                claim_id: test_claim.claim_id,
+                                topic: test_claim.topic,
+                                scheme: test_claim.scheme,
+                                issuer: test_claim.issuer,
+                                signature: test_claim.signature,
+                                data: test_claim.data,
+                                uri: test_claim.uri
+                            }
+                        )
+                    )
+                ]
+            );
     }
 }
 
 pub mod get_claim {
+    use core::num::traits::Zero;
+    use onchain_id_starknet::interface::iidentity::IdentityABIDispatcherTrait;
+    use onchain_id_starknet::storage::structs::Signature;
+    use onchain_id_starknet_tests::common::setup_identity;
+
     #[test]
     fn test_should_return_default_values_when_claim_does_not_exist() {
-        assert(true, '');
+        let setup = setup_identity();
+        let (topic, scheme, issuer, signature, data, uri) = setup
+            .alice_identity
+            .get_claim('non_existing_claim');
+        assert!(topic == Zero::zero());
+        assert!(scheme == Zero::zero());
+        assert!(issuer == Zero::zero());
+        if let Signature::StarkSignature(stored_sig) = signature {
+            assert!(
+                stored_sig.r == Zero::zero()
+                    && stored_sig.s == Zero::zero()
+                    && stored_sig.public_key == Zero::zero()
+            );
+        }
+        assert!(data == Default::default());
+        assert!(uri == Default::default());
     }
 
     #[test]
     fn test_should_return_claim_data() {
-        assert(true, '');
+        let setup = setup_identity();
+        let (topic, scheme, issuer, signature, data, uri) = setup
+            .alice_identity
+            .get_claim(setup.alice_claim_666.claim_id);
+
+        assert!(topic == setup.alice_claim_666.topic);
+        assert!(scheme == setup.alice_claim_666.scheme);
+        assert!(issuer == setup.alice_claim_666.issuer);
+        if let Signature::StarkSignature(stored_sig) = signature {
+            if let Signature::StarkSignature(actual_sig) = setup.alice_claim_666.signature {
+                assert!(
+                    stored_sig.r == actual_sig.r
+                        && stored_sig.s == actual_sig.s
+                        && stored_sig.public_key == actual_sig.public_key,
+                    "Stored signature does not match"
+                );
+            }
+        }
+        assert!(data == setup.alice_claim_666.data);
+        assert!(uri == setup.alice_claim_666.uri);
     }
 }
 
 pub mod get_claims_by_topic {
+    use onchain_id_starknet::interface::iidentity::IdentityABIDispatcherTrait;
+    use onchain_id_starknet_tests::common::setup_identity;
+
     #[test]
     fn test_should_return_empty_array_when_there_are_no_claim_topics() {
-        assert(true, '');
+        let setup = setup_identity();
+        let claim_ids = setup.alice_identity.get_claim_ids_by_topics('non_existing_topic');
+        assert!(claim_ids == array![]);
     }
+
     #[test]
     fn test_should_return_array_of_claim_ids_existing_for_topic() {
-        assert(true, '');
+        let setup = setup_identity();
+        let claim_ids = setup.alice_identity.get_claim_ids_by_topics(setup.alice_claim_666.topic);
+        assert!(claim_ids == array![setup.alice_claim_666.claim_id]);
     }
 }

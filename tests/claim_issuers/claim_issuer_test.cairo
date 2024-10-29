@@ -16,16 +16,3 @@ pub mod revoke_claim_by_signature_test {
         assert(true, '');
     }
 }
-
-pub mod get_recovered_public_key {
-    #[test]
-    fn test_should_return_correct_public_key_for_valid_signature() {
-        assert(true, '');
-    }
-
-    #[test]
-    fn test_should_return_none_for_invalid_signature() {
-        assert(true, '');
-    }
-}
-

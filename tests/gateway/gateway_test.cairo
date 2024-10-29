@@ -51,7 +51,6 @@ pub fn setup_gateway(
     }
 }
 
-
 pub mod constructor {
     use core::num::traits::Zero;
     use snforge_std::{declare, DeclareResultTrait, ContractClassTrait,};
@@ -916,6 +915,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
         stop_cheat_block_timestamp_global();
     }
 }
+
 pub mod deploy_identity_for_wallet {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
@@ -1134,6 +1134,7 @@ pub mod transfer_factory_ownership {
         setup.gateway.transfer_factory_ownership(setup.accounts.bob_account.contract_address);
     }
 }
+
 pub mod revoke_signature {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Gateway, Signature};
@@ -1249,6 +1250,7 @@ pub mod revoke_signature {
             );
     }
 }
+
 pub mod approve_signature {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Gateway, Signature};

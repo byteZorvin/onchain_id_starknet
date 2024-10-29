@@ -692,13 +692,6 @@ pub mod IdentityComponent {
             );
         }
 
-        //fn get_recovered_public_key(
-        //    self: @ComponentState<TContractState>, signature: Signature, data_hash: felt252
-        //) -> felt252 {
-        //    recover_public_key(data_hash, signature.r, signature.s, signature.y_parity)
-        //        .expect('Public Key Recovery Failed')
-        //}
-
         fn _approve(
             ref self: ComponentState<TContractState>,
             execution_id: felt252,
