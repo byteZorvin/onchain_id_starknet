@@ -1,5 +1,6 @@
 #[starknet::component]
 pub mod VerifierComponent {
+    use OwnableComponent::InternalTrait as OwnableInternalTrait;
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::interface::ierc735::{IERC735Dispatcher, IERC735DispatcherTrait};
@@ -16,10 +17,13 @@ pub mod VerifierComponent {
             MutableContractAddressVecToContractAddressArray
         }
     };
-    use openzeppelin_access::ownable::OwnableComponent;
     use starknet::ContractAddress;
     use starknet::storage::{
         StoragePathEntry, StorageAsPath, Map, StoragePointerReadAccess, StoragePointerWriteAccess
+    };
+
+    use openzeppelin_access::ownable::{
+        ownable::OwnableComponent, interface::{IOwnableDispatcher, IOwnableDispatcherTrait},
     };
 
     #[storage]
@@ -184,9 +188,11 @@ pub mod VerifierComponent {
 
     #[embeddable_as(ClaimTopicsRegistryImpl)]
     impl ClaimTopicsRegistry<
-        TContractState, +Drop<TContractState>, +HasComponent<TContractState>
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>, impl Owner: OwnableComponent::HasComponent<TContractState>
     > of IClaimTopicsRegistry<ComponentState<TContractState>> {
         fn add_claim_topic(ref self: ComponentState<TContractState>, claim_topic: felt252) {
+            let ownable_comp = get_dep_component!(@self, Owner);
+            ownable_comp.assert_only_owner();
             let required_claim_topics_storage_path = self.required_claim_topics.as_path();
             assert(
                 required_claim_topics_storage_path.len() < 15, Errors::TOPIC_LENGTH_EXCEEDS_LIMIT
@@ -205,6 +211,8 @@ pub mod VerifierComponent {
             self.emit(ClaimTopicAdded { claim_topic });
         }
         fn remove_claim_topic(ref self: ComponentState<TContractState>, claim_topic: felt252) {
+            let ownable_comp = get_dep_component!(@self, Owner);
+            ownable_comp.assert_only_owner();
             let required_claim_topics_storage_path = self.required_claim_topics.as_path();
             for i in 0
                 ..required_claim_topics_storage_path
@@ -223,13 +231,16 @@ pub mod VerifierComponent {
 
     #[embeddable_as(TrustedIssuerRegistryImpl)]
     impl TrustedIssuerRegistry<
-        TContractState, +HasComponent<TContractState>
+        TContractState, +HasComponent<TContractState>, impl Owner: OwnableComponent::HasComponent<TContractState>
     > of ITrustedIssuersRegistry<ComponentState<TContractState>> {
         fn add_trusted_issuer(
             ref self: ComponentState<TContractState>,
             trusted_issuer: ContractAddress,
             claim_topics: Array<felt252>
         ) {
+            let ownable_comp = get_dep_component!(@self, Owner);
+            ownable_comp.assert_only_owner();
+
             let trusted_issuer_claim_topics_storage_path = self
                 .trusted_issuer_claim_topics
                 .as_path()
@@ -259,6 +270,8 @@ pub mod VerifierComponent {
         fn remove_trusted_issuer(
             ref self: ComponentState<TContractState>, trusted_issuer: ContractAddress
         ) {
+            let ownable_comp = get_dep_component!(@self, Owner);
+            ownable_comp.assert_only_owner();
             let trusted_issuer_claim_topics_storage_path = self
                 .trusted_issuer_claim_topics
                 .as_path()
@@ -314,6 +327,9 @@ pub mod VerifierComponent {
             trusted_issuer: ContractAddress,
             claim_topics: Array<felt252>
         ) {
+            let ownable_comp = get_dep_component!(@self, Owner);
+            ownable_comp.assert_only_owner();
+            
             let trusted_issuer_claim_topics_storage_path = self
                 .trusted_issuer_claim_topics
                 .as_path()
