@@ -332,9 +332,9 @@ pub mod VerifierComponent {
             ownable_comp.assert_only_owner();
             assert(!trusted_issuer.is_zero(), Errors::ZERO_ADDRESS);
             let trusted_issuer_claim_topics_storage_path = self
-            .Verifier_trusted_issuer_claim_topics
-            .as_path()
-            .entry(trusted_issuer);
+                .Verifier_trusted_issuer_claim_topics
+                .as_path()
+                .entry(trusted_issuer);
             assert(trusted_issuer_claim_topics_storage_path.len() != 0, Errors::NO_TOPICS);
             assert(claim_topics.len() > 0, Errors::ZERO_TOPICS);
             assert(claim_topics.len() <= 15, Errors::TOPIC_LENGTH_EXCEEDS_LIMIT);

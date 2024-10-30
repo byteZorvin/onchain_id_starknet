@@ -223,7 +223,10 @@ pub mod IdentityComponent {
             ref self: ComponentState<TContractState>, execution_id: felt252, approve: bool
         ) -> bool {
             assert(
-                Into::<felt252, u256>::into(execution_id) < self.Identity_execution_nonce.read().into(),
+                Into::<felt252, u256>::into(execution_id) < self
+                    .Identity_execution_nonce
+                    .read()
+                    .into(),
                 Errors::NON_EXISTING_EXECUTION
             );
             let execution_storage_path = self.Identity_executions.entry(execution_id);
