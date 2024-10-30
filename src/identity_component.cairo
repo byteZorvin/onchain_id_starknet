@@ -31,12 +31,12 @@ pub mod IdentityComponent {
 
     #[storage]
     pub struct Storage {
-        execution_nonce: felt252,
-        keys: Map<felt252, Key>,
-        keys_by_purpose: Map<felt252, StorageArrayFelt252>,
-        executions: Map<felt252, Execution>,
-        claims: Map<felt252, Claim>,
-        claims_by_topic: Map<felt252, StorageArrayFelt252>,
+        Identity_execution_nonce: felt252,
+        Identity_keys: Map<felt252, Key>,
+        Identity_keys_by_purpose: Map<felt252, StorageArrayFelt252>,
+        Identity_executions: Map<felt252, Execution>,
+        Identity_claims: Map<felt252, Claim>,
+        Identity_claims_by_topic: Map<felt252, StorageArrayFelt252>,
     }
 
     #[event]
@@ -121,7 +121,7 @@ pub mod IdentityComponent {
             key_type: felt252
         ) -> bool {
             self.only_manager();
-            let mut key_storage_path = self.keys.entry(key);
+            let mut key_storage_path = self.Identity_keys.entry(key);
             if key_storage_path.key.read() == key {
                 let purposes_storage_path = key_storage_path.purposes.deref();
                 for i in 0
@@ -138,7 +138,7 @@ pub mod IdentityComponent {
                 key_storage_path.key_type.write(key_type);
                 key_storage_path.purposes.deref().append().write(purpose);
             }
-            self.keys_by_purpose.entry(purpose).append().write(key);
+            self.Identity_keys_by_purpose.entry(purpose).append().write(key);
             self.emit(ERC734Event::KeyAdded(ierc734::KeyAdded { key, purpose, key_type }));
             true
         }
@@ -164,7 +164,7 @@ pub mod IdentityComponent {
             ref self: ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
             self.only_manager();
-            let key_storage_path = self.keys.entry(key);
+            let key_storage_path = self.Identity_keys.entry(key);
             assert(key_storage_path.key.read() == key, Errors::KEY_NOT_REGISTERED);
 
             let purposes_storage_path = key_storage_path.purposes.deref();
@@ -180,7 +180,7 @@ pub mod IdentityComponent {
             assert(purpose_index != Option::None, Errors::KEY_DOES_NOT_HAVE_PURPOSE);
             purposes_storage_path.delete(purpose_index.unwrap());
 
-            let keys_by_purpose_key_storage_path = self.keys_by_purpose.entry(purpose);
+            let keys_by_purpose_key_storage_path = self.Identity_keys_by_purpose.entry(purpose);
             let mut keys_len = keys_by_purpose_key_storage_path.len();
             // MOTE: this loops assumes that whenever key is added to keys mapping it
             // keys_by_purpose mapping is also updated thus no need to check for
@@ -223,10 +223,10 @@ pub mod IdentityComponent {
             ref self: ComponentState<TContractState>, execution_id: felt252, approve: bool
         ) -> bool {
             assert(
-                Into::<felt252, u256>::into(execution_id) < self.execution_nonce.read().into(),
+                Into::<felt252, u256>::into(execution_id) < self.Identity_execution_nonce.read().into(),
                 Errors::NON_EXISTING_EXECUTION
             );
-            let execution_storage_path = self.executions.entry(execution_id);
+            let execution_storage_path = self.Identity_executions.entry(execution_id);
             assert(!execution_storage_path.executed.read(), Errors::ALREADY_EXECUTED);
             let caller_hash = poseidon_hash_span(
                 array![starknet::get_caller_address().into()].span()
@@ -281,8 +281,8 @@ pub mod IdentityComponent {
             selector: felt252,
             calldata: Span<felt252>
         ) -> felt252 {
-            let execution_nonce = self.execution_nonce.read();
-            let execution_storage_path = self.executions.entry(execution_nonce);
+            let execution_nonce = self.Identity_execution_nonce.read();
+            let execution_storage_path = self.Identity_executions.entry(execution_nonce);
             execution_storage_path.to.write(to);
             execution_storage_path.selector.write(selector);
             let calldata_storage_path = execution_storage_path.calldata.deref();
@@ -290,7 +290,7 @@ pub mod IdentityComponent {
                 calldata_storage_path.append().write(*chunk);
             };
 
-            self.execution_nonce.write(execution_nonce + 1);
+            self.Identity_execution_nonce.write(execution_nonce + 1);
 
             self
                 .emit(
@@ -328,7 +328,7 @@ pub mod IdentityComponent {
         fn get_key(
             self: @ComponentState<TContractState>, key: felt252
         ) -> (Span<felt252>, felt252, felt252) {
-            let key_storage_path = self.keys.entry(key);
+            let key_storage_path = self.Identity_keys.entry(key);
             let purposes: Array<felt252> = key_storage_path.purposes.deref().into();
             (purposes.span(), key_storage_path.key_type.read(), key_storage_path.key.read())
         }
@@ -345,7 +345,7 @@ pub mod IdentityComponent {
         fn get_key_purposes(self: @ComponentState<TContractState>, key: felt252) -> Span<felt252> {
             Into::<
                 StoragePath<StorageArrayFelt252>, Array<felt252>
-            >::into(self.keys.entry(key).purposes.deref())
+            >::into(self.Identity_keys.entry(key).purposes.deref())
                 .span()
         }
 
@@ -363,7 +363,7 @@ pub mod IdentityComponent {
         ) -> Span<felt252> {
             Into::<
                 StoragePath<StorageArrayFelt252>, Array<felt252>
-            >::into(self.keys_by_purpose.entry(purpose))
+            >::into(self.Identity_keys_by_purpose.entry(purpose))
                 .span()
         }
 
@@ -380,7 +380,7 @@ pub mod IdentityComponent {
         fn key_has_purpose(
             self: @ComponentState<TContractState>, key: felt252, purpose: felt252
         ) -> bool {
-            let key_storage_path = self.keys.entry(key);
+            let key_storage_path = self.Identity_keys.entry(key);
             if key_storage_path.key.read().is_zero() {
                 return false;
             }
@@ -426,7 +426,7 @@ pub mod IdentityComponent {
             topic.serialize(ref claim_data_serialized);
             let claim_id = poseidon_hash_span(claim_data_serialized.span());
 
-            let claim_storage_path = self.claims.entry(claim_id);
+            let claim_storage_path = self.Identity_claims.entry(claim_id);
             claim_storage_path.topic.write(topic);
             claim_storage_path.scheme.write(scheme);
             ///TODO: if convert Signature to Array felt to support multiple verification schemes
@@ -435,7 +435,7 @@ pub mod IdentityComponent {
             claim_storage_path.uri.write(uri.clone());
 
             if claim_storage_path.issuer.read() != issuer {
-                self.claims_by_topic.entry(topic).append().write(claim_id);
+                self.Identity_claims_by_topic.entry(topic).append().write(claim_id);
                 claim_storage_path.issuer.write(issuer);
                 self
                     .emit(
@@ -461,10 +461,10 @@ pub mod IdentityComponent {
 
         fn remove_claim(ref self: ComponentState<TContractState>, claim_id: felt252) -> bool {
             self.only_claim_key();
-            let claim_storage_path = self.claims.entry(claim_id);
+            let claim_storage_path = self.Identity_claims.entry(claim_id);
             let topic = claim_storage_path.topic.read();
             assert(topic.is_non_zero(), Errors::CLAIM_DOES_NOT_EXIST);
-            let claims_by_topic_storage_path = self.claims_by_topic.entry(topic);
+            let claims_by_topic_storage_path = self.Identity_claims_by_topic.entry(topic);
             let mut claim_index = Option::None; // TODO: Might turn into Option<index>
             let claims_len = claims_by_topic_storage_path.len();
             for i in 0
@@ -501,7 +501,7 @@ pub mod IdentityComponent {
         fn get_claim(
             self: @ComponentState<TContractState>, claim_id: felt252
         ) -> (felt252, felt252, ContractAddress, Signature, ByteArray, ByteArray) {
-            let claim_storage_path = self.claims.entry(claim_id);
+            let claim_storage_path = self.Identity_claims.entry(claim_id);
             (
                 claim_storage_path.topic.read(),
                 claim_storage_path.scheme.read(),
@@ -515,7 +515,7 @@ pub mod IdentityComponent {
         fn get_claim_ids_by_topics(
             self: @ComponentState<TContractState>, topic: felt252
         ) -> Array<felt252> {
-            self.claims_by_topic.entry(topic).into()
+            self.Identity_claims_by_topic.entry(topic).into()
         }
     }
 
@@ -658,12 +658,12 @@ pub mod IdentityComponent {
             let initial_management_key_hash = poseidon_hash_span(
                 array![initial_management_key.into()].span()
             );
-            let key_storage_path = self.keys.entry(initial_management_key_hash);
+            let key_storage_path = self.Identity_keys.entry(initial_management_key_hash);
             key_storage_path.key.write(initial_management_key_hash);
             key_storage_path.key_type.write(1);
             key_storage_path.purposes.deref().append().write(1);
 
-            self.keys_by_purpose.entry(1).append().write(initial_management_key_hash);
+            self.Identity_keys_by_purpose.entry(1).append().write(initial_management_key_hash);
             self
                 .emit(
                     ERC734Event::KeyAdded(
@@ -700,7 +700,7 @@ pub mod IdentityComponent {
             data: Span<felt252>
         ) -> bool {
             self.emit(ERC734Event::Approved(ierc734::Approved { execution_id, approved: true }));
-            let execution_storage_path = self.executions.entry(execution_id);
+            let execution_storage_path = self.Identity_executions.entry(execution_id);
             execution_storage_path.approved.write(true);
             // see
             // {https://book.cairo-lang.org/appendix-08-system-calls.html?highlight=call_con#call_contract}
