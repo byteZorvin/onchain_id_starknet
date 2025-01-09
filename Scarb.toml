@@ -16,6 +16,8 @@ openzeppelin_account = "0.20.0"
 [dev-dependencies]
 snforge_std = "0.35.1"
 
+[lib]
+
 [[target.starknet-contract]]
 sierra = true
 casm = false
@@ -25,5 +27,3 @@ sort-module-level-items = true
 
 [scripts]
 test = "snforge test"
-
-[lib]
