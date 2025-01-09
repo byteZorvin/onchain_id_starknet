@@ -59,15 +59,14 @@ pub mod Gateway {
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]
-    impl OwnableImpl =
-        OwnableComponent::OwnableImpl<ContractState>; // NOTE: consider making it 2 step
+    impl OwnableTwoStepImpl = OwnableComponent::OwnableTwoStepImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
         id_factory: ContractAddress,
         approved_signers: Map<felt252, bool>,
-        revoked_signatures: Map<Signature, bool>, //Map<ByteArray, bool> in sol
+        revoked_signatures: Map<Signature, bool>,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
     }
@@ -154,7 +153,6 @@ pub mod Gateway {
         if owner.is_zero() {
             Errors::ZeroAddress();
         }
-        self.ownable.initializer(owner);
 
         if id_factory_address.is_zero() {
             Errors::ZeroAddress();
@@ -163,6 +161,8 @@ pub mod Gateway {
         if signers_to_approve.len() > 10 {
             Errors::TooManySigners();
         }
+
+        self.ownable.initializer(owner);
 
         for signer in signers_to_approve {
             self.approved_signers.entry(signer).write(true);
@@ -185,18 +185,21 @@ pub mod Gateway {
         /// `signer` must not be already approved.
         fn approve_signer(ref self: ContractState, signer: felt252) {
             self.ownable.assert_only_owner();
+
             if signer.is_zero() {
                 Errors::ZeroAddress();
             };
+
             let approved_signer_storage_path = self.approved_signers.entry(signer);
             if approved_signer_storage_path.read() {
                 Errors::SignerAlreadyApproved();
             }
+
             approved_signer_storage_path.write(true);
             self.emit(SignerApproved { signer });
         }
 
-        /// This function revokes a signer to sign identity deployments.
+        /// This function revokes signers privileges to sign identity deployments.
         ///
         /// # Arguments
         ///
@@ -209,21 +212,24 @@ pub mod Gateway {
         /// `signer` must be already approved.
         fn revoke_signer(ref self: ContractState, signer: felt252) {
             self.ownable.assert_only_owner();
+
             if signer.is_zero() {
                 Errors::ZeroAddress();
             }
+
             let approved_signer_storage_path = self.approved_signers.entry(signer);
             if !approved_signer_storage_path.read() {
                 Errors::SignerAlreadyNotApproved();
             }
+
             approved_signer_storage_path.write(false);
             self.emit(SignerRevoked { signer });
         }
 
-        /// This function deploys an identity using a factory using custom salt and registers
+        /// This function deploys an identity using a factory using custom `salt` and registers
         /// `identity_owner` as initial MANAGEMENT key.
         ///
-        /// The operation must be signed by an approved public key. This method allows to deploy an
+        /// This operation must be signed by an approved public key. This method allows to deploy an
         /// identity using a custom salt.
         ///
         /// # Arguments
@@ -239,8 +245,8 @@ pub mod Gateway {
         ///
         /// - `identity_owner` must be non-zero.
         /// - `signature` must be signed by approved signer.
-        /// - `signature`  must not expired already.
-        /// - `signature`  must not revoked.
+        /// - `signature` must not expired already.
+        /// - `signature` must not revoked.
         /// - `salt` must be non-zero and not taken.
         ///
         /// # Returns
@@ -291,7 +297,7 @@ pub mod Gateway {
         ///
         /// The operation must be signed by an approved public key. This method allows to deploy an
         /// identity using a custom salt. `identity_owner` wont be added as MANAGEMENT key, if this
-        /// is desired add poseidon of `identity_owner` in `management_keys`.
+        /// is desired add poseidon hash of `identity_owner` in `management_keys`.
         ///
         /// # Arguments
         ///
