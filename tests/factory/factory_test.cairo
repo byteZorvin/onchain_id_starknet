@@ -1,6 +1,6 @@
 pub mod constructor {
     use core::num::traits::Zero;
-    use onchain_id_starknet_tests::common::setup_factory;
+    use crate::common::setup_factory;
     use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
     #[test]
     #[should_panic]
@@ -26,7 +26,7 @@ pub mod constructor {
 pub mod create_identity {
     use core::num::traits::Zero;
     use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
-    use onchain_id_starknet_tests::common::{setup_factory, setup_identity};
+    use crate::common::{setup_factory, setup_identity};
     use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 
     #[test]
@@ -98,7 +98,7 @@ pub mod create_identity_with_management_keys {
     use onchain_id_starknet::interface::iidentity::{
         IdentityABIDispatcher, IdentityABIDispatcherTrait
     };
-    use onchain_id_starknet_tests::common::setup_identity;
+    use crate::common::setup_identity;
     use snforge_std::{
         start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
     };
@@ -224,7 +224,7 @@ pub mod link_unlink_wallet {
         use core::num::traits::Zero;
         use onchain_id_starknet::factory::id_factory::IdFactory;
         use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
-        use onchain_id_starknet_tests::common::setup_identity;
+        use crate::common::setup_identity;
         use snforge_std::{
             start_cheat_caller_address, stop_cheat_caller_address, spy_events,
             EventSpyAssertionsTrait
@@ -320,7 +320,7 @@ pub mod link_unlink_wallet {
         use core::num::traits::Zero;
         use onchain_id_starknet::factory::id_factory::IdFactory;
         use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
-        use onchain_id_starknet_tests::common::setup_identity;
+        use crate::common::setup_identity;
         use snforge_std::{
             start_cheat_caller_address, stop_cheat_caller_address, spy_events,
             EventSpyAssertionsTrait

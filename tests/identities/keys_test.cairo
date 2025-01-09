@@ -1,7 +1,7 @@
 pub mod read_key_methods {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::interface::iidentity::IdentityABIDispatcherTrait;
-    use onchain_id_starknet_tests::common::setup_identity;
+    use crate::common::setup_identity;
 
     #[test]
     fn test_should_return_full_key_details() {
@@ -75,7 +75,7 @@ pub mod read_key_methods {
 pub mod add_key {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc734};
-    use onchain_id_starknet_tests::common::setup_identity;
+    use crate::common::setup_identity;
     use snforge_std::{
         start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
     };
@@ -180,7 +180,7 @@ pub mod remove_key {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc734};
-    use onchain_id_starknet_tests::common::setup_identity;
+    use crate::common::setup_identity;
     use snforge_std::{
         start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
     };

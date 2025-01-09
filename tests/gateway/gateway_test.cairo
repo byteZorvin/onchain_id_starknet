@@ -1,7 +1,7 @@
 use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcher;
 use onchain_id_starknet::gateway::gateway::IGatewayDispatcher;
 use onchain_id_starknet::interface::iimplementation_authority::IImplementationAuthorityDispatcher;
-use onchain_id_starknet_tests::common::{setup_factory, TestAccounts, FactorySetup};
+use crate::common::{setup_factory, TestAccounts, FactorySetup};
 use openzeppelin_access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
 
 use snforge_std::{

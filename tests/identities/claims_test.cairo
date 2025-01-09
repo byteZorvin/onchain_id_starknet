@@ -3,7 +3,7 @@ pub mod add_claim {
         use core::poseidon::poseidon_hash_span;
         use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
         use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
-        use onchain_id_starknet_tests::common::{setup_identity, TestClaim, IdentitySetup};
+        use crate::common::{setup_identity, TestClaim, IdentitySetup};
         use snforge_std::{
             start_cheat_caller_address, stop_cheat_caller_address, spy_events,
             EventSpyAssertionsTrait,
@@ -250,7 +250,7 @@ pub mod add_claim {
         use core::poseidon::poseidon_hash_span;
         use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
         use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
-        use onchain_id_starknet_tests::common::{setup_identity, get_test_claim};
+        use crate::common::{setup_identity, get_test_claim};
         use snforge_std::{
             start_cheat_caller_address, stop_cheat_caller_address, spy_events,
             EventSpyAssertionsTrait,
@@ -456,7 +456,7 @@ pub mod update_claim {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
     use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
-    use onchain_id_starknet_tests::common::{setup_identity, TestClaim, get_test_claim};
+    use crate::common::{setup_identity, TestClaim, get_test_claim};
     use snforge_std::{
         start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
         signature::{
@@ -573,7 +573,7 @@ pub mod update_claim {
 pub mod remove_claim {
     use core::num::traits::Zero;
     use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
-    use onchain_id_starknet_tests::common::{setup_identity, get_test_claim};
+    use crate::common::{setup_identity, get_test_claim};
     use snforge_std::{
         start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
     };
@@ -744,7 +744,7 @@ pub mod get_claim {
     use core::num::traits::Zero;
     use onchain_id_starknet::interface::iidentity::IdentityABIDispatcherTrait;
     use onchain_id_starknet::storage::structs::Signature;
-    use onchain_id_starknet_tests::common::setup_identity;
+    use crate::common::setup_identity;
 
     #[test]
     fn test_should_return_default_values_when_claim_does_not_exist() {
@@ -793,7 +793,7 @@ pub mod get_claim {
 
 pub mod get_claims_by_topic {
     use onchain_id_starknet::interface::iidentity::IdentityABIDispatcherTrait;
-    use onchain_id_starknet_tests::common::setup_identity;
+    use crate::common::setup_identity;
 
     #[test]
     fn test_should_return_empty_array_when_there_are_no_claim_topics() {
