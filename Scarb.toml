@@ -17,6 +17,8 @@ openzeppelin_account = "0.20.0"
 snforge_std = "0.35.1"
 
 [lib]
+sierra = true
+casm = false
 
 [[target.starknet-contract]]
 sierra = true
