@@ -24,3 +24,6 @@ sort-module-level-items = true
 
 [scripts]
 test = "snforge test"
+
+[lib]
+name= "onchain_id_starknet"
