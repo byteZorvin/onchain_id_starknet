@@ -18,6 +18,7 @@ snforge_std = "0.35.1"
 
 [[target.starknet-contract]]
 sierra = true
+casm = false
 
 [tool.fmt]
 sort-module-level-items = true
@@ -26,4 +27,3 @@ sort-module-level-items = true
 test = "snforge test"
 
 [lib]
-name= "onchain_id_starknet"
