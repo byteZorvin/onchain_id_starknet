@@ -1,16 +1,16 @@
 pub mod add_claim {
     pub mod when_self_attested_claim {
         use core::poseidon::poseidon_hash_span;
-        use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
+        use crate::common::{IdentitySetup, TestClaim, setup_identity};
+        use onchain_id_starknet::interface::{ierc735, iidentity::IdentityABIDispatcherTrait};
         use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
-        use crate::common::{setup_identity, TestClaim, IdentitySetup};
         use snforge_std::{
-            start_cheat_caller_address, stop_cheat_caller_address, spy_events,
             EventSpyAssertionsTrait,
             signature::{
                 SignerTrait,
                 stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
             },
+            spy_events, start_cheat_caller_address, stop_cheat_caller_address,
         };
 
         fn get_self_attested_claim(setup: @IdentitySetup) -> TestClaim {
@@ -27,7 +27,7 @@ pub mod add_claim {
 
             let hashed_claim = poseidon_hash_span(
                 array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())]
-                    .span()
+                    .span(),
             );
 
             let (r, s) = (*setup.accounts.alice_key).sign(hashed_claim).unwrap();
@@ -39,9 +39,9 @@ pub mod add_claim {
                 scheme: 1,
                 data: claim_data,
                 signature: Signature::StarkSignature(
-                    StarkSignature { r, s, public_key: *setup.accounts.alice_key.public_key }
+                    StarkSignature { r, s, public_key: *setup.accounts.alice_key.public_key },
                 ),
-                uri: "https://example.com"
+                uri: "https://example.com",
             }
         }
 
@@ -61,15 +61,16 @@ pub mod add_claim {
                 data: "0xC0FFEE",
                 signature: Signature::StarkSignature(
                     StarkSignature {
-                        r: '', s: '', public_key: setup.accounts.claim_issuer_key.public_key
-                    }
+                        r: '', s: '', public_key: setup.accounts.claim_issuer_key.public_key,
+                    },
                 ),
-                uri: "https://example.com"
+                uri: "https://example.com",
             };
             let mut spy = spy_events();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.alice_account.contract_address,
             );
             setup
                 .alice_identity
@@ -79,7 +80,7 @@ pub mod add_claim {
                     self_attested_claim.issuer,
                     self_attested_claim.signature,
                     self_attested_claim.data.clone(),
-                    self_attested_claim.uri.clone()
+                    self_attested_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
 
@@ -96,11 +97,11 @@ pub mod add_claim {
                                     issuer: self_attested_claim.issuer,
                                     signature: self_attested_claim.signature,
                                     data: self_attested_claim.data,
-                                    uri: self_attested_claim.uri
-                                }
-                            )
-                        )
-                    ]
+                                    uri: self_attested_claim.uri,
+                                },
+                            ),
+                        ),
+                    ],
                 );
         }
 
@@ -112,26 +113,27 @@ pub mod add_claim {
             let mut calldata = array![
                 self_attested_claim.topic,
                 self_attested_claim.scheme,
-                self_attested_claim.issuer.into()
+                self_attested_claim.issuer.into(),
             ];
             self_attested_claim.signature.serialize(ref calldata);
             self_attested_claim.data.serialize(ref calldata);
             self_attested_claim.uri.serialize(ref calldata);
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
             );
             let execution_id = setup
                 .alice_identity
                 .execute(
-                    setup.alice_identity.contract_address, selector!("add_claim"), calldata.span()
+                    setup.alice_identity.contract_address, selector!("add_claim"), calldata.span(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
 
             let mut spy = spy_events();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.alice_account.contract_address,
             );
             setup.alice_identity.approve(execution_id, true);
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -143,9 +145,9 @@ pub mod add_claim {
                         self_attested_claim.identity,
                         self_attested_claim.topic,
                         self_attested_claim.signature,
-                        self_attested_claim.data.clone()
+                        self_attested_claim.data.clone(),
                     ),
-                "Claim not added"
+                "Claim not added",
             );
             spy
                 .assert_emitted(
@@ -160,11 +162,11 @@ pub mod add_claim {
                                     issuer: self_attested_claim.issuer,
                                     signature: self_attested_claim.signature,
                                     data: self_attested_claim.data,
-                                    uri: self_attested_claim.uri
-                                }
-                            )
-                        )
-                    ]
+                                    uri: self_attested_claim.uri,
+                                },
+                            ),
+                        ),
+                    ],
                 );
         }
 
@@ -176,7 +178,8 @@ pub mod add_claim {
             let mut spy = spy_events();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.alice_account.contract_address,
             );
             setup
                 .alice_identity
@@ -186,7 +189,7 @@ pub mod add_claim {
                     self_attested_claim.issuer,
                     self_attested_claim.signature,
                     self_attested_claim.data.clone(),
-                    self_attested_claim.uri.clone()
+                    self_attested_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
 
@@ -197,9 +200,9 @@ pub mod add_claim {
                         self_attested_claim.identity,
                         self_attested_claim.topic,
                         self_attested_claim.signature,
-                        self_attested_claim.data.clone()
+                        self_attested_claim.data.clone(),
                     ),
-                "Claim not added"
+                "Claim not added",
             );
 
             spy
@@ -215,11 +218,11 @@ pub mod add_claim {
                                     issuer: self_attested_claim.issuer,
                                     signature: self_attested_claim.signature,
                                     data: self_attested_claim.data,
-                                    uri: self_attested_claim.uri
-                                }
-                            )
-                        )
-                    ]
+                                    uri: self_attested_claim.uri,
+                                },
+                            ),
+                        ),
+                    ],
                 );
         }
 
@@ -230,7 +233,7 @@ pub mod add_claim {
             let self_attested_claim = get_self_attested_claim(@setup);
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
             );
             setup
                 .alice_identity
@@ -240,7 +243,7 @@ pub mod add_claim {
                     self_attested_claim.issuer,
                     self_attested_claim.signature,
                     self_attested_claim.data.clone(),
-                    self_attested_claim.uri.clone()
+                    self_attested_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
         }
@@ -248,16 +251,16 @@ pub mod add_claim {
 
     pub mod when_issued_by_claim_issuer {
         use core::poseidon::poseidon_hash_span;
-        use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
+        use crate::common::{get_test_claim, setup_identity};
+        use onchain_id_starknet::interface::{ierc735, iidentity::IdentityABIDispatcherTrait};
         use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
-        use crate::common::{setup_identity, get_test_claim};
         use snforge_std::{
-            start_cheat_caller_address, stop_cheat_caller_address, spy_events,
             EventSpyAssertionsTrait,
             signature::{
                 SignerTrait,
                 stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
             },
+            spy_events, start_cheat_caller_address, stop_cheat_caller_address,
         };
 
         #[test]
@@ -273,12 +276,13 @@ pub mod add_claim {
             claim_data.serialize(ref serialized_claim_to_sign);
             let hashed_invalid_claim = poseidon_hash_span(
                 array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())]
-                    .span()
+                    .span(),
             );
             let (r, s) = setup.accounts.claim_issuer_key.sign(hashed_invalid_claim).unwrap();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.alice_account.contract_address,
             );
             setup
                 .alice_identity
@@ -288,11 +292,11 @@ pub mod add_claim {
                     test_claim.issuer,
                     Signature::StarkSignature(
                         StarkSignature {
-                            r, s, public_key: setup.accounts.claim_issuer_key.public_key
-                        }
+                            r, s, public_key: setup.accounts.claim_issuer_key.public_key,
+                        },
                     ),
                     test_claim.data.clone(),
-                    test_claim.uri.clone()
+                    test_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
         }
@@ -303,24 +307,25 @@ pub mod add_claim {
             let test_claim = get_test_claim(@setup);
 
             let mut calldata = array![
-                test_claim.topic, test_claim.scheme, test_claim.issuer.into()
+                test_claim.topic, test_claim.scheme, test_claim.issuer.into(),
             ];
             test_claim.signature.serialize(ref calldata);
             test_claim.data.serialize(ref calldata);
             test_claim.uri.serialize(ref calldata);
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
             );
             let execution_id = setup
                 .alice_identity
                 .execute(
-                    setup.alice_identity.contract_address, selector!("add_claim"), calldata.span()
+                    setup.alice_identity.contract_address, selector!("add_claim"), calldata.span(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
             let mut spy = spy_events();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.alice_account.contract_address,
             );
             setup.alice_identity.approve(execution_id, true);
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -337,7 +342,7 @@ pub mod add_claim {
                         stored_sig.r == actual_sig.r
                             && stored_sig.s == actual_sig.s
                             && stored_sig.public_key == actual_sig.public_key,
-                        "Stored signature does not match"
+                        "Stored signature does not match",
                     );
                 }
             }
@@ -357,11 +362,11 @@ pub mod add_claim {
                                     issuer: test_claim.issuer,
                                     signature: test_claim.signature,
                                     data: test_claim.data,
-                                    uri: test_claim.uri
-                                }
-                            )
-                        )
-                    ]
+                                    uri: test_claim.uri,
+                                },
+                            ),
+                        ),
+                    ],
                 );
         }
 
@@ -373,7 +378,8 @@ pub mod add_claim {
             let mut spy = spy_events();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.alice_account.contract_address,
             );
             setup
                 .alice_identity
@@ -383,7 +389,7 @@ pub mod add_claim {
                     test_claim.issuer,
                     test_claim.signature,
                     test_claim.data.clone(),
-                    test_claim.uri.clone()
+                    test_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
 
@@ -400,7 +406,7 @@ pub mod add_claim {
                         stored_sig.r == actual_sig.r
                             && stored_sig.s == actual_sig.s
                             && stored_sig.public_key == actual_sig.public_key,
-                        "Stored signature does not match"
+                        "Stored signature does not match",
                     );
                 }
             }
@@ -420,11 +426,11 @@ pub mod add_claim {
                                     issuer: test_claim.issuer,
                                     signature: test_claim.signature,
                                     data: test_claim.data,
-                                    uri: test_claim.uri
-                                }
-                            )
-                        )
-                    ]
+                                    uri: test_claim.uri,
+                                },
+                            ),
+                        ),
+                    ],
                 );
         }
 
@@ -435,7 +441,7 @@ pub mod add_claim {
             let test_claim = get_test_claim(@setup);
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
             );
             setup
                 .alice_identity
@@ -445,7 +451,7 @@ pub mod add_claim {
                     test_claim.issuer,
                     test_claim.signature,
                     test_claim.data.clone(),
-                    test_claim.uri.clone()
+                    test_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
         }
@@ -454,15 +460,16 @@ pub mod add_claim {
 
 pub mod update_claim {
     use core::poseidon::poseidon_hash_span;
-    use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
+    use crate::common::{TestClaim, get_test_claim, setup_identity};
+    use onchain_id_starknet::interface::{ierc735, iidentity::IdentityABIDispatcherTrait};
     use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
-    use crate::common::{setup_identity, TestClaim, get_test_claim};
     use snforge_std::{
-        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
+        EventSpyAssertionsTrait,
         signature::{
             SignerTrait,
             stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
         },
+        spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
 
     #[test]
@@ -471,7 +478,7 @@ pub mod update_claim {
         let test_claim = get_test_claim(@setup);
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address,
         );
         setup
             .alice_identity
@@ -481,7 +488,7 @@ pub mod update_claim {
                 test_claim.issuer,
                 test_claim.signature,
                 test_claim.data.clone(),
-                test_claim.uri.clone()
+                test_claim.uri.clone(),
             );
         stop_cheat_caller_address(setup.alice_identity.contract_address);
 
@@ -493,7 +500,7 @@ pub mod update_claim {
         new_data.serialize(ref serialized_claim_to_sign);
 
         let hashed_claim = poseidon_hash_span(
-            array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span()
+            array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span(),
         );
 
         let (r, s) = setup.accounts.claim_issuer_key.sign(hashed_claim).unwrap();
@@ -506,15 +513,15 @@ pub mod update_claim {
             scheme: test_claim.scheme,
             data: new_data,
             signature: Signature::StarkSignature(
-                StarkSignature { r, s, public_key: setup.accounts.claim_issuer_key.public_key }
+                StarkSignature { r, s, public_key: setup.accounts.claim_issuer_key.public_key },
             ),
-            uri: "https://example.com"
+            uri: "https://example.com",
         };
 
         let mut spy = spy_events();
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address,
         );
         setup
             .alice_identity
@@ -524,7 +531,7 @@ pub mod update_claim {
                 test_claim_updated.issuer,
                 test_claim_updated.signature,
                 test_claim_updated.data.clone(),
-                test_claim_updated.uri.clone()
+                test_claim_updated.uri.clone(),
             );
         stop_cheat_caller_address(setup.alice_identity.contract_address);
 
@@ -541,7 +548,7 @@ pub mod update_claim {
                     stored_sig.r == actual_sig.r
                         && stored_sig.s == actual_sig.s
                         && stored_sig.public_key == actual_sig.public_key,
-                    "Stored signature does not match"
+                    "Stored signature does not match",
                 );
             }
         }
@@ -561,21 +568,21 @@ pub mod update_claim {
                                 issuer: test_claim.issuer,
                                 signature: test_claim_updated.signature,
                                 data: test_claim_updated.data,
-                                uri: test_claim.uri
-                            }
-                        )
-                    )
-                ]
+                                uri: test_claim.uri,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 }
 
 pub mod remove_claim {
     use core::num::traits::Zero;
-    use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc735};
-    use crate::common::{setup_identity, get_test_claim};
+    use crate::common::{get_test_claim, setup_identity};
+    use onchain_id_starknet::interface::{ierc735, iidentity::IdentityABIDispatcherTrait};
     use snforge_std::{
-        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
 
     #[test]
@@ -584,7 +591,7 @@ pub mod remove_claim {
         let test_claim = get_test_claim(@setup);
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address,
         );
         setup
             .alice_identity
@@ -594,7 +601,7 @@ pub mod remove_claim {
                 test_claim.issuer,
                 test_claim.signature,
                 test_claim.data.clone(),
-                test_claim.uri.clone()
+                test_claim.uri.clone(),
             );
 
         let mut spy = spy_events();
@@ -604,7 +611,7 @@ pub mod remove_claim {
             .execute(
                 setup.alice_identity.contract_address,
                 selector!("remove_claim"),
-                array![test_claim.claim_id].span()
+                array![test_claim.claim_id].span(),
             );
         // Remove claim
         stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -641,11 +648,11 @@ pub mod remove_claim {
                                 issuer: test_claim.issuer,
                                 signature: test_claim.signature,
                                 data: test_claim.data,
-                                uri: test_claim.uri
-                            }
-                        )
-                    )
-                ]
+                                uri: test_claim.uri,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 
@@ -656,7 +663,7 @@ pub mod remove_claim {
         let test_claim = get_test_claim(@setup);
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
         );
         setup.alice_identity.remove_claim(test_claim.claim_id);
         stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -669,7 +676,7 @@ pub mod remove_claim {
         let test_claim = get_test_claim(@setup);
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address,
         );
         setup.alice_identity.remove_claim(test_claim.claim_id);
         stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -681,7 +688,7 @@ pub mod remove_claim {
         let test_claim = get_test_claim(@setup);
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address,
         );
         setup
             .alice_identity
@@ -691,7 +698,7 @@ pub mod remove_claim {
                 test_claim.issuer,
                 test_claim.signature,
                 test_claim.data.clone(),
-                test_claim.uri.clone()
+                test_claim.uri.clone(),
             );
 
         let mut spy = spy_events();
@@ -731,20 +738,20 @@ pub mod remove_claim {
                                 issuer: test_claim.issuer,
                                 signature: test_claim.signature,
                                 data: test_claim.data,
-                                uri: test_claim.uri
-                            }
-                        )
-                    )
-                ]
+                                uri: test_claim.uri,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 }
 
 pub mod get_claim {
     use core::num::traits::Zero;
+    use crate::common::setup_identity;
     use onchain_id_starknet::interface::iidentity::IdentityABIDispatcherTrait;
     use onchain_id_starknet::storage::structs::Signature;
-    use crate::common::setup_identity;
 
     #[test]
     fn test_should_return_default_values_when_claim_does_not_exist() {
@@ -759,7 +766,7 @@ pub mod get_claim {
             assert!(
                 stored_sig.r == Zero::zero()
                     && stored_sig.s == Zero::zero()
-                    && stored_sig.public_key == Zero::zero()
+                    && stored_sig.public_key == Zero::zero(),
             );
         }
         assert!(data == Default::default());
@@ -782,7 +789,7 @@ pub mod get_claim {
                     stored_sig.r == actual_sig.r
                         && stored_sig.s == actual_sig.s
                         && stored_sig.public_key == actual_sig.public_key,
-                    "Stored signature does not match"
+                    "Stored signature does not match",
                 );
             }
         }
@@ -792,8 +799,8 @@ pub mod get_claim {
 }
 
 pub mod get_claims_by_topic {
-    use onchain_id_starknet::interface::iidentity::IdentityABIDispatcherTrait;
     use crate::common::setup_identity;
+    use onchain_id_starknet::interface::iidentity::IdentityABIDispatcherTrait;
 
     #[test]
     fn test_should_return_empty_array_when_there_are_no_claim_topics() {

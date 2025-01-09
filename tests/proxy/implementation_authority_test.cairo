@@ -1,14 +1,14 @@
 use core::num::traits::Zero;
 use onchain_id_starknet::interface::iimplementation_authority::{
-    IImplementationAuthorityDispatcher, IImplementationAuthorityDispatcherTrait
+    IImplementationAuthorityDispatcher, IImplementationAuthorityDispatcherTrait,
 };
 use onchain_id_starknet::proxy::implementation_authority::ImplementationAuthority;
 use openzeppelin_access::ownable::interface::{
-    IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait
+    IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait,
 };
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
+    ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, declare, spy_events,
+    start_cheat_caller_address, stop_cheat_caller_address,
 };
 use starknet::ClassHash;
 use starknet::ContractAddress;
@@ -51,10 +51,10 @@ fn test_should_deploy_ia_with_init_class_hash_and_owner() {
     let implementation_authority = deploy();
     assert!(
         implementation_authority.get_implementation() == INITIAL_CLASS_HASH(),
-        "initial class hash mismatch"
+        "initial class hash mismatch",
     );
     let owner = IOwnableTwoStepDispatcher {
-        contract_address: implementation_authority.contract_address
+        contract_address: implementation_authority.contract_address,
     }
         .owner();
     assert!(owner == OWNER_ADDRESS(), "owner not set correctly");
@@ -95,11 +95,11 @@ fn test_should_update_implementation() {
                     implementation_authority.contract_address,
                     ImplementationAuthority::Event::UpdatedImplementation(
                         ImplementationAuthority::UpdatedImplementation {
-                            new_class_hash: UPDATED_CLASS_HASH()
-                        }
-                    )
-                )
-            ]
+                            new_class_hash: UPDATED_CLASS_HASH(),
+                        },
+                    ),
+                ),
+            ],
         );
 }
 

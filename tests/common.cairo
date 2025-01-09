@@ -1,19 +1,19 @@
 use core::poseidon::poseidon_hash_span;
 use onchain_id_starknet::factory::iid_factory::{IIdFactoryDispatcher, IIdFactoryDispatcherTrait};
 use onchain_id_starknet::interface::{
+    iclaim_issuer::{ClaimIssuerABIDispatcher, ClaimIssuerABIDispatcherTrait},
     iidentity::{IdentityABIDispatcher, IdentityABIDispatcherTrait},
     iimplementation_authority::IImplementationAuthorityDispatcher,
-    iclaim_issuer::{ClaimIssuerABIDispatcher, ClaimIssuerABIDispatcherTrait},
     iverifier::{VerifierABIDispatcher, VerifierABIDispatcherTrait},
 };
 use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
 use snforge_std::{
-    declare, DeclareResultTrait, ContractClassTrait, start_cheat_caller_address,
-    stop_cheat_caller_address,
+    ContractClassTrait, DeclareResultTrait, declare,
     signature::{
-        KeyPairTrait, SignerTrait, KeyPair,
+        KeyPair, KeyPairTrait, SignerTrait,
         stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
     },
+    start_cheat_caller_address, stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 use starknet::account::AccountContractDispatcher;
@@ -54,7 +54,7 @@ pub struct IdentitySetup {
     pub alice_identity: IdentityABIDispatcher,
     pub bob_identity: IdentityABIDispatcher,
     pub alice_claim_666: TestClaim,
-    pub token_address: ContractAddress
+    pub token_address: ContractAddress,
 }
 
 #[derive(Drop)]
@@ -63,7 +63,7 @@ pub struct VerifierSetup {
     pub claim_issuer: ClaimIssuerABIDispatcher,
     pub mock_verifier: VerifierABIDispatcher,
     pub accounts: TestAccounts,
-    pub alice_claim_666: TestClaim
+    pub alice_claim_666: TestClaim,
 }
 
 #[derive(Drop)]
@@ -75,7 +75,7 @@ pub struct TestClaim {
     pub issuer: ContractAddress,
     pub signature: Signature,
     pub data: ByteArray,
-    pub uri: ByteArray
+    pub uri: ByteArray,
 }
 
 pub fn setup_accounts() -> TestAccounts {
@@ -116,7 +116,7 @@ pub fn setup_accounts() -> TestAccounts {
         .deploy(@array![claim_issuer_key.public_key])
         .unwrap();
     let claim_issuer_account = AccountContractDispatcher {
-        contract_address: claim_issuer_account_address
+        contract_address: claim_issuer_account_address,
     };
     // set token owner key and account
     let token_owner_key = KeyPairTrait::<felt252, felt252>::generate();
@@ -124,7 +124,7 @@ pub fn setup_accounts() -> TestAccounts {
         .deploy(@array![token_owner_key.public_key])
         .unwrap();
     let token_owner_account = AccountContractDispatcher {
-        contract_address: token_owner_account_address
+        contract_address: token_owner_account_address,
     };
 
     TestAccounts {
@@ -141,7 +141,7 @@ pub fn setup_accounts() -> TestAccounts {
         claim_issuer_key,
         claim_issuer_account,
         token_owner_key,
-        token_owner_account
+        token_owner_account,
     }
 }
 
@@ -160,7 +160,7 @@ pub fn setup_factory() -> FactorySetup {
         .deploy(@implementation_authority_ctor_data)
         .unwrap();
     let mut implementation_authority_dispatcher = IImplementationAuthorityDispatcher {
-        contract_address: implementation_authority_address
+        contract_address: implementation_authority_address,
     };
     // Declare and Deploy IdFactory
     let id_factory_contract = declare("IdFactory").unwrap().contract_class();
@@ -168,8 +168,8 @@ pub fn setup_factory() -> FactorySetup {
         .deploy(
             @array![
                 implementation_authority_address.into(),
-                test_accounts.owner_account.contract_address.into()
-            ]
+                test_accounts.owner_account.contract_address.into(),
+            ],
         )
         .unwrap();
     let id_factory_dispatcher = IIdFactoryDispatcher { contract_address: id_factory_address };
@@ -178,7 +178,7 @@ pub fn setup_factory() -> FactorySetup {
         identity_factory: id_factory_dispatcher,
         identity_contract: *identity_contract,
         implementation_authority: implementation_authority_dispatcher,
-        accounts: test_accounts
+        accounts: test_accounts,
     }
 }
 
@@ -190,19 +190,19 @@ pub fn setup_identity() -> IdentitySetup {
         .deploy(@array![factory_setup.accounts.claim_issuer_account.contract_address.into()])
         .unwrap();
     let claim_issuer_dispatcher = ClaimIssuerABIDispatcher {
-        contract_address: claim_issuer_address
+        contract_address: claim_issuer_address,
     };
     start_cheat_caller_address(
-        claim_issuer_address, factory_setup.accounts.claim_issuer_account.contract_address
+        claim_issuer_address, factory_setup.accounts.claim_issuer_account.contract_address,
     );
     // register claim issuer account as claim key
     let claim_issuer_account_address_hash = poseidon_hash_span(
-        array![factory_setup.accounts.claim_issuer_account.contract_address.into()].span()
+        array![factory_setup.accounts.claim_issuer_account.contract_address.into()].span(),
     );
     claim_issuer_dispatcher.add_key(claim_issuer_account_address_hash, 3, 1);
     // register claim issuer public key as management + claim_key
     let claim_issuer_pub_key_hash = poseidon_hash_span(
-        array![factory_setup.accounts.claim_issuer_key.public_key].span()
+        array![factory_setup.accounts.claim_issuer_key.public_key].span(),
     );
     claim_issuer_dispatcher.add_key(claim_issuer_pub_key_hash, 1, 1);
     claim_issuer_dispatcher.add_key(claim_issuer_pub_key_hash, 3, 1);
@@ -210,7 +210,7 @@ pub fn setup_identity() -> IdentitySetup {
 
     start_cheat_caller_address(
         factory_setup.identity_factory.contract_address,
-        factory_setup.accounts.owner_account.contract_address
+        factory_setup.accounts.owner_account.contract_address,
     );
     factory_setup
         .identity_factory
@@ -220,41 +220,41 @@ pub fn setup_identity() -> IdentitySetup {
     let alice_identity = IdentityABIDispatcher {
         contract_address: factory_setup
             .identity_factory
-            .get_identity(factory_setup.accounts.alice_account.contract_address)
+            .get_identity(factory_setup.accounts.alice_account.contract_address),
     };
     start_cheat_caller_address(
-        alice_identity.contract_address, factory_setup.accounts.alice_account.contract_address
+        alice_identity.contract_address, factory_setup.accounts.alice_account.contract_address,
     );
     // register alice pub key as management key
     alice_identity
         .add_key(
-            poseidon_hash_span(array![factory_setup.accounts.alice_key.public_key].span()), 1, 1
+            poseidon_hash_span(array![factory_setup.accounts.alice_key.public_key].span()), 1, 1,
         );
     // register carol pub key + contract address as claim key
     alice_identity
         .add_key(
             poseidon_hash_span(
-                array![factory_setup.accounts.carol_account.contract_address.into()].span()
+                array![factory_setup.accounts.carol_account.contract_address.into()].span(),
             ),
             3,
-            1
+            1,
         );
     alice_identity
         .add_key(
-            poseidon_hash_span(array![factory_setup.accounts.carol_key.public_key].span()), 3, 1
+            poseidon_hash_span(array![factory_setup.accounts.carol_key.public_key].span()), 3, 1,
         );
     // register david pub key + contract address as action key
     alice_identity
         .add_key(
             poseidon_hash_span(
-                array![factory_setup.accounts.david_account.contract_address.into()].span()
+                array![factory_setup.accounts.david_account.contract_address.into()].span(),
             ),
             2,
-            1
+            1,
         );
     alice_identity
         .add_key(
-            poseidon_hash_span(array![factory_setup.accounts.david_key.public_key].span()), 2, 1
+            poseidon_hash_span(array![factory_setup.accounts.david_key.public_key].span()), 2, 1,
         );
 
     let claim_topic = 666_felt252;
@@ -268,7 +268,7 @@ pub fn setup_identity() -> IdentitySetup {
     claim_data.serialize(ref serialized_claim_to_sign);
 
     let hashed_claim = poseidon_hash_span(
-        array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span()
+        array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span(),
     );
 
     let (r, s) = factory_setup.accounts.claim_issuer_key.sign(hashed_claim).unwrap();
@@ -281,9 +281,9 @@ pub fn setup_identity() -> IdentitySetup {
         scheme: 1,
         data: claim_data,
         signature: Signature::StarkSignature(
-            StarkSignature { r, s, public_key: factory_setup.accounts.claim_issuer_key.public_key }
+            StarkSignature { r, s, public_key: factory_setup.accounts.claim_issuer_key.public_key },
         ),
-        uri: "https://example.com"
+        uri: "https://example.com",
     };
 
     alice_identity
@@ -293,13 +293,13 @@ pub fn setup_identity() -> IdentitySetup {
             alice_claim_666.issuer,
             alice_claim_666.signature,
             alice_claim_666.data.clone(),
-            alice_claim_666.uri.clone()
+            alice_claim_666.uri.clone(),
         );
     stop_cheat_caller_address(alice_identity.contract_address);
 
     start_cheat_caller_address(
         factory_setup.identity_factory.contract_address,
-        factory_setup.accounts.owner_account.contract_address
+        factory_setup.accounts.owner_account.contract_address,
     );
     factory_setup
         .identity_factory
@@ -307,7 +307,7 @@ pub fn setup_identity() -> IdentitySetup {
     let bob_identity = IdentityABIDispatcher {
         contract_address: factory_setup
             .identity_factory
-            .get_identity(factory_setup.accounts.bob_account.contract_address)
+            .get_identity(factory_setup.accounts.bob_account.contract_address),
     };
 
     let token_address = starknet::contract_address_const::<'token_address'>();
@@ -316,7 +316,7 @@ pub fn setup_identity() -> IdentitySetup {
         .create_token_identity(
             token_address,
             factory_setup.accounts.token_owner_account.contract_address,
-            'token_owner'
+            'token_owner',
         );
     stop_cheat_caller_address(factory_setup.identity_factory.contract_address);
 
@@ -329,7 +329,7 @@ pub fn setup_identity() -> IdentitySetup {
         alice_identity,
         bob_identity,
         alice_claim_666,
-        token_address
+        token_address,
     }
 }
 
@@ -341,7 +341,7 @@ pub fn setup_verifier() -> VerifierSetup {
         .deploy(@array![setup.accounts.claim_issuer_account.contract_address.into()])
         .unwrap();
     let claim_issuer_dispatcher = ClaimIssuerABIDispatcher {
-        contract_address: claim_issuer_address
+        contract_address: claim_issuer_address,
     };
 
     let identity_contract = declare("Identity").unwrap().contract_class();
@@ -349,8 +349,8 @@ pub fn setup_verifier() -> VerifierSetup {
         .deploy(
             @array![
                 setup.implementation_authority.contract_address.into(),
-                setup.accounts.alice_account.contract_address.into()
-            ]
+                setup.accounts.alice_account.contract_address.into(),
+            ],
         )
         .unwrap();
     let mock_verifier_contract = declare("MockVerifier").unwrap().contract_class();
@@ -360,12 +360,12 @@ pub fn setup_verifier() -> VerifierSetup {
     let mut verifier_dispatcher = VerifierABIDispatcher { contract_address: mock_verifier_address };
     let alice_claim_666 = setup.alice_claim_666;
     start_cheat_caller_address(
-        mock_verifier_address, setup.accounts.owner_account.contract_address
+        mock_verifier_address, setup.accounts.owner_account.contract_address,
     );
     verifier_dispatcher.add_claim_topic(alice_claim_666.topic);
     verifier_dispatcher
         .add_trusted_issuer(
-            setup.accounts.claim_issuer_account.contract_address, array![alice_claim_666.topic]
+            setup.accounts.claim_issuer_account.contract_address, array![alice_claim_666.topic],
         );
     stop_cheat_caller_address(mock_verifier_address);
 
@@ -374,7 +374,7 @@ pub fn setup_verifier() -> VerifierSetup {
         claim_issuer: claim_issuer_dispatcher,
         mock_verifier: verifier_dispatcher,
         accounts: setup.accounts,
-        alice_claim_666: alice_claim_666
+        alice_claim_666: alice_claim_666,
     }
 }
 
@@ -391,7 +391,7 @@ pub fn get_test_claim(setup: @IdentitySetup) -> TestClaim {
     claim_data.serialize(ref serialized_claim_to_sign);
 
     let hashed_claim = poseidon_hash_span(
-        array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span()
+        array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span(),
     );
 
     let (r, s) = (*setup.accounts.claim_issuer_key).sign(hashed_claim).unwrap();
@@ -403,8 +403,8 @@ pub fn get_test_claim(setup: @IdentitySetup) -> TestClaim {
         scheme: 1,
         data: claim_data,
         signature: Signature::StarkSignature(
-            StarkSignature { r, s, public_key: *setup.accounts.claim_issuer_key.public_key }
+            StarkSignature { r, s, public_key: *setup.accounts.claim_issuer_key.public_key },
         ),
-        uri: "https://example.com"
+        uri: "https://example.com",
     }
 }

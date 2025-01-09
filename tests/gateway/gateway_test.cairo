@@ -1,12 +1,12 @@
+use crate::common::{FactorySetup, TestAccounts, setup_factory};
 use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcher;
 use onchain_id_starknet::gateway::gateway::IGatewayDispatcher;
 use onchain_id_starknet::interface::iimplementation_authority::IImplementationAuthorityDispatcher;
-use crate::common::{setup_factory, TestAccounts, FactorySetup};
 use openzeppelin_access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
 
 use snforge_std::{
-    declare, DeclareResultTrait, ContractClassTrait, start_cheat_caller_address,
-    stop_cheat_caller_address
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
+    stop_cheat_caller_address,
 };
 
 pub const YEAR: u64 = 365 * 24 * 60 * 60;
@@ -21,7 +21,7 @@ pub struct GatewaySetup {
 }
 
 pub fn setup_gateway(
-    factory_setup: FactorySetup, signers_to_approve: Span<felt252>
+    factory_setup: FactorySetup, signers_to_approve: Span<felt252>,
 ) -> GatewaySetup {
     let gateway_contract = declare("Gateway").unwrap().contract_class();
     let mut gateway_ctor_data: Array<felt252> = array![];
@@ -31,14 +31,14 @@ pub fn setup_gateway(
     let (gateway_address, _) = gateway_contract.deploy(@gateway_ctor_data).unwrap();
     start_cheat_caller_address(
         factory_setup.identity_factory.contract_address,
-        factory_setup.accounts.owner_account.contract_address
+        factory_setup.accounts.owner_account.contract_address,
     );
     IOwnableDispatcher { contract_address: factory_setup.identity_factory.contract_address }
         .transfer_ownership(gateway_address);
     assert!(
         IOwnableDispatcher { contract_address: factory_setup.identity_factory.contract_address }
             .owner() == gateway_address,
-        "owner is not gateway"
+        "owner is not gateway",
     );
     stop_cheat_caller_address(factory_setup.identity_factory.contract_address);
 
@@ -53,7 +53,7 @@ pub fn setup_gateway(
 
 pub mod constructor {
     use core::num::traits::Zero;
-    use snforge_std::{declare, DeclareResultTrait, ContractClassTrait,};
+    use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 
     #[test]
     #[should_panic]
@@ -85,7 +85,7 @@ pub mod constructor {
         ];
 
         let mut gateway_ctor_data: Array<felt252> = array![
-            starknet::contract_address_const::<'dummy_factory'>().into()
+            starknet::contract_address_const::<'dummy_factory'>().into(),
         ];
         array_with_more_than_ten_signer.serialize(ref gateway_ctor_data);
         gateway_ctor_data.append(starknet::contract_address_const::<'owner_address'>().into());
@@ -95,11 +95,11 @@ pub mod constructor {
 
 pub mod approve_signer {
     use core::num::traits::Zero;
-    use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Gateway};
+    use onchain_id_starknet::gateway::gateway::{Gateway, IGatewayDispatcherTrait};
     use snforge_std::{
-        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
-    use super::{setup_gateway, setup_factory};
+    use super::{setup_factory, setup_gateway};
 
     #[test]
     #[should_panic(expected: "A required parameter was set to the Zero address.")]
@@ -108,7 +108,7 @@ pub mod approve_signer {
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.approve_signer(Zero::zero());
         stop_cheat_caller_address(setup.gateway.contract_address);
@@ -130,7 +130,7 @@ pub mod approve_signer {
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.approve_signer(carol_pub_key);
         stop_cheat_caller_address(setup.gateway.contract_address);
@@ -146,7 +146,7 @@ pub mod approve_signer {
         let mut spy = spy_events();
 
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.approve_signer(david_pub_key);
         stop_cheat_caller_address(setup.gateway.contract_address);
@@ -158,21 +158,21 @@ pub mod approve_signer {
                     (
                         setup.gateway.contract_address,
                         Gateway::Event::SignerApproved(
-                            Gateway::SignerApproved { signer: david_pub_key }
-                        )
-                    )
-                ]
+                            Gateway::SignerApproved { signer: david_pub_key },
+                        ),
+                    ),
+                ],
             );
     }
 }
 
 pub mod revoke_signer {
     use core::num::traits::Zero;
-    use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Gateway};
+    use onchain_id_starknet::gateway::gateway::{Gateway, IGatewayDispatcherTrait};
     use snforge_std::{
-        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
-    use super::{setup_gateway, setup_factory};
+    use super::{setup_factory, setup_gateway};
 
     #[test]
     #[should_panic(expected: "A required parameter was set to the Zero address.")]
@@ -181,7 +181,7 @@ pub mod revoke_signer {
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.revoke_signer(Zero::zero());
         stop_cheat_caller_address(setup.gateway.contract_address);
@@ -203,7 +203,7 @@ pub mod revoke_signer {
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.revoke_signer(setup.accounts.david_key.public_key);
         stop_cheat_caller_address(setup.gateway.contract_address);
@@ -218,7 +218,7 @@ pub mod revoke_signer {
         assert!(!setup.gateway.is_approved_signer(david_pub_key), "David is already approved");
 
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         assert!(!setup.gateway.is_approved_signer(david_pub_key), "David is already approved");
         setup.gateway.approve_signer(david_pub_key);
@@ -234,10 +234,10 @@ pub mod revoke_signer {
                     (
                         setup.gateway.contract_address,
                         Gateway::Event::SignerRevoked(
-                            Gateway::SignerRevoked { signer: david_pub_key }
-                        )
-                    )
-                ]
+                            Gateway::SignerRevoked { signer: david_pub_key },
+                        ),
+                    ),
+                ],
             );
     }
 }
@@ -246,18 +246,19 @@ pub mod deploy_identity_with_salt {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::factory::{
-        id_factory::IdFactory, iid_factory::IIdFactoryDispatcherTrait
+        id_factory::IdFactory, iid_factory::IIdFactoryDispatcherTrait,
     };
     use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Signature};
     use onchain_id_starknet::interface::iidentity::{
-        IdentityABIDispatcher, IdentityABIDispatcherTrait
+        IdentityABIDispatcher, IdentityABIDispatcherTrait,
     };
     use snforge_std::{
-        spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address,
-        start_cheat_block_timestamp_global, stop_cheat_block_timestamp_global,
-        signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl},},
+        EventSpyAssertionsTrait,
+        signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl}},
+        spy_events, start_cheat_block_timestamp_global, start_cheat_caller_address,
+        stop_cheat_block_timestamp_global, stop_cheat_caller_address,
     };
-    use super::{setup_gateway, setup_factory};
+    use super::{setup_factory, setup_gateway};
 
     #[test]
     #[should_panic(expected: "A required parameter was set to the Zero address.")]
@@ -272,7 +273,7 @@ pub mod deploy_identity_with_salt {
                 Zero::zero(),
                 'salt1',
                 starknet::get_block_timestamp() + super::YEAR,
-                Signature { r: Zero::zero(), s: Zero::zero(), y_parity: false }
+                Signature { r: Zero::zero(), s: Zero::zero(), y_parity: false },
             );
     }
 
@@ -289,13 +290,13 @@ pub mod deploy_identity_with_salt {
                 setup.accounts.alice_account.contract_address,
                 'salt1',
                 starknet::get_block_timestamp() + super::YEAR,
-                Signature { r: Zero::zero(), s: Zero::zero(), y_parity: false }
+                Signature { r: Zero::zero(), s: Zero::zero(), y_parity: false },
             );
     }
 
     #[test]
     #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested and signed by a non approved signer."
+        expected: "A requested ONCHAINID deployment was requested and signed by a non approved signer.",
     )]
     fn test_should_panic_when_signature_signed_by_non_authorized_signer() {
         let factory_setup = setup_factory();
@@ -324,7 +325,7 @@ pub mod deploy_identity_with_salt {
                 setup.accounts.alice_account.contract_address,
                 salt,
                 signature_expiry,
-                Signature { r, s, y_parity }
+                Signature { r, s, y_parity },
             );
     }
 
@@ -359,7 +360,7 @@ pub mod deploy_identity_with_salt {
                 setup.accounts.alice_account.contract_address,
                 salt,
                 signature_expiry,
-                Signature { r, s, y_parity }
+                Signature { r, s, y_parity },
             );
         let identity_address = setup
             .identity_factory
@@ -369,11 +370,11 @@ pub mod deploy_identity_with_salt {
             identity_dispatcher
                 .key_has_purpose(
                     poseidon_hash_span(
-                        array![setup.accounts.alice_account.contract_address.into()].span()
+                        array![setup.accounts.alice_account.contract_address.into()].span(),
                     ),
-                    1
+                    1,
                 ),
-            "key havent registered in deployment"
+            "key havent registered in deployment",
         );
 
         spy
@@ -382,19 +383,19 @@ pub mod deploy_identity_with_salt {
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::Deployed(
-                            IdFactory::Deployed { deployed_address: identity_address }
-                        )
+                            IdFactory::Deployed { deployed_address: identity_address },
+                        ),
                     ),
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::WalletLinked(
                             IdFactory::WalletLinked {
                                 wallet: setup.accounts.alice_account.contract_address,
-                                identity: identity_address
-                            }
-                        )
-                    )
-                ]
+                                identity: identity_address,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 
@@ -429,7 +430,7 @@ pub mod deploy_identity_with_salt {
                 setup.accounts.alice_account.contract_address,
                 salt,
                 signature_expiry,
-                Signature { r, s, y_parity }
+                Signature { r, s, y_parity },
             );
         let identity_address = setup
             .identity_factory
@@ -439,11 +440,11 @@ pub mod deploy_identity_with_salt {
             identity_dispatcher
                 .key_has_purpose(
                     poseidon_hash_span(
-                        array![setup.accounts.alice_account.contract_address.into()].span()
+                        array![setup.accounts.alice_account.contract_address.into()].span(),
                     ),
-                    1
+                    1,
                 ),
-            "key havent registered in deployment"
+            "key havent registered in deployment",
         );
 
         spy
@@ -452,25 +453,25 @@ pub mod deploy_identity_with_salt {
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::Deployed(
-                            IdFactory::Deployed { deployed_address: identity_address }
-                        )
+                            IdFactory::Deployed { deployed_address: identity_address },
+                        ),
                     ),
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::WalletLinked(
                             IdFactory::WalletLinked {
                                 wallet: setup.accounts.alice_account.contract_address,
-                                identity: identity_address
-                            }
-                        )
-                    )
-                ]
+                                identity: identity_address,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 
     #[test]
     #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested with a signature revoked."
+        expected: "A requested ONCHAINID deployment was requested with a signature revoked.",
     )]
     fn test_should_panic_when_signature_is_valid_but_revoked() {
         let factory_setup = setup_factory();
@@ -495,20 +496,20 @@ pub mod deploy_identity_with_salt {
             .public_key;
         let signature = Signature { r, s, y_parity };
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.revoke_signature(signature);
         stop_cheat_caller_address(setup.gateway.contract_address);
         setup
             .gateway
             .deploy_identity_with_salt(
-                setup.accounts.alice_account.contract_address, salt, signature_expiry, signature
+                setup.accounts.alice_account.contract_address, salt, signature_expiry, signature,
             );
     }
 
     #[test]
     #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested with a signature that expired."
+        expected: "A requested ONCHAINID deployment was requested with a signature that expired.",
     )]
     fn test_should_panic_when_signature_is_valid_but_expired() {
         let factory_setup = setup_factory();
@@ -533,7 +534,7 @@ pub mod deploy_identity_with_salt {
             .public_key;
         let signature = Signature { r, s, y_parity };
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.revoke_signature(signature);
         stop_cheat_caller_address(setup.gateway.contract_address);
@@ -541,7 +542,7 @@ pub mod deploy_identity_with_salt {
         setup
             .gateway
             .deploy_identity_with_salt(
-                setup.accounts.alice_account.contract_address, salt, signature_expiry, signature
+                setup.accounts.alice_account.contract_address, salt, signature_expiry, signature,
             );
         stop_cheat_block_timestamp_global();
     }
@@ -551,18 +552,19 @@ pub mod deploy_identity_with_salt_and_management_keys {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::factory::{
-        id_factory::IdFactory, iid_factory::IIdFactoryDispatcherTrait
+        id_factory::IdFactory, iid_factory::IIdFactoryDispatcherTrait,
     };
     use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Signature};
     use onchain_id_starknet::interface::iidentity::{
-        IdentityABIDispatcher, IdentityABIDispatcherTrait
+        IdentityABIDispatcher, IdentityABIDispatcherTrait,
     };
     use snforge_std::{
-        spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address,
-        start_cheat_block_timestamp_global, stop_cheat_block_timestamp_global,
-        signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl},},
+        EventSpyAssertionsTrait,
+        signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl}},
+        spy_events, start_cheat_block_timestamp_global, start_cheat_caller_address,
+        stop_cheat_block_timestamp_global, stop_cheat_caller_address,
     };
-    use super::{setup_gateway, setup_factory};
+    use super::{setup_factory, setup_gateway};
 
     #[test]
     #[should_panic(expected: "A required parameter was set to the Zero address.")]
@@ -578,7 +580,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
                 'salt1',
                 array![],
                 starknet::get_block_timestamp() + super::YEAR,
-                Signature { r: Zero::zero(), s: Zero::zero(), y_parity: false }
+                Signature { r: Zero::zero(), s: Zero::zero(), y_parity: false },
             );
     }
 
@@ -596,13 +598,13 @@ pub mod deploy_identity_with_salt_and_management_keys {
                 'salt1',
                 array![],
                 starknet::get_block_timestamp() + super::YEAR,
-                Signature { r: Zero::zero(), s: Zero::zero(), y_parity: false }
+                Signature { r: Zero::zero(), s: Zero::zero(), y_parity: false },
             );
     }
 
     #[test]
     #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested and signed by a non approved signer."
+        expected: "A requested ONCHAINID deployment was requested and signed by a non approved signer.",
     )]
     fn test_should_panic_when_signature_signed_by_non_authorized_signer() {
         let factory_setup = setup_factory();
@@ -616,7 +618,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
         salt.serialize(ref serialized_message);
 
         let management_keys = array![
-            poseidon_hash_span(array![setup.accounts.bob_account.contract_address.into()].span())
+            poseidon_hash_span(array![setup.accounts.bob_account.contract_address.into()].span()),
         ];
         management_keys.serialize(ref serialized_message);
         let signature_expiry: u64 = starknet::get_block_timestamp() + super::YEAR;
@@ -637,7 +639,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
                 salt,
                 management_keys,
                 signature_expiry,
-                Signature { r, s, y_parity }
+                Signature { r, s, y_parity },
             );
     }
 
@@ -654,7 +656,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
         salt.serialize(ref serialized_message);
 
         let management_keys = array![
-            poseidon_hash_span(array![setup.accounts.bob_account.contract_address.into()].span())
+            poseidon_hash_span(array![setup.accounts.bob_account.contract_address.into()].span()),
         ];
         management_keys.serialize(ref serialized_message);
         let signature_expiry: u64 = starknet::get_block_timestamp() + super::YEAR;
@@ -677,7 +679,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
                 salt,
                 management_keys,
                 signature_expiry,
-                Signature { r, s, y_parity }
+                Signature { r, s, y_parity },
             );
 
         let identity_address = setup
@@ -685,29 +687,29 @@ pub mod deploy_identity_with_salt_and_management_keys {
             .get_identity(setup.accounts.alice_account.contract_address);
         assert!(
             identity_address == identity_address_gateway,
-            "returned and stored identity_address does not match"
+            "returned and stored identity_address does not match",
         );
         let identity_dispatcher = IdentityABIDispatcher { contract_address: identity_address };
         assert!(
             !identity_dispatcher
                 .key_has_purpose(
                     poseidon_hash_span(
-                        array![setup.accounts.alice_account.contract_address.into()].span()
+                        array![setup.accounts.alice_account.contract_address.into()].span(),
                     ),
-                    1
+                    1,
                 ),
-            "key havent registered in deployment"
+            "key havent registered in deployment",
         );
 
         assert!(
             identity_dispatcher
                 .key_has_purpose(
                     poseidon_hash_span(
-                        array![setup.accounts.bob_account.contract_address.into()].span()
+                        array![setup.accounts.bob_account.contract_address.into()].span(),
                     ),
-                    1
+                    1,
                 ),
-            "key havent registered in deployment"
+            "key havent registered in deployment",
         );
 
         spy
@@ -716,19 +718,19 @@ pub mod deploy_identity_with_salt_and_management_keys {
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::Deployed(
-                            IdFactory::Deployed { deployed_address: identity_address }
-                        )
+                            IdFactory::Deployed { deployed_address: identity_address },
+                        ),
                     ),
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::WalletLinked(
                             IdFactory::WalletLinked {
                                 wallet: setup.accounts.alice_account.contract_address,
-                                identity: identity_address
-                            }
-                        )
-                    )
-                ]
+                                identity: identity_address,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 
@@ -745,7 +747,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
         salt.serialize(ref serialized_message);
 
         let management_keys = array![
-            poseidon_hash_span(array![setup.accounts.bob_account.contract_address.into()].span())
+            poseidon_hash_span(array![setup.accounts.bob_account.contract_address.into()].span()),
         ];
         management_keys.serialize(ref serialized_message);
         let signature_expiry: u64 = Zero::zero();
@@ -768,7 +770,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
                 salt,
                 management_keys,
                 signature_expiry,
-                Signature { r, s, y_parity }
+                Signature { r, s, y_parity },
             );
 
         let identity_address = setup
@@ -776,29 +778,29 @@ pub mod deploy_identity_with_salt_and_management_keys {
             .get_identity(setup.accounts.alice_account.contract_address);
         assert!(
             identity_address == identity_address_gateway,
-            "returned and stored identity_address does not match"
+            "returned and stored identity_address does not match",
         );
         let identity_dispatcher = IdentityABIDispatcher { contract_address: identity_address };
         assert!(
             !identity_dispatcher
                 .key_has_purpose(
                     poseidon_hash_span(
-                        array![setup.accounts.alice_account.contract_address.into()].span()
+                        array![setup.accounts.alice_account.contract_address.into()].span(),
                     ),
-                    1
+                    1,
                 ),
-            "key havent registered in deployment"
+            "key havent registered in deployment",
         );
 
         assert!(
             identity_dispatcher
                 .key_has_purpose(
                     poseidon_hash_span(
-                        array![setup.accounts.bob_account.contract_address.into()].span()
+                        array![setup.accounts.bob_account.contract_address.into()].span(),
                     ),
-                    1
+                    1,
                 ),
-            "key havent registered in deployment"
+            "key havent registered in deployment",
         );
 
         spy
@@ -807,25 +809,25 @@ pub mod deploy_identity_with_salt_and_management_keys {
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::Deployed(
-                            IdFactory::Deployed { deployed_address: identity_address }
-                        )
+                            IdFactory::Deployed { deployed_address: identity_address },
+                        ),
                     ),
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::WalletLinked(
                             IdFactory::WalletLinked {
                                 wallet: setup.accounts.alice_account.contract_address,
-                                identity: identity_address
-                            }
-                        )
-                    )
-                ]
+                                identity: identity_address,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 
     #[test]
     #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested with a signature revoked."
+        expected: "A requested ONCHAINID deployment was requested with a signature revoked.",
     )]
     fn test_should_panic_when_signature_is_valid_but_revoked() {
         let factory_setup = setup_factory();
@@ -839,7 +841,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
         salt.serialize(ref serialized_message);
 
         let management_keys = array![
-            poseidon_hash_span(array![setup.accounts.bob_account.contract_address.into()].span())
+            poseidon_hash_span(array![setup.accounts.bob_account.contract_address.into()].span()),
         ];
         management_keys.serialize(ref serialized_message);
         let signature_expiry: u64 = starknet::get_block_timestamp() + super::YEAR;
@@ -856,7 +858,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
         let signature = Signature { r, s, y_parity };
 
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.revoke_signature(signature);
         stop_cheat_caller_address(setup.gateway.contract_address);
@@ -868,13 +870,13 @@ pub mod deploy_identity_with_salt_and_management_keys {
                 salt,
                 management_keys,
                 signature_expiry,
-                signature
+                signature,
             );
     }
 
     #[test]
     #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested with a signature that expired."
+        expected: "A requested ONCHAINID deployment was requested with a signature that expired.",
     )]
     fn test_should_panic_when_signature_is_valid_but_expired() {
         let factory_setup = setup_factory();
@@ -888,7 +890,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
         salt.serialize(ref serialized_message);
 
         let management_keys = array![
-            poseidon_hash_span(array![setup.accounts.bob_account.contract_address.into()].span())
+            poseidon_hash_span(array![setup.accounts.bob_account.contract_address.into()].span()),
         ];
         management_keys.serialize(ref serialized_message);
         let signature_expiry: u64 = starknet::get_block_timestamp() + super::YEAR;
@@ -910,7 +912,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
                 salt,
                 management_keys,
                 signature_expiry,
-                Signature { r, s, y_parity }
+                Signature { r, s, y_parity },
             );
         stop_cheat_block_timestamp_global();
     }
@@ -920,17 +922,17 @@ pub mod deploy_identity_for_wallet {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::factory::{
-        id_factory::IdFactory, iid_factory::IIdFactoryDispatcherTrait
+        id_factory::IdFactory, iid_factory::IIdFactoryDispatcherTrait,
     };
     use onchain_id_starknet::gateway::gateway::IGatewayDispatcherTrait;
     use onchain_id_starknet::interface::iidentity::{
-        IdentityABIDispatcher, IdentityABIDispatcherTrait
+        IdentityABIDispatcher, IdentityABIDispatcherTrait,
     };
 
     use snforge_std::{
-        spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
-    use super::{setup_gateway, setup_factory};
+    use super::{setup_factory, setup_gateway};
 
     #[test]
     #[should_panic(expected: "A required parameter was set to the Zero address.")]
@@ -951,7 +953,7 @@ pub mod deploy_identity_for_wallet {
         let mut spy = spy_events();
 
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.bob_account.contract_address
+            setup.gateway.contract_address, setup.accounts.bob_account.contract_address,
         );
         let identity_address_gateway = setup
             .gateway
@@ -963,7 +965,7 @@ pub mod deploy_identity_for_wallet {
             .get_identity(setup.accounts.alice_account.contract_address);
         assert!(
             identity_address == identity_address_gateway,
-            "returned and stored identity_address does not match"
+            "returned and stored identity_address does not match",
         );
         let identity_dispatcher = IdentityABIDispatcher { contract_address: identity_address };
 
@@ -971,11 +973,11 @@ pub mod deploy_identity_for_wallet {
             identity_dispatcher
                 .key_has_purpose(
                     poseidon_hash_span(
-                        array![setup.accounts.alice_account.contract_address.into()].span()
+                        array![setup.accounts.alice_account.contract_address.into()].span(),
                     ),
-                    1
+                    1,
                 ),
-            "key havent registered in deployment"
+            "key havent registered in deployment",
         );
 
         spy
@@ -984,19 +986,19 @@ pub mod deploy_identity_for_wallet {
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::Deployed(
-                            IdFactory::Deployed { deployed_address: identity_address }
-                        )
+                            IdFactory::Deployed { deployed_address: identity_address },
+                        ),
                     ),
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::WalletLinked(
                             IdFactory::WalletLinked {
                                 wallet: setup.accounts.alice_account.contract_address,
-                                identity: identity_address
-                            }
-                        )
-                    )
-                ]
+                                identity: identity_address,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 
@@ -1009,7 +1011,7 @@ pub mod deploy_identity_for_wallet {
         let mut spy = spy_events();
 
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.alice_account.contract_address
+            setup.gateway.contract_address, setup.accounts.alice_account.contract_address,
         );
         let identity_address_gateway = setup
             .gateway
@@ -1021,7 +1023,7 @@ pub mod deploy_identity_for_wallet {
             .get_identity(setup.accounts.alice_account.contract_address);
         assert!(
             identity_address == identity_address_gateway,
-            "returned and stored identity_address does not match"
+            "returned and stored identity_address does not match",
         );
         let identity_dispatcher = IdentityABIDispatcher { contract_address: identity_address };
 
@@ -1029,11 +1031,11 @@ pub mod deploy_identity_for_wallet {
             identity_dispatcher
                 .key_has_purpose(
                     poseidon_hash_span(
-                        array![setup.accounts.alice_account.contract_address.into()].span()
+                        array![setup.accounts.alice_account.contract_address.into()].span(),
                     ),
-                    1
+                    1,
                 ),
-            "key havent registered in deployment"
+            "key havent registered in deployment",
         );
 
         spy
@@ -1042,19 +1044,19 @@ pub mod deploy_identity_for_wallet {
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::Deployed(
-                            IdFactory::Deployed { deployed_address: identity_address }
-                        )
+                            IdFactory::Deployed { deployed_address: identity_address },
+                        ),
                     ),
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::WalletLinked(
                             IdFactory::WalletLinked {
                                 wallet: setup.accounts.alice_account.contract_address,
-                                identity: identity_address
-                            }
-                        )
-                    )
-                ]
+                                identity: identity_address,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 
@@ -1074,13 +1076,13 @@ pub mod deploy_identity_for_wallet {
 pub mod transfer_factory_ownership {
     use onchain_id_starknet::gateway::gateway::IGatewayDispatcherTrait;
     use openzeppelin_access::ownable::{
-        OwnableComponent, interface::{IOwnableDispatcher, IOwnableDispatcherTrait}
+        OwnableComponent, interface::{IOwnableDispatcher, IOwnableDispatcherTrait},
     };
 
     use snforge_std::{
-        spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
-    use super::{setup_gateway, setup_factory};
+    use super::{setup_factory, setup_gateway};
 
     #[test]
     fn test_should_transfer_ownership_of_the_factory() {
@@ -1091,21 +1093,21 @@ pub mod transfer_factory_ownership {
         let mut spy = spy_events();
 
         let factory_ownable_dispatcher = IOwnableDispatcher {
-            contract_address: setup.identity_factory.contract_address
+            contract_address: setup.identity_factory.contract_address,
         };
         assert!(
             factory_ownable_dispatcher.owner() == setup.gateway.contract_address,
-            "Gateway is not the owner of the IdFactory"
+            "Gateway is not the owner of the IdFactory",
         );
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.transfer_factory_ownership(setup.accounts.bob_account.contract_address);
         stop_cheat_caller_address(setup.gateway.contract_address);
 
         assert!(
             factory_ownable_dispatcher.owner() == setup.accounts.bob_account.contract_address,
-            "Ownership of the IdFactory is not transferred"
+            "Ownership of the IdFactory is not transferred",
         );
 
         spy
@@ -1116,11 +1118,11 @@ pub mod transfer_factory_ownership {
                         OwnableComponent::Event::OwnershipTransferred(
                             OwnableComponent::OwnershipTransferred {
                                 previous_owner: setup.gateway.contract_address,
-                                new_owner: setup.accounts.bob_account.contract_address
-                            }
-                        )
-                    )
-                ]
+                                new_owner: setup.accounts.bob_account.contract_address,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 
@@ -1137,12 +1139,13 @@ pub mod transfer_factory_ownership {
 
 pub mod revoke_signature {
     use core::poseidon::poseidon_hash_span;
-    use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Gateway, Signature};
+    use onchain_id_starknet::gateway::gateway::{Gateway, IGatewayDispatcherTrait, Signature};
     use snforge_std::{
-        spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address,
-        signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl},},
+        EventSpyAssertionsTrait,
+        signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl}},
+        spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
-    use super::{setup_gateway, setup_factory};
+    use super::{setup_factory, setup_gateway};
 
     #[test]
     #[should_panic(expected: 'Caller is not the owner')]
@@ -1197,7 +1200,7 @@ pub mod revoke_signature {
 
         let signature = Signature { r, s, y_parity };
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.revoke_signature(signature);
         // revoking second time should fail
@@ -1232,7 +1235,7 @@ pub mod revoke_signature {
 
         assert!(!setup.gateway.is_revoked_signature(signature), "signature already revoked");
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.revoke_signature(signature);
         stop_cheat_caller_address(setup.gateway.contract_address);
@@ -1244,21 +1247,22 @@ pub mod revoke_signature {
                 @array![
                     (
                         setup.gateway.contract_address,
-                        Gateway::Event::SignatureRevoked(Gateway::SignatureRevoked { signature })
-                    )
-                ]
+                        Gateway::Event::SignatureRevoked(Gateway::SignatureRevoked { signature }),
+                    ),
+                ],
             );
     }
 }
 
 pub mod approve_signature {
     use core::poseidon::poseidon_hash_span;
-    use onchain_id_starknet::gateway::gateway::{IGatewayDispatcherTrait, Gateway, Signature};
+    use onchain_id_starknet::gateway::gateway::{Gateway, IGatewayDispatcherTrait, Signature};
     use snforge_std::{
-        spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address,
-        signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl},},
+        EventSpyAssertionsTrait,
+        signature::{SignerTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl}},
+        spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
-    use super::{setup_gateway, setup_factory};
+    use super::{setup_factory, setup_gateway};
 
     #[test]
     #[should_panic(expected: 'Caller is not the owner')]
@@ -1285,7 +1289,7 @@ pub mod approve_signature {
 
         let signature = Signature { r, s, y_parity };
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.revoke_signature(signature);
         stop_cheat_caller_address(setup.gateway.contract_address);
@@ -1318,7 +1322,7 @@ pub mod approve_signature {
 
         let signature = Signature { r, s, y_parity };
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.approve_signature(signature);
         stop_cheat_caller_address(setup.gateway.contract_address);
@@ -1348,7 +1352,7 @@ pub mod approve_signature {
 
         let signature = Signature { r, s, y_parity };
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.revoke_signature(signature);
         assert!(setup.gateway.is_revoked_signature(signature), "signature not revoked");
@@ -1365,9 +1369,9 @@ pub mod approve_signature {
                 @array![
                     (
                         setup.gateway.contract_address,
-                        Gateway::Event::SignatureApproved(Gateway::SignatureApproved { signature })
-                    )
-                ]
+                        Gateway::Event::SignatureApproved(Gateway::SignatureApproved { signature }),
+                    ),
+                ],
             );
     }
 }
@@ -1375,13 +1379,13 @@ pub mod approve_signature {
 pub mod call_factory {
     use core::num::traits::Zero;
     use onchain_id_starknet::factory::{
-        id_factory::IdFactory, iid_factory::IIdFactoryDispatcherTrait
+        id_factory::IdFactory, iid_factory::IIdFactoryDispatcherTrait,
     };
     use onchain_id_starknet::gateway::gateway::IGatewayDispatcherTrait;
     use snforge_std::{
-        spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address,
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
-    use super::{setup_gateway, setup_factory};
+    use super::{setup_factory, setup_gateway};
     #[test]
     #[should_panic(expected: 'Caller is not the owner')]
     fn test_should_panic_when_caller_is_not_owner() {
@@ -1399,7 +1403,7 @@ pub mod call_factory {
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.gateway.call_factory(selector!("add_token_factory"), array![Zero::zero()].span());
         stop_cheat_caller_address(setup.gateway.contract_address);
@@ -1413,19 +1417,19 @@ pub mod call_factory {
 
         let mut spy = spy_events();
         start_cheat_caller_address(
-            setup.gateway.contract_address, setup.accounts.owner_account.contract_address
+            setup.gateway.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup
             .gateway
             .call_factory(
                 selector!("add_token_factory"),
-                array![setup.accounts.bob_account.contract_address.into()].span()
+                array![setup.accounts.bob_account.contract_address.into()].span(),
             );
         stop_cheat_caller_address(setup.gateway.contract_address);
 
         assert!(
             setup.identity_factory.is_token_factory(setup.accounts.bob_account.contract_address),
-            "Not added as token factory"
+            "Not added as token factory",
         );
 
         spy
@@ -1435,11 +1439,11 @@ pub mod call_factory {
                         setup.identity_factory.contract_address,
                         IdFactory::Event::TokenFactoryAdded(
                             IdFactory::TokenFactoryAdded {
-                                factory: setup.accounts.bob_account.contract_address
-                            }
-                        )
-                    )
-                ]
+                                factory: setup.accounts.bob_account.contract_address,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 }

@@ -2,8 +2,8 @@
 #[starknet::contract]
 mod StorageArrayHolder {
     use onchain_id_starknet::storage::storage::{
-        MutableStorageArrayTrait, StorageArrayFelt252, StorageArrayContractAddress,
-        MutableContractAddressVecToContractAddressArray, MutableFelt252VecToFelt252Array
+        MutableContractAddressVecToContractAddressArray, MutableFelt252VecToFelt252Array,
+        MutableStorageArrayTrait, StorageArrayContractAddress, StorageArrayFelt252,
     };
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -11,7 +11,7 @@ mod StorageArrayHolder {
     #[storage]
     struct Storage {
         vec_felt252: StorageArrayFelt252,
-        vec_contract_address: StorageArrayContractAddress
+        vec_contract_address: StorageArrayContractAddress,
     }
 
     #[external(v0)]
@@ -61,7 +61,7 @@ mod StorageArrayHolder {
 
     #[external(v0)]
     pub fn vec_contract_address_into_array_contract_address(
-        ref self: ContractState
+        ref self: ContractState,
     ) -> Array<ContractAddress> {
         self.vec_contract_address.deref().into()
     }
@@ -105,37 +105,37 @@ fn test_append_and_at_vec_felt252() {
 #[test]
 fn test_append_and_at_vec_contract_address() {
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'first_address'>())
+        serialized(starknet::contract_address_const::<'first_address'>()),
     );
     assert!(
         starknet::contract_address_const::<
-            'first_address'
-        >() == deserialized(StorageArrayHolder::__external::at_vec_contract_address(serialized(0)))
+            'first_address',
+        >() == deserialized(StorageArrayHolder::__external::at_vec_contract_address(serialized(0))),
     );
     assert!(
-        1 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(())))
+        1 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(()))),
     );
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'second_address'>())
+        serialized(starknet::contract_address_const::<'second_address'>()),
     );
     assert!(
         starknet::contract_address_const::<
-            'second_address'
-        >() == deserialized(StorageArrayHolder::__external::at_vec_contract_address(serialized(1)))
+            'second_address',
+        >() == deserialized(StorageArrayHolder::__external::at_vec_contract_address(serialized(1))),
     );
     assert!(
-        2 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(())))
+        2 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(()))),
     );
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'third_address'>())
+        serialized(starknet::contract_address_const::<'third_address'>()),
     );
     assert!(
         starknet::contract_address_const::<
-            'third_address'
-        >() == deserialized(StorageArrayHolder::__external::at_vec_contract_address(serialized(2)))
+            'third_address',
+        >() == deserialized(StorageArrayHolder::__external::at_vec_contract_address(serialized(2))),
     );
     assert!(
-        3 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(())))
+        3 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(()))),
     );
 }
 
@@ -146,32 +146,32 @@ fn test_vec_felt252_into_array() {
     StorageArrayHolder::__external::append_vec_felt252(serialized(3));
     assert!(
         deserialized(
-            StorageArrayHolder::__external::vec_felt252_into_array_felt252(serialized(()))
-        ) == array![1, 2, 3]
+            StorageArrayHolder::__external::vec_felt252_into_array_felt252(serialized(())),
+        ) == array![1, 2, 3],
     );
 }
 
 #[test]
 fn test_vec_contract_address_into_array() {
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'first_address'>())
+        serialized(starknet::contract_address_const::<'first_address'>()),
     );
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'second_address'>())
+        serialized(starknet::contract_address_const::<'second_address'>()),
     );
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'third_address'>())
+        serialized(starknet::contract_address_const::<'third_address'>()),
     );
     assert!(
         deserialized(
             StorageArrayHolder::__external::vec_contract_address_into_array_contract_address(
-                serialized(())
-            )
+                serialized(()),
+            ),
         ) == array![
             starknet::contract_address_const::<'first_address'>(),
             starknet::contract_address_const::<'second_address'>(),
-            starknet::contract_address_const::<'third_address'>()
-        ]
+            starknet::contract_address_const::<'third_address'>(),
+        ],
     );
 }
 
@@ -183,75 +183,75 @@ fn test_delete_from_vec_felt252() {
     StorageArrayHolder::__external::append_vec_felt252(serialized(3));
     assert!(
         deserialized(
-            StorageArrayHolder::__external::vec_felt252_into_array_felt252(serialized(()))
-        ) == array![1, 2, 3]
+            StorageArrayHolder::__external::vec_felt252_into_array_felt252(serialized(())),
+        ) == array![1, 2, 3],
     );
     assert!(3 == deserialized(StorageArrayHolder::__external::len_vec_felt252(serialized(()))));
     StorageArrayHolder::__external::delete_from_vec_felt252(serialized(0));
     assert!(2 == deserialized(StorageArrayHolder::__external::len_vec_felt252(serialized(()))));
     assert!(
         deserialized(
-            StorageArrayHolder::__external::vec_felt252_into_array_felt252(serialized(()))
-        ) == array![3, 2]
+            StorageArrayHolder::__external::vec_felt252_into_array_felt252(serialized(())),
+        ) == array![3, 2],
     );
     StorageArrayHolder::__external::delete_from_vec_felt252(serialized(1));
     assert!(1 == deserialized(StorageArrayHolder::__external::len_vec_felt252(serialized(()))));
     assert!(
         deserialized(
-            StorageArrayHolder::__external::vec_felt252_into_array_felt252(serialized(()))
-        ) == array![3]
+            StorageArrayHolder::__external::vec_felt252_into_array_felt252(serialized(())),
+        ) == array![3],
     );
 }
 
 #[test]
 fn test_delet_from_vec_contract_address() {
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'first_address'>())
+        serialized(starknet::contract_address_const::<'first_address'>()),
     );
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'second_address'>())
+        serialized(starknet::contract_address_const::<'second_address'>()),
     );
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'third_address'>())
+        serialized(starknet::contract_address_const::<'third_address'>()),
     );
     assert!(
         deserialized(
             StorageArrayHolder::__external::vec_contract_address_into_array_contract_address(
-                serialized(())
-            )
+                serialized(()),
+            ),
         ) == array![
             starknet::contract_address_const::<'first_address'>(),
             starknet::contract_address_const::<'second_address'>(),
-            starknet::contract_address_const::<'third_address'>()
-        ]
+            starknet::contract_address_const::<'third_address'>(),
+        ],
     );
     assert!(
-        3 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(())))
+        3 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(()))),
     );
     StorageArrayHolder::__external::delete_from_vec_contract_address(serialized(0));
     assert!(
-        2 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(())))
+        2 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(()))),
     );
     assert!(
         deserialized(
             StorageArrayHolder::__external::vec_contract_address_into_array_contract_address(
-                serialized(())
-            )
+                serialized(()),
+            ),
         ) == array![
             starknet::contract_address_const::<'third_address'>(),
             starknet::contract_address_const::<'second_address'>(),
-        ]
+        ],
     );
     StorageArrayHolder::__external::delete_from_vec_contract_address(serialized(1));
     assert!(
-        1 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(())))
+        1 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(()))),
     );
     assert!(
         deserialized(
             StorageArrayHolder::__external::vec_contract_address_into_array_contract_address(
-                serialized(())
-            )
-        ) == array![starknet::contract_address_const::<'third_address'>()]
+                serialized(()),
+            ),
+        ) == array![starknet::contract_address_const::<'third_address'>()],
     );
 }
 
@@ -262,8 +262,8 @@ fn test_clear_vec_felt252() {
     StorageArrayHolder::__external::append_vec_felt252(serialized(3));
     assert!(
         deserialized(
-            StorageArrayHolder::__external::vec_felt252_into_array_felt252(serialized(()))
-        ) == array![1, 2, 3]
+            StorageArrayHolder::__external::vec_felt252_into_array_felt252(serialized(())),
+        ) == array![1, 2, 3],
     );
     assert!(3 == deserialized(StorageArrayHolder::__external::len_vec_felt252(serialized(()))));
     StorageArrayHolder::__external::clear_vec_felt252(serialized(()));
@@ -273,31 +273,31 @@ fn test_clear_vec_felt252() {
 #[test]
 fn test_clear_vec_contract_address() {
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'first_address'>())
+        serialized(starknet::contract_address_const::<'first_address'>()),
     );
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'second_address'>())
+        serialized(starknet::contract_address_const::<'second_address'>()),
     );
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'third_address'>())
+        serialized(starknet::contract_address_const::<'third_address'>()),
     );
     assert!(
         deserialized(
             StorageArrayHolder::__external::vec_contract_address_into_array_contract_address(
-                serialized(())
-            )
+                serialized(()),
+            ),
         ) == array![
             starknet::contract_address_const::<'first_address'>(),
             starknet::contract_address_const::<'second_address'>(),
-            starknet::contract_address_const::<'third_address'>()
-        ]
+            starknet::contract_address_const::<'third_address'>(),
+        ],
     );
     assert!(
-        3 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(())))
+        3 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(()))),
     );
     StorageArrayHolder::__external::clear_vec_contract_address(serialized(()));
     assert!(
-        0 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(())))
+        0 == deserialized(StorageArrayHolder::__external::len_vec_contract_address(serialized(()))),
     );
 }
 
@@ -313,10 +313,10 @@ fn test_should_panic_when_vec_felt252_when_access_out_of_bounds_index() {
 #[should_panic(expected: "Index out of bounds")]
 fn test_should_panic_when_vec_contract_address_when_access_out_of_bounds_index() {
     StorageArrayHolder::__external::append_vec_contract_address(
-        serialized(starknet::contract_address_const::<'first_address'>())
+        serialized(starknet::contract_address_const::<'first_address'>()),
     );
     let len = deserialized(
-        StorageArrayHolder::__external::len_vec_contract_address(serialized(()))
+        StorageArrayHolder::__external::len_vec_contract_address(serialized(())),
     );
     StorageArrayHolder::__external::at_vec_contract_address(serialized(len + 1));
 }

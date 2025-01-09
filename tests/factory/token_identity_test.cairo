@@ -1,10 +1,10 @@
 pub mod add_remove_token_factory {
     use core::num::traits::Zero;
+    use crate::common::setup_factory;
     use onchain_id_starknet::factory::id_factory::IdFactory;
     use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
-    use crate::common::setup_factory;
     use snforge_std::{
-        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
 
     #[test]
@@ -12,7 +12,7 @@ pub mod add_remove_token_factory {
     fn test_should_panic_when_add_when_caller_not_owner() {
         let setup = setup_factory();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.alice_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.alice_account.contract_address,
         );
         setup.identity_factory.add_token_factory(setup.accounts.alice_account.contract_address);
         stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -23,7 +23,7 @@ pub mod add_remove_token_factory {
     fn test_should_panic_when_remove_when_caller_not_owner() {
         let setup = setup_factory();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.alice_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.alice_account.contract_address,
         );
         setup.identity_factory.remove_token_factory(setup.accounts.alice_account.contract_address);
         stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -34,7 +34,7 @@ pub mod add_remove_token_factory {
     fn test_should_panic_when_add_when_token_factory_is_zero() {
         let setup = setup_factory();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.identity_factory.add_token_factory(Zero::zero());
         stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -45,7 +45,7 @@ pub mod add_remove_token_factory {
     fn test_should_panic_when_remove_when_token_factory_is_zero() {
         let setup = setup_factory();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.identity_factory.remove_token_factory(Zero::zero());
         stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -56,7 +56,7 @@ pub mod add_remove_token_factory {
     fn test_should_panic_when_add_when_address_already_token_factory() {
         let setup = setup_factory();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.identity_factory.add_token_factory(setup.accounts.alice_account.contract_address);
         /// adding twice should panic
@@ -69,7 +69,7 @@ pub mod add_remove_token_factory {
     fn test_should_panic_when_remove_when_address_is_not_token_factory() {
         let setup = setup_factory();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.identity_factory.remove_token_factory(setup.accounts.bob_account.contract_address);
         stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -79,7 +79,7 @@ pub mod add_remove_token_factory {
     fn test_should_add_token_factory() {
         let setup = setup_factory();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         let mut spy = spy_events();
 
@@ -87,7 +87,7 @@ pub mod add_remove_token_factory {
         stop_cheat_caller_address(setup.identity_factory.contract_address);
         assert!(
             setup.identity_factory.is_token_factory(setup.accounts.alice_account.contract_address),
-            "Alice is not added as token factory"
+            "Alice is not added as token factory",
         );
 
         spy
@@ -97,11 +97,11 @@ pub mod add_remove_token_factory {
                         setup.identity_factory.contract_address,
                         IdFactory::Event::TokenFactoryAdded(
                             IdFactory::TokenFactoryAdded {
-                                factory: setup.accounts.alice_account.contract_address
-                            }
-                        )
-                    )
-                ]
+                                factory: setup.accounts.alice_account.contract_address,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 
@@ -109,13 +109,13 @@ pub mod add_remove_token_factory {
     fn test_should_remove_token_factory() {
         let setup = setup_factory();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
 
         setup.identity_factory.add_token_factory(setup.accounts.alice_account.contract_address);
         assert!(
             setup.identity_factory.is_token_factory(setup.accounts.alice_account.contract_address),
-            "Alice is not added as token factory"
+            "Alice is not added as token factory",
         );
 
         let mut spy = spy_events();
@@ -124,7 +124,7 @@ pub mod add_remove_token_factory {
 
         assert!(
             !setup.identity_factory.is_token_factory(setup.accounts.alice_account.contract_address),
-            "Alice is still a token factory"
+            "Alice is still a token factory",
         );
         spy
             .assert_emitted(
@@ -133,11 +133,11 @@ pub mod add_remove_token_factory {
                         setup.identity_factory.contract_address,
                         IdFactory::Event::TokenFactoryRemoved(
                             IdFactory::TokenFactoryRemoved {
-                                factory: setup.accounts.alice_account.contract_address
-                            }
-                        )
-                    )
-                ]
+                                factory: setup.accounts.alice_account.contract_address,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 }
@@ -145,11 +145,11 @@ pub mod add_remove_token_factory {
 pub mod create_token_identity {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
+    use crate::common::setup_factory;
     use onchain_id_starknet::factory::id_factory::IdFactory;
     use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
-    use crate::common::setup_factory;
     use snforge_std::{
-        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
 
     #[test]
@@ -170,12 +170,12 @@ pub mod create_token_identity {
         let setup = setup_factory();
 
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup
             .identity_factory
             .create_token_identity(
-                Zero::zero(), setup.accounts.alice_account.contract_address, 'test_salt'
+                Zero::zero(), setup.accounts.alice_account.contract_address, 'test_salt',
             );
         stop_cheat_caller_address(setup.identity_factory.contract_address);
     }
@@ -186,12 +186,12 @@ pub mod create_token_identity {
         let setup = setup_factory();
 
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup
             .identity_factory
             .create_token_identity(
-                setup.accounts.alice_account.contract_address, Zero::zero(), 'test_salt'
+                setup.accounts.alice_account.contract_address, Zero::zero(), 'test_salt',
             );
         stop_cheat_caller_address(setup.identity_factory.contract_address);
     }
@@ -202,7 +202,7 @@ pub mod create_token_identity {
         let setup = setup_factory();
         let alice_account_address = setup.accounts.alice_account.contract_address;
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup
             .identity_factory
@@ -217,12 +217,12 @@ pub mod create_token_identity {
         let mut spy = spy_events();
 
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         let deployed_identity = setup
             .identity_factory
             .create_token_identity(
-                alice_account_address, setup.accounts.bob_account.contract_address, 'salt1'
+                alice_account_address, setup.accounts.bob_account.contract_address, 'salt1',
             );
         stop_cheat_caller_address(setup.identity_factory.contract_address);
         let token_identity_address = setup.identity_factory.get_identity(alice_account_address);
@@ -233,7 +233,7 @@ pub mod create_token_identity {
             setup
                 .identity_factory
                 .is_salt_taken(poseidon_hash_span(array!['Token', 'salt1'].span())),
-            "salt not taken"
+            "salt not taken",
         );
         spy
             .assert_emitted(
@@ -242,17 +242,17 @@ pub mod create_token_identity {
                         setup.identity_factory.contract_address,
                         IdFactory::Event::TokenLinked(
                             IdFactory::TokenLinked {
-                                token: token, identity: token_identity_address
-                            }
-                        )
+                                token: token, identity: token_identity_address,
+                            },
+                        ),
                     ),
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::Deployed(
-                            IdFactory::Deployed { deployed_address: token_identity_address }
-                        )
-                    )
-                ]
+                            IdFactory::Deployed { deployed_address: token_identity_address },
+                        ),
+                    ),
+                ],
             );
     }
 
@@ -262,18 +262,18 @@ pub mod create_token_identity {
         let setup = setup_factory();
         let alice_account_address = setup.accounts.alice_account.contract_address;
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup
             .identity_factory
             .create_token_identity(
-                alice_account_address, setup.accounts.bob_account.contract_address, 'salt1'
+                alice_account_address, setup.accounts.bob_account.contract_address, 'salt1',
             );
         // using same nonce twice should panic
         setup
             .identity_factory
             .create_token_identity(
-                alice_account_address, setup.accounts.bob_account.contract_address, 'salt1'
+                alice_account_address, setup.accounts.bob_account.contract_address, 'salt1',
             );
         stop_cheat_caller_address(setup.identity_factory.contract_address);
     }
@@ -284,18 +284,18 @@ pub mod create_token_identity {
         let setup = setup_factory();
         let alice_account_address = setup.accounts.alice_account.contract_address;
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup
             .identity_factory
             .create_token_identity(
-                alice_account_address, setup.accounts.bob_account.contract_address, 'salt1'
+                alice_account_address, setup.accounts.bob_account.contract_address, 'salt1',
             );
         // already linked should panic
         setup
             .identity_factory
             .create_token_identity(
-                alice_account_address, setup.accounts.bob_account.contract_address, 'salt2'
+                alice_account_address, setup.accounts.bob_account.contract_address, 'salt2',
             );
         stop_cheat_caller_address(setup.identity_factory.contract_address);
     }

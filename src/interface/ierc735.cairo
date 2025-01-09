@@ -60,13 +60,13 @@ pub trait IERC735<TContractState> {
         issuer: ContractAddress,
         signature: Signature,
         data: ByteArray,
-        uri: ByteArray
+        uri: ByteArray,
     ) -> felt252;
     fn remove_claim(ref self: TContractState, claim_id: felt252) -> bool;
     fn get_claim(
-        self: @TContractState, claim_id: felt252
+        self: @TContractState, claim_id: felt252,
     ) -> (
-        felt252, felt252, ContractAddress, Signature, ByteArray, ByteArray
+        felt252, felt252, ContractAddress, Signature, ByteArray, ByteArray,
     ); // NOTE: turn this into a struct?
     fn get_claim_ids_by_topics(self: @TContractState, topic: felt252) -> Array<felt252>;
 }

@@ -3,19 +3,19 @@ use starknet::ContractAddress;
 #[starknet::interface]
 pub trait IIdFactory<TContractState> {
     fn create_identity(
-        ref self: TContractState, wallet: ContractAddress, salt: felt252
+        ref self: TContractState, wallet: ContractAddress, salt: felt252,
     ) -> ContractAddress;
     fn create_identity_with_management_keys(
         ref self: TContractState,
         wallet: ContractAddress,
         salt: felt252,
-        management_keys: Array<felt252>
+        management_keys: Array<felt252>,
     ) -> ContractAddress;
     fn create_token_identity(
         ref self: TContractState,
         token: ContractAddress,
         token_owner: ContractAddress,
-        salt: felt252
+        salt: felt252,
     ) -> ContractAddress;
     fn link_wallet(ref self: TContractState, new_wallet: ContractAddress);
     fn unlink_wallet(ref self: TContractState, old_wallet: ContractAddress);

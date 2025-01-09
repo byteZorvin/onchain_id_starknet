@@ -16,7 +16,7 @@ pub mod VersionComponent {
 
     #[embeddable_as(VersionImpl)]
     pub impl Version<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of super::IVersion<ComponentState<TContractState>> {
         fn version(self: @ComponentState<TContractState>) -> felt252 {
             VERSION

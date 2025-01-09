@@ -2,11 +2,11 @@ use core::num::traits::Zero;
 use core::poseidon::poseidon_hash_span;
 use onchain_id_starknet::storage::storage::StorageArrayFelt252;
 use starknet::ContractAddress;
-use starknet::storage::{StoragePointerWriteAccess, StoragePath, Mutable,};
+use starknet::storage::{Mutable, StoragePath, StoragePointerWriteAccess};
 use starknet::storage_access::{
-    StorageBaseAddress, storage_address_from_base, storage_base_address_from_felt252
+    StorageBaseAddress, storage_address_from_base, storage_base_address_from_felt252,
 };
-use starknet::{SyscallResult, SyscallResultTrait, Store,};
+use starknet::{Store, SyscallResult, SyscallResultTrait};
 
 // TODO: Go over comments
 #[starknet::storage_node]
@@ -17,7 +17,7 @@ pub struct Key {
     /// RSA, etc.
     pub key_type: felt252,
     /// Hash of the public key or ContractAddress
-    pub key: felt252
+    pub key: felt252,
 }
 
 #[starknet::storage_node]
@@ -31,7 +31,7 @@ pub struct Execution {
     /// The bool that indicates if execution is approved or not.
     pub approved: bool,
     /// The bool that indicates if execution is already executed or not.
-    pub executed: bool
+    pub executed: bool,
 }
 // TODO: Go over comments
 #[starknet::storage_node]
@@ -56,7 +56,7 @@ pub struct Claim {
     /// data based on the claim scheme.
     pub data: ByteArray,
     /// The location of the claim, this can be HTTP links, swarm hashes, IPFS hashes, and such.
-    pub uri: ByteArray
+    pub uri: ByteArray,
 }
 // NOTE: Implement StoragePacking if this type of sig can comply with compact signatures
 
@@ -80,14 +80,14 @@ pub fn delete_claim(self: StoragePath<Mutable<Claim>>) {
 pub struct StarkSignature {
     pub r: felt252,
     pub s: felt252,
-    pub public_key: felt252
+    pub public_key: felt252,
 }
 
 #[derive(Copy, Drop, Serde, Hash, Default, starknet::Store)]
 pub struct EthSignature {
     pub r: u256,
     pub s: u256,
-    pub public_key: starknet::EthAddress
+    pub public_key: starknet::EthAddress,
 }
 
 impl DefaultEthAddress of Default<starknet::EthAddress> {
@@ -131,26 +131,26 @@ impl StoreSignature of starknet::Store<Signature> {
         let signature = match kind {
             0 => Signature::StarkSignature(
                 Store::<
-                    StarkSignature
+                    StarkSignature,
                 >::read(
                     address_domain,
                     storage_base_address_from_felt252(
-                        storage_address_from_base(base).into() + 1_felt252
-                    )
-                )?
+                        storage_address_from_base(base).into() + 1_felt252,
+                    ),
+                )?,
             ),
             1 => Signature::EthSignature(
                 Store::<
-                    EthSignature
+                    EthSignature,
                 >::read(
                     address_domain,
                     storage_base_address_from_felt252(
-                        storage_address_from_base(base).into() + 1_felt252
-                    )
-                )?
+                        storage_address_from_base(base).into() + 1_felt252,
+                    ),
+                )?,
             ),
             //2 => Signature::SmartContract,
-            _ => panic!("Invalid Signature Type")
+            _ => panic!("Invalid Signature Type"),
         };
 
         SyscallResult::Ok(signature)
@@ -160,22 +160,22 @@ impl StoreSignature of starknet::Store<Signature> {
         Store::<u8>::write(address_domain, base, value.into()).unwrap_syscall();
         match value {
             Signature::StarkSignature(signature) => Store::<
-                StarkSignature
+                StarkSignature,
             >::write(
                 address_domain,
                 storage_base_address_from_felt252(
-                    storage_address_from_base(base).into() + 1_felt252
+                    storage_address_from_base(base).into() + 1_felt252,
                 ),
-                signature
+                signature,
             )?,
             Signature::EthSignature(signature) => Store::<
-                EthSignature
+                EthSignature,
             >::write(
                 address_domain,
                 storage_base_address_from_felt252(
-                    storage_address_from_base(base).into() + 1_felt252
+                    storage_address_from_base(base).into() + 1_felt252,
                 ),
-                signature
+                signature,
             )?,
             // no-op
         //Signature::SmartContract => {},
@@ -185,14 +185,14 @@ impl StoreSignature of starknet::Store<Signature> {
     /// Reads a value from storage from domain `address_domain` and base address `base` at offset
     /// `offset`.
     fn read_at_offset(
-        address_domain: u32, base: StorageBaseAddress, offset: u8
+        address_domain: u32, base: StorageBaseAddress, offset: u8,
     ) -> SyscallResult<Signature> {
         SyscallResult::Err(array![Err::NOT_IMPLEMENTED])
     }
     /// Writes a value to storage to domain `address_domain` and base address `base` at offset
     /// `offset`.
     fn write_at_offset(
-        address_domain: u32, base: StorageBaseAddress, offset: u8, value: Signature
+        address_domain: u32, base: StorageBaseAddress, offset: u8, value: Signature,
     ) -> SyscallResult<()> {
         SyscallResult::Err(array![Err::NOT_IMPLEMENTED])
     }
@@ -210,13 +210,13 @@ pub fn is_valid_signature(message_hash: felt252, signature: Signature) -> bool {
             starknet::eth_signature::is_eth_signature_valid(
                 message_hash.into(),
                 starknet::secp256_trait::Signature { r: sig.r, s: sig.s, y_parity: true },
-                sig.public_key
+                sig.public_key,
             )
                 .is_ok()
                 || starknet::eth_signature::is_eth_signature_valid(
                     message_hash.into(),
                     starknet::secp256_trait::Signature { r: sig.r, s: sig.s, y_parity: false },
-                    sig.public_key
+                    sig.public_key,
                 )
                     .is_ok()
         },
@@ -231,6 +231,6 @@ pub fn get_public_key_hash(signature: Signature) -> felt252 {
             let mut serialized_pub_key: Array<felt252> = array![];
             sig.public_key.serialize(ref serialized_pub_key);
             poseidon_hash_span(serialized_pub_key.span())
-        }
+        },
     }
 }

@@ -1,7 +1,8 @@
 use core::num::traits::Zero;
 use starknet::ContractAddress;
 use starknet::storage::{
-    StoragePath, StoragePointerReadAccess, StoragePointerWriteAccess, Mutable, Map, StoragePathEntry
+    Map, Mutable, StoragePath, StoragePathEntry, StoragePointerReadAccess,
+    StoragePointerWriteAccess,
 };
 
 pub trait StorageArrayTrait<T> {
@@ -26,13 +27,13 @@ pub trait MutableStorageArrayTrait<T> {
 #[starknet::storage_node]
 pub struct StorageArrayFelt252 {
     vec: Map<u64, felt252>,
-    len: u64
+    len: u64,
 }
 
 pub impl StorageArrayFelt252Impl of StorageArrayTrait<StoragePath<StorageArrayFelt252>> {
     type ElementType = felt252;
     fn get(
-        self: StoragePath<StorageArrayFelt252>, index: u64
+        self: StoragePath<StorageArrayFelt252>, index: u64,
     ) -> Option<StoragePath<Self::ElementType>> {
         let vec_len = self.len.read();
         if index < vec_len {
@@ -52,7 +53,7 @@ pub impl StorageArrayFelt252Impl of StorageArrayTrait<StoragePath<StorageArrayFe
 }
 
 pub impl MutableStorageArrayFelt252Impl of MutableStorageArrayTrait<
-    StoragePath<Mutable<StorageArrayFelt252>>
+    StoragePath<Mutable<StorageArrayFelt252>>,
 > {
     type ElementType = felt252;
     fn delete(self: StoragePath<Mutable<StorageArrayFelt252>>, index: u64) {
@@ -68,7 +69,7 @@ pub impl MutableStorageArrayFelt252Impl of MutableStorageArrayTrait<
     }
 
     fn append(
-        self: StoragePath<Mutable<StorageArrayFelt252>>
+        self: StoragePath<Mutable<StorageArrayFelt252>>,
     ) -> StoragePath<Mutable<Self::ElementType>> {
         let len = self.len.read();
         self.len.write(len + 1);
@@ -76,7 +77,7 @@ pub impl MutableStorageArrayFelt252Impl of MutableStorageArrayTrait<
     }
 
     fn get(
-        self: StoragePath<Mutable<StorageArrayFelt252>>, index: u64
+        self: StoragePath<Mutable<StorageArrayFelt252>>, index: u64,
     ) -> Option<StoragePath<Mutable<Self::ElementType>>> {
         let vec_len = self.len.read();
         if index < vec_len {
@@ -86,7 +87,7 @@ pub impl MutableStorageArrayFelt252Impl of MutableStorageArrayTrait<
     }
 
     fn at(
-        self: StoragePath<Mutable<StorageArrayFelt252>>, index: u64
+        self: StoragePath<Mutable<StorageArrayFelt252>>, index: u64,
     ) -> StoragePath<Mutable<Self::ElementType>> {
         assert!(index < self.len.read(), "Index out of bounds");
         self.vec.entry(index)
@@ -102,7 +103,7 @@ pub impl MutableStorageArrayFelt252Impl of MutableStorageArrayTrait<
 }
 
 pub impl StorageArrayFelt252IndexView of core::ops::IndexView<
-    StoragePath<StorageArrayFelt252>, u64
+    StoragePath<StorageArrayFelt252>, u64,
 > {
     type Target = StoragePath<felt252>;
     fn index(self: @StoragePath<StorageArrayFelt252>, index: u64) -> Self::Target {
@@ -111,7 +112,7 @@ pub impl StorageArrayFelt252IndexView of core::ops::IndexView<
 }
 
 pub impl MutableStorageArrayFelt252IndexView of core::ops::IndexView<
-    StoragePath<Mutable<StorageArrayFelt252>>, u64
+    StoragePath<Mutable<StorageArrayFelt252>>, u64,
 > {
     type Target = StoragePath<Mutable<felt252>>;
     fn index(self: @StoragePath<Mutable<StorageArrayFelt252>>, index: u64) -> Self::Target {
@@ -130,7 +131,7 @@ pub impl Felt252VecToFelt252Array of Into<StoragePath<StorageArrayFelt252>, Arra
 }
 
 pub impl MutableFelt252VecToFelt252Array of Into<
-    StoragePath<Mutable<StorageArrayFelt252>>, Array<felt252>
+    StoragePath<Mutable<StorageArrayFelt252>>, Array<felt252>,
 > {
     fn into(self: StoragePath<Mutable<StorageArrayFelt252>>) -> Array<felt252> {
         let mut array = array![];
@@ -147,15 +148,15 @@ pub impl MutableFelt252VecToFelt252Array of Into<
 #[starknet::storage_node]
 pub struct StorageArrayContractAddress {
     vec: Map<u64, ContractAddress>,
-    len: u64
+    len: u64,
 }
 
 pub impl StorageArrayContractAddressImpl of StorageArrayTrait<
-    StoragePath<StorageArrayContractAddress>
+    StoragePath<StorageArrayContractAddress>,
 > {
     type ElementType = ContractAddress;
     fn get(
-        self: StoragePath<StorageArrayContractAddress>, index: u64
+        self: StoragePath<StorageArrayContractAddress>, index: u64,
     ) -> Option<StoragePath<Self::ElementType>> {
         let vec_len = self.len.read();
         if index < vec_len {
@@ -165,7 +166,7 @@ pub impl StorageArrayContractAddressImpl of StorageArrayTrait<
     }
 
     fn at(
-        self: StoragePath<StorageArrayContractAddress>, index: u64
+        self: StoragePath<StorageArrayContractAddress>, index: u64,
     ) -> StoragePath<Self::ElementType> {
         assert!(index < self.len.read(), "Index out of bounds");
         self.vec.entry(index)
@@ -177,7 +178,7 @@ pub impl StorageArrayContractAddressImpl of StorageArrayTrait<
 }
 
 pub impl MutableStorageArrayContractAddressImpl of MutableStorageArrayTrait<
-    StoragePath<Mutable<StorageArrayContractAddress>>
+    StoragePath<Mutable<StorageArrayContractAddress>>,
 > {
     type ElementType = ContractAddress;
     fn delete(self: StoragePath<Mutable<StorageArrayContractAddress>>, index: u64) {
@@ -193,7 +194,7 @@ pub impl MutableStorageArrayContractAddressImpl of MutableStorageArrayTrait<
     }
 
     fn append(
-        self: StoragePath<Mutable<StorageArrayContractAddress>>
+        self: StoragePath<Mutable<StorageArrayContractAddress>>,
     ) -> StoragePath<Mutable<Self::ElementType>> {
         let len = self.len.read();
         self.len.write(len + 1);
@@ -201,7 +202,7 @@ pub impl MutableStorageArrayContractAddressImpl of MutableStorageArrayTrait<
     }
 
     fn get(
-        self: StoragePath<Mutable<StorageArrayContractAddress>>, index: u64
+        self: StoragePath<Mutable<StorageArrayContractAddress>>, index: u64,
     ) -> Option<StoragePath<Mutable<Self::ElementType>>> {
         let vec_len = self.len.read();
         if index < vec_len {
@@ -211,7 +212,7 @@ pub impl MutableStorageArrayContractAddressImpl of MutableStorageArrayTrait<
     }
 
     fn at(
-        self: StoragePath<Mutable<StorageArrayContractAddress>>, index: u64
+        self: StoragePath<Mutable<StorageArrayContractAddress>>, index: u64,
     ) -> StoragePath<Mutable<Self::ElementType>> {
         assert!(index < self.len.read(), "Index out of bounds");
         self.vec.entry(index)
@@ -227,7 +228,7 @@ pub impl MutableStorageArrayContractAddressImpl of MutableStorageArrayTrait<
 }
 
 pub impl StorageArrayContractAddressIndexView of core::ops::IndexView<
-    StoragePath<StorageArrayContractAddress>, u64
+    StoragePath<StorageArrayContractAddress>, u64,
 > {
     type Target = StoragePath<ContractAddress>;
     fn index(self: @StoragePath<StorageArrayContractAddress>, index: u64) -> Self::Target {
@@ -236,7 +237,7 @@ pub impl StorageArrayContractAddressIndexView of core::ops::IndexView<
 }
 
 pub impl MutableStorageArrayContractAddressIndexView of core::ops::IndexView<
-    StoragePath<Mutable<StorageArrayContractAddress>>, u64
+    StoragePath<Mutable<StorageArrayContractAddress>>, u64,
 > {
     type Target = StoragePath<Mutable<ContractAddress>>;
     fn index(self: @StoragePath<Mutable<StorageArrayContractAddress>>, index: u64) -> Self::Target {
@@ -245,7 +246,7 @@ pub impl MutableStorageArrayContractAddressIndexView of core::ops::IndexView<
 }
 
 pub impl ContractAddressVecToContractAddressArray of Into<
-    StoragePath<StorageArrayContractAddress>, Array<ContractAddress>
+    StoragePath<StorageArrayContractAddress>, Array<ContractAddress>,
 > {
     fn into(self: StoragePath<StorageArrayContractAddress>) -> Array<ContractAddress> {
         let mut array = array![];
@@ -257,7 +258,7 @@ pub impl ContractAddressVecToContractAddressArray of Into<
 }
 
 pub impl MutableContractAddressVecToContractAddressArray of Into<
-    StoragePath<Mutable<StorageArrayContractAddress>>, Array<ContractAddress>
+    StoragePath<Mutable<StorageArrayContractAddress>>, Array<ContractAddress>,
 > {
     fn into(self: StoragePath<Mutable<StorageArrayContractAddress>>) -> Array<ContractAddress> {
         let mut array = array![];

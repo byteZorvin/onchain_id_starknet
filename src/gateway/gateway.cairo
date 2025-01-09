@@ -4,7 +4,7 @@ use starknet::ContractAddress;
 pub struct Signature {
     pub r: felt252,
     pub s: felt252,
-    pub y_parity: bool
+    pub y_parity: bool,
 }
 
 #[starknet::interface]
@@ -16,7 +16,7 @@ pub trait IGateway<TContractState> {
         identity_owner: ContractAddress,
         salt: felt252,
         signature_expiry: u64,
-        signature: Signature
+        signature: Signature,
     ) -> ContractAddress;
     fn deploy_identity_with_salt_and_management_keys(
         ref self: TContractState,
@@ -24,10 +24,10 @@ pub trait IGateway<TContractState> {
         salt: felt252,
         management_keys: Array<felt252>,
         signature_expiry: u64,
-        signature: Signature
+        signature: Signature,
     ) -> ContractAddress;
     fn deploy_identity_for_wallet(
-        ref self: TContractState, identity_owner: ContractAddress
+        ref self: TContractState, identity_owner: ContractAddress,
     ) -> ContractAddress;
     fn revoke_signature(ref self: TContractState, signature: Signature);
     fn approve_signature(ref self: TContractState, signature: Signature);
@@ -45,14 +45,14 @@ pub mod Gateway {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::factory::iid_factory::{
-        IIdFactoryDispatcher, IIdFactoryDispatcherTrait
+        IIdFactoryDispatcher, IIdFactoryDispatcherTrait,
     };
     use openzeppelin_access::ownable::{
-        ownable::OwnableComponent, interface::{IOwnableDispatcher, IOwnableDispatcherTrait},
+        interface::{IOwnableDispatcher, IOwnableDispatcherTrait}, ownable::OwnableComponent,
     };
     use starknet::ContractAddress;
     use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, Map, StoragePathEntry
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use super::Signature;
 
@@ -79,7 +79,7 @@ pub mod Gateway {
         SignatureApproved: SignatureApproved,
         SignatureRevoked: SignatureRevoked,
         #[flat]
-        OwnableEvent: OwnableComponent::Event
+        OwnableEvent: OwnableComponent::Event,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -121,12 +121,12 @@ pub mod Gateway {
         }
         pub fn UnsignedDeployment() {
             panic!(
-                "A requested ONCHAINID deployment was requested without a valid signature while the Gateway requires one."
+                "A requested ONCHAINID deployment was requested without a valid signature while the Gateway requires one.",
             );
         }
         pub fn UnapprovedSigner() {
             panic!(
-                "A requested ONCHAINID deployment was requested and signed by a non approved signer."
+                "A requested ONCHAINID deployment was requested and signed by a non approved signer.",
             );
         }
         pub fn RevokedSignature() {
@@ -257,7 +257,7 @@ pub mod Gateway {
             identity_owner: ContractAddress,
             salt: felt252,
             signature_expiry: u64,
-            signature: Signature
+            signature: Signature,
         ) -> ContractAddress {
             if identity_owner.is_zero() {
                 Errors::ZeroAddress();
@@ -276,7 +276,7 @@ pub mod Gateway {
 
             let message_hash: felt252 = poseidon_hash_span(serialized_message.span());
             let signer: felt252 = recover_public_key(
-                message_hash, signature.r, signature.s, signature.y_parity
+                message_hash, signature.r, signature.s, signature.y_parity,
             )
                 .expect('recover_public_key failed');
 
@@ -328,7 +328,7 @@ pub mod Gateway {
             salt: felt252,
             management_keys: Array<felt252>,
             signature_expiry: u64,
-            signature: Signature
+            signature: Signature,
         ) -> ContractAddress {
             if identity_owner.is_zero() {
                 Errors::ZeroAddress();
@@ -349,7 +349,7 @@ pub mod Gateway {
             /// TODO: comply with  SNIP12
             let message_hash: felt252 = poseidon_hash_span(serialized_message.span());
             let signer: felt252 = recover_public_key(
-                message_hash, signature.r, signature.s, signature.y_parity
+                message_hash, signature.r, signature.s, signature.y_parity,
             )
                 .expect('recover_public_key failed');
 
@@ -381,7 +381,7 @@ pub mod Gateway {
         ///
         /// A `ContractAddress` representing the deployed identity.
         fn deploy_identity_for_wallet(
-            ref self: ContractState, identity_owner: ContractAddress
+            ref self: ContractState, identity_owner: ContractAddress,
         ) -> ContractAddress {
             if identity_owner.is_zero() {
                 Errors::ZeroAddress();

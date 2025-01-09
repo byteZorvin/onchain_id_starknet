@@ -1,16 +1,16 @@
 use core::num::traits::Zero;
 use onchain_id_starknet::interface::iimplementation_authority::{
-    IImplementationAuthorityDispatcher, IImplementationAuthorityDispatcherTrait
+    IImplementationAuthorityDispatcher, IImplementationAuthorityDispatcherTrait,
 };
 use onchain_id_starknet::mocks::mock_with_version_manager::{
-    IMockWithVersionManagerDispatcher, IMockWithVersionManagerDispatcherTrait
+    IMockWithVersionManagerDispatcher, IMockWithVersionManagerDispatcherTrait,
 };
 use onchain_id_starknet::proxy::version_manager::{
-    IUpgradeableDispatcher, IUpgradeableDispatcherTrait
+    IUpgradeableDispatcher, IUpgradeableDispatcherTrait,
 };
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
-    stop_cheat_caller_address, get_class_hash
+    ContractClassTrait, DeclareResultTrait, declare, get_class_hash, start_cheat_caller_address,
+    stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 
@@ -19,7 +19,7 @@ pub fn OWNER_ADDRESS() -> ContractAddress {
 }
 
 pub fn setup_version_manager() -> (
-    IImplementationAuthorityDispatcher, IMockWithVersionManagerDispatcher
+    IImplementationAuthorityDispatcher, IMockWithVersionManagerDispatcher,
 ) {
     let mock_version_manager_contract = declare("MockWithVersionManager").unwrap().contract_class();
     let implementation_authority_contract = declare("ImplementationAuthority")
@@ -37,7 +37,7 @@ pub fn setup_version_manager() -> (
         .unwrap();
     (
         IImplementationAuthorityDispatcher { contract_address: implementation_authority_address },
-        IMockWithVersionManagerDispatcher { contract_address: mock_version_manager_address }
+        IMockWithVersionManagerDispatcher { contract_address: mock_version_manager_address },
     )
 }
 
@@ -56,7 +56,7 @@ fn test_should_execute_when_class_hash_matches() {
 
 #[test]
 #[should_panic(
-    expected: "Identity implementation is outdated! Trigger upgrade() function to upgrade your identity to latest version"
+    expected: "Identity implementation is outdated! Trigger upgrade() function to upgrade your identity to latest version",
 )]
 fn test_should_panic_when_class_hash_does_not_match() {
     let (mut implementation_authority, mut mock_version_manager) = setup_version_manager();

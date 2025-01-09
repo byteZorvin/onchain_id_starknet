@@ -3,14 +3,14 @@ pub mod ClaimIssuer {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::identity_component::IdentityComponent;
     use onchain_id_starknet::interface::{
-        iclaim_issuer::IClaimIssuer, iidentity::IIdentity,
-        ierc735::{IERC735Dispatcher, IERC735DispatcherTrait},
+        iclaim_issuer::IClaimIssuer, ierc735::{IERC735Dispatcher, IERC735DispatcherTrait},
+        iidentity::IIdentity,
     };
-    use onchain_id_starknet::storage::structs::{Signature, is_valid_signature, get_public_key_hash};
+    use onchain_id_starknet::storage::structs::{Signature, get_public_key_hash, is_valid_signature};
     use onchain_id_starknet::version::version::VersionComponent;
     use starknet::ContractAddress;
     use starknet::storage::{
-        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess
+        Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
 
     component!(path: IdentityComponent, storage: identity, event: IdentityEvent);
@@ -32,7 +32,7 @@ pub mod ClaimIssuer {
         #[substorage(v0)]
         identity: IdentityComponent::Storage,
         #[substorage(v0)]
-        version: VersionComponent::Storage
+        version: VersionComponent::Storage,
     }
 
     #[event]
@@ -42,7 +42,7 @@ pub mod ClaimIssuer {
         IdentityEvent: IdentityComponent::Event,
         #[flat]
         VersionEvent: VersionComponent::Event,
-        ClaimRevoked: ClaimRevoked
+        ClaimRevoked: ClaimRevoked,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -72,7 +72,7 @@ pub mod ClaimIssuer {
         // NOTE: Deprecated - see
         // {https://docs.onchainid.com/docs/developers/contracts/claim-issuer#revocation-of-a-claim}
         fn revoke_claim(
-            ref self: ContractState, claim_id: felt252, identity: ContractAddress
+            ref self: ContractState, claim_id: felt252, identity: ContractAddress,
         ) -> bool {
             self.identity.only_manager();
             let (_, _, _, signature, _, _) = IERC735Dispatcher { contract_address: identity }
@@ -96,7 +96,7 @@ pub mod ClaimIssuer {
             identity: ContractAddress,
             claim_topic: felt252,
             signature: Signature,
-            data: ByteArray
+            data: ByteArray,
         ) -> bool {
             let pub_key_hash = get_public_key_hash(signature);
             if !self.key_has_purpose(pub_key_hash, 3) || self.is_claim_revoked(signature) {
@@ -109,7 +109,7 @@ pub mod ClaimIssuer {
             data.serialize(ref seralized_claim);
             // TODO: Add prefix
             let data_hash = poseidon_hash_span(
-                array!['Starknet Message', poseidon_hash_span(seralized_claim.span())].span()
+                array!['Starknet Message', poseidon_hash_span(seralized_claim.span())].span(),
             );
             is_valid_signature(data_hash, signature)
         }

@@ -1,9 +1,9 @@
 pub mod revoke_claim_by_signature_test {
+    use crate::common::{setup_identity};
     use onchain_id_starknet::claim_issuer::ClaimIssuer;
     use onchain_id_starknet::interface::{iclaim_issuer::ClaimIssuerABIDispatcherTrait};
-    use crate::common::{setup_identity};
     use snforge_std::{
-        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
 
     #[test]
@@ -19,7 +19,7 @@ pub mod revoke_claim_by_signature_test {
         let setup = setup_identity();
         start_cheat_caller_address(
             setup.claim_issuer.contract_address,
-            setup.accounts.claim_issuer_account.contract_address
+            setup.accounts.claim_issuer_account.contract_address,
         );
         setup.claim_issuer.revoke_claim_by_signature(setup.alice_claim_666.signature);
         // Revoking already revoked claim should panic
@@ -35,7 +35,7 @@ pub mod revoke_claim_by_signature_test {
 
         start_cheat_caller_address(
             setup.claim_issuer.contract_address,
-            setup.accounts.claim_issuer_account.contract_address
+            setup.accounts.claim_issuer_account.contract_address,
         );
         setup.claim_issuer.revoke_claim_by_signature(setup.alice_claim_666.signature);
         stop_cheat_caller_address(setup.claim_issuer.contract_address);
@@ -55,20 +55,22 @@ pub mod revoke_claim_by_signature_test {
                     (
                         setup.claim_issuer.contract_address,
                         ClaimIssuer::Event::ClaimRevoked(
-                            ClaimIssuer::ClaimRevoked { signature: setup.alice_claim_666.signature }
-                        )
-                    )
-                ]
+                            ClaimIssuer::ClaimRevoked {
+                                signature: setup.alice_claim_666.signature,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 }
 
 pub mod revoke_claim {
+    use crate::common::{setup_identity};
     use onchain_id_starknet::claim_issuer::ClaimIssuer;
     use onchain_id_starknet::interface::{iclaim_issuer::ClaimIssuerABIDispatcherTrait};
-    use crate::common::{setup_identity};
     use snforge_std::{
-        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait,
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
 
     #[test]
@@ -86,7 +88,7 @@ pub mod revoke_claim {
         let setup = setup_identity();
         start_cheat_caller_address(
             setup.claim_issuer.contract_address,
-            setup.accounts.claim_issuer_account.contract_address
+            setup.accounts.claim_issuer_account.contract_address,
         );
         setup
             .claim_issuer
@@ -106,7 +108,7 @@ pub mod revoke_claim {
 
         start_cheat_caller_address(
             setup.claim_issuer.contract_address,
-            setup.accounts.claim_issuer_account.contract_address
+            setup.accounts.claim_issuer_account.contract_address,
         );
         setup
             .claim_issuer
@@ -128,25 +130,27 @@ pub mod revoke_claim {
                     (
                         setup.claim_issuer.contract_address,
                         ClaimIssuer::Event::ClaimRevoked(
-                            ClaimIssuer::ClaimRevoked { signature: setup.alice_claim_666.signature }
-                        )
-                    )
-                ]
+                            ClaimIssuer::ClaimRevoked {
+                                signature: setup.alice_claim_666.signature,
+                            },
+                        ),
+                    ),
+                ],
             );
     }
 }
 
 pub mod is_claim_valid {
     use core::poseidon::poseidon_hash_span;
+    use crate::common::{get_test_claim, setup_identity};
     use onchain_id_starknet::interface::{iclaim_issuer::ClaimIssuerABIDispatcherTrait};
     use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
-    use crate::common::{setup_identity, get_test_claim};
     use snforge_std::{
-        start_cheat_caller_address, stop_cheat_caller_address,
         signature::{
             SignerTrait,
             stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
         },
+        start_cheat_caller_address, stop_cheat_caller_address,
     };
 
     #[test]
@@ -157,20 +161,20 @@ pub mod is_claim_valid {
         let mut data_to_hash = array![test_claim.identity.into(), test_claim.topic];
         test_claim.data.serialize(ref data_to_hash);
         let hashed_claim = poseidon_hash_span(
-            array!['Starknet Message', poseidon_hash_span(data_to_hash.span())].span()
+            array!['Starknet Message', poseidon_hash_span(data_to_hash.span())].span(),
         );
         test_claim.issuer = setup.accounts.bob_account.contract_address;
         let (r, s) = setup.accounts.bob_key.sign(hashed_claim).unwrap();
         test_claim
             .signature =
                 Signature::StarkSignature(
-                    StarkSignature { r, s, public_key: setup.accounts.bob_key.public_key }
+                    StarkSignature { r, s, public_key: setup.accounts.bob_key.public_key },
                 );
 
         let is_claim_valid = setup
             .claim_issuer
             .is_claim_valid(
-                test_claim.identity, test_claim.topic, test_claim.signature, test_claim.data
+                test_claim.identity, test_claim.topic, test_claim.signature, test_claim.data,
             );
         assert!(!is_claim_valid, "Claim should be invalid for non-management, non-claim key");
     }
@@ -182,7 +186,7 @@ pub mod is_claim_valid {
 
         start_cheat_caller_address(
             setup.claim_issuer.contract_address,
-            setup.accounts.claim_issuer_account.contract_address
+            setup.accounts.claim_issuer_account.contract_address,
         );
         setup.claim_issuer.revoke_claim_by_signature(test_claim.signature);
         stop_cheat_caller_address(setup.claim_issuer.contract_address);
@@ -190,7 +194,7 @@ pub mod is_claim_valid {
         let is_claim_valid = setup
             .claim_issuer
             .is_claim_valid(
-                test_claim.identity, test_claim.topic, test_claim.signature, test_claim.data
+                test_claim.identity, test_claim.topic, test_claim.signature, test_claim.data,
             );
         assert!(!is_claim_valid, "Claim should be invalid when signature is revoked");
     }
@@ -207,19 +211,19 @@ pub mod is_claim_valid {
         let claim_data: ByteArray = "0xBadBabe0000";
         claim_data.serialize(ref serialized_claim_to_sign);
         let hashed_invalid_claim = poseidon_hash_span(
-            array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span()
+            array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span(),
         );
         let (r, s) = setup.accounts.claim_issuer_key.sign(hashed_invalid_claim).unwrap();
         test_claim
             .signature =
                 Signature::StarkSignature(
-                    StarkSignature { r, s, public_key: setup.accounts.claim_issuer_key.public_key }
+                    StarkSignature { r, s, public_key: setup.accounts.claim_issuer_key.public_key },
                 );
 
         let is_claim_valid = setup
             .claim_issuer
             .is_claim_valid(
-                test_claim.identity, test_claim.topic, test_claim.signature, test_claim.data
+                test_claim.identity, test_claim.topic, test_claim.signature, test_claim.data,
             );
         assert!(!is_claim_valid, "Claim should be invalid when signature is invalid");
     }
@@ -232,11 +236,11 @@ pub mod is_claim_valid {
         let is_claim_valid = setup
             .claim_issuer
             .is_claim_valid(
-                test_claim.identity, test_claim.topic, test_claim.signature, test_claim.data
+                test_claim.identity, test_claim.topic, test_claim.signature, test_claim.data,
             );
         assert!(
             is_claim_valid,
-            "Claim should be valid when signature is valid when key has (claim/management) purpose"
+            "Claim should be valid when signature is valid when key has (claim/management) purpose",
         );
     }
 }

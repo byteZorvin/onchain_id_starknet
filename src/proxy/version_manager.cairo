@@ -8,10 +8,10 @@ pub trait IUpgradeable<TContractState> {
 pub mod VersionManagerComponent {
     use core::num::traits::Zero;
     use onchain_id_starknet::interface::iimplementation_authority::{
-        IImplementationAuthorityDispatcher, IImplementationAuthorityDispatcherTrait
+        IImplementationAuthorityDispatcher, IImplementationAuthorityDispatcherTrait,
     };
     use openzeppelin_upgrades::upgradeable::{
-        UpgradeableComponent, UpgradeableComponent::InternalTrait as UpgradeableInternalTrait
+        UpgradeableComponent, UpgradeableComponent::InternalTrait as UpgradeableInternalTrait,
     };
     use starknet::ClassHash;
     use starknet::ContractAddress;
@@ -21,7 +21,7 @@ pub mod VersionManagerComponent {
     pub struct Storage {
         // TODO: use get_class_hash_at_syscall instead
         VersionManager_implementation_class_hash: ClassHash,
-        VersionManager_implementation_authority: ContractAddress
+        VersionManager_implementation_authority: ContractAddress,
     }
 
     #[event]
@@ -33,11 +33,11 @@ pub mod VersionManagerComponent {
         TContractState,
         +HasComponent<TContractState>,
         impl UpgradeImpl: UpgradeableComponent::HasComponent<TContractState>,
-        +Drop<TContractState>
+        +Drop<TContractState>,
     > of super::IUpgradeable<ComponentState<TContractState>> {
         fn upgrade(ref self: ComponentState<TContractState>) -> bool {
             let ia_class_hash = IImplementationAuthorityDispatcher {
-                contract_address: self.VersionManager_implementation_authority.read()
+                contract_address: self.VersionManager_implementation_authority.read(),
             }
                 .get_implementation();
             let local_class_hash = self.VersionManager_implementation_class_hash.read();
@@ -55,16 +55,16 @@ pub mod VersionManagerComponent {
         TContractState,
         +HasComponent<TContractState>,
         impl UpgradeImpl: UpgradeableComponent::HasComponent<TContractState>,
-        +Drop<TContractState>
+        +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn initialize(
-            ref self: ComponentState<TContractState>, implementation_authority: ContractAddress
+            ref self: ComponentState<TContractState>, implementation_authority: ContractAddress,
         ) {
             assert!(
-                implementation_authority.is_non_zero(), "implementation authority address zero"
+                implementation_authority.is_non_zero(), "implementation authority address zero",
             );
             let ia_class_hash = IImplementationAuthorityDispatcher {
-                contract_address: implementation_authority
+                contract_address: implementation_authority,
             }
                 .get_implementation();
             self.VersionManager_implementation_authority.write(implementation_authority);
@@ -73,13 +73,13 @@ pub mod VersionManagerComponent {
 
         fn assert_up_to_date_implementation(self: @ComponentState<TContractState>) {
             let ia_class_hash = IImplementationAuthorityDispatcher {
-                contract_address: self.VersionManager_implementation_authority.read()
+                contract_address: self.VersionManager_implementation_authority.read(),
             }
                 .get_implementation();
             let local_class_hash = self.VersionManager_implementation_class_hash.read();
             assert!(
                 ia_class_hash == local_class_hash,
-                "Identity implementation is outdated! Trigger upgrade() function to upgrade your identity to latest version"
+                "Identity implementation is outdated! Trigger upgrade() function to upgrade your identity to latest version",
             );
         }
     }

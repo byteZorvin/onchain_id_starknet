@@ -5,8 +5,8 @@ pub mod ImplementationAuthority {
     use core::num::traits::Zero;
     use onchain_id_starknet::interface::iimplementation_authority::IImplementationAuthority;
     use openzeppelin_access::ownable::ownable::OwnableComponent;
-    use starknet::storage::{StoragePointerWriteAccess, StoragePointerReadAccess};
-    use starknet::{ContractAddress, ClassHash};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::{ClassHash, ContractAddress};
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
@@ -18,14 +18,14 @@ pub mod ImplementationAuthority {
     struct Storage {
         implementation_class_hash: ClassHash,
         #[substorage(v0)]
-        ownable: OwnableComponent::Storage
+        ownable: OwnableComponent::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         UpdatedImplementation: UpdatedImplementation,
         #[flat]
-        OwnableEvent: OwnableComponent::Event
+        OwnableEvent: OwnableComponent::Event,
     }
 
 
@@ -39,7 +39,7 @@ pub mod ImplementationAuthority {
     }
     #[constructor]
     fn constructor(
-        ref self: ContractState, implementation_class_hash: ClassHash, owner: ContractAddress
+        ref self: ContractState, implementation_class_hash: ClassHash, owner: ContractAddress,
     ) {
         assert(implementation_class_hash.is_non_zero(), Errors::CLASS_HASH_ZERO);
         self.ownable.initializer(owner);

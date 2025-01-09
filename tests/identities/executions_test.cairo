@@ -1,5 +1,5 @@
 use onchain_id_starknet::mocks::mock_simple_storage::ISimpleStorageDispatcher;
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 
 fn deploy_simple_storage() -> ISimpleStorageDispatcher {
     let mock_simple_storage_contract = declare("MockSimpleStorage").unwrap().contract_class();
@@ -10,12 +10,12 @@ fn deploy_simple_storage() -> ISimpleStorageDispatcher {
 pub mod execute {
     pub mod when_management_key {
         use core::poseidon::poseidon_hash_span;
-        use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc734};
-        use onchain_id_starknet::mocks::mock_simple_storage::ISimpleStorageDispatcherTrait;
         use crate::common::setup_identity;
+        use onchain_id_starknet::interface::{ierc734, iidentity::IdentityABIDispatcherTrait};
+        use onchain_id_starknet::mocks::mock_simple_storage::ISimpleStorageDispatcherTrait;
         use snforge_std::{
-            start_cheat_caller_address, stop_cheat_caller_address, spy_events,
-            EventSpyAssertionsTrait
+            EventSpyAssertionsTrait, spy_events, start_cheat_caller_address,
+            stop_cheat_caller_address,
         };
         use super::super::deploy_simple_storage;
 
@@ -30,13 +30,14 @@ pub mod execute {
             let mut spy = spy_events();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.alice_account.contract_address,
             );
             let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
             stop_cheat_caller_address(setup.alice_identity.contract_address);
             assert!(
                 simple_storage_dispatcher.get_value() == 'test_val_to_store',
-                "Didnt execute the call"
+                "Didnt execute the call",
             );
 
             spy
@@ -45,18 +46,18 @@ pub mod execute {
                         (
                             setup.alice_identity.contract_address,
                             ierc734::ERC734Event::Approved(
-                                ierc734::Approved { execution_id, approved: true }
-                            )
+                                ierc734::Approved { execution_id, approved: true },
+                            ),
                         ),
                         (
                             setup.alice_identity.contract_address,
                             ierc734::ERC734Event::Executed(
                                 ierc734::Executed {
-                                    execution_id, to, selector, data: calldata.span()
-                                }
-                            )
-                        )
-                    ]
+                                    execution_id, to, selector, data: calldata.span(),
+                                },
+                            ),
+                        ),
+                    ],
                 );
         }
 
@@ -65,7 +66,7 @@ pub mod execute {
             let setup = setup_identity();
 
             let alice_address_hash = poseidon_hash_span(
-                array![setup.accounts.alice_account.contract_address.into()].span()
+                array![setup.accounts.alice_account.contract_address.into()].span(),
             );
             let to = setup.alice_identity.contract_address;
             let selector = selector!("add_key");
@@ -74,13 +75,14 @@ pub mod execute {
             let mut spy = spy_events();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.alice_account.contract_address,
             );
             let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
             stop_cheat_caller_address(setup.alice_identity.contract_address);
             assert!(
                 setup.alice_identity.get_key_purposes(alice_address_hash) == array![1, 3].span(),
-                "Key purposes does not match"
+                "Key purposes does not match",
             );
 
             spy
@@ -89,18 +91,18 @@ pub mod execute {
                         (
                             setup.alice_identity.contract_address,
                             ierc734::ERC734Event::Approved(
-                                ierc734::Approved { execution_id, approved: true }
-                            )
+                                ierc734::Approved { execution_id, approved: true },
+                            ),
                         ),
                         (
                             setup.alice_identity.contract_address,
                             ierc734::ERC734Event::Executed(
                                 ierc734::Executed {
-                                    execution_id, to, selector, data: calldata.span()
-                                }
-                            )
-                        )
-                    ]
+                                    execution_id, to, selector, data: calldata.span(),
+                                },
+                            ),
+                        ),
+                    ],
                 );
         }
 
@@ -112,7 +114,7 @@ pub mod execute {
             let setup = setup_identity();
 
             let alice_address_hash = poseidon_hash_span(
-                array![setup.accounts.alice_account.contract_address.into()].span()
+                array![setup.accounts.alice_account.contract_address.into()].span(),
             );
             let to = setup.alice_identity.contract_address;
             let selector = selector!("add_key");
@@ -121,13 +123,14 @@ pub mod execute {
             let mut spy = spy_events();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.alice_account.contract_address,
             );
             let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
             stop_cheat_caller_address(setup.alice_identity.contract_address);
             assert!(
                 setup.alice_identity.get_key_purposes(alice_address_hash) == array![1, 3].span(),
-                "Key purposes does not match"
+                "Key purposes does not match",
             );
 
             spy
@@ -136,30 +139,30 @@ pub mod execute {
                         (
                             setup.alice_identity.contract_address,
                             ierc734::ERC734Event::Approved(
-                                ierc734::Approved { execution_id, approved: true }
-                            )
+                                ierc734::Approved { execution_id, approved: true },
+                            ),
                         ),
                         (
                             setup.alice_identity.contract_address,
                             ierc734::ERC734Event::ExecutionFailed(
                                 ierc734::ExecutionFailed {
-                                    execution_id, to, selector, data: calldata.span()
-                                }
-                            )
-                        )
-                    ]
+                                    execution_id, to, selector, data: calldata.span(),
+                                },
+                            ),
+                        ),
+                    ],
                 );
         }
     }
 
     pub mod when_action_key {
         use core::poseidon::poseidon_hash_span;
-        use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc734};
-        use onchain_id_starknet::mocks::mock_simple_storage::ISimpleStorageDispatcherTrait;
         use crate::common::setup_identity;
+        use onchain_id_starknet::interface::{ierc734, iidentity::IdentityABIDispatcherTrait};
+        use onchain_id_starknet::mocks::mock_simple_storage::ISimpleStorageDispatcherTrait;
         use snforge_std::{
-            start_cheat_caller_address, stop_cheat_caller_address, spy_events,
-            EventSpyAssertionsTrait
+            EventSpyAssertionsTrait, spy_events, start_cheat_caller_address,
+            stop_cheat_caller_address,
         };
         use super::super::deploy_simple_storage;
 
@@ -168,15 +171,16 @@ pub mod execute {
             let setup = setup_identity();
 
             let alice_address_hash = poseidon_hash_span(
-                array![setup.accounts.alice_account.contract_address.into()].span()
+                array![setup.accounts.alice_account.contract_address.into()].span(),
             );
 
             let carol_address_hash = poseidon_hash_span(
-                array![setup.accounts.carol_account.contract_address.into()].span()
+                array![setup.accounts.carol_account.contract_address.into()].span(),
             );
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.alice_account.contract_address,
             );
             setup.alice_identity.add_key(carol_address_hash, 2, 1);
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -188,7 +192,8 @@ pub mod execute {
             let mut spy = spy_events();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.carol_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.carol_account.contract_address,
             );
             let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -200,11 +205,11 @@ pub mod execute {
                             setup.alice_identity.contract_address,
                             ierc734::ERC734Event::ExecutionRequested(
                                 ierc734::ExecutionRequested {
-                                    execution_id, to, selector, data: calldata.span()
-                                }
-                            )
+                                    execution_id, to, selector, data: calldata.span(),
+                                },
+                            ),
                         ),
-                    ]
+                    ],
                 );
         }
 
@@ -214,11 +219,12 @@ pub mod execute {
             let simple_storage_dispatcher = deploy_simple_storage();
 
             let carol_address_hash = poseidon_hash_span(
-                array![setup.accounts.carol_account.contract_address.into()].span()
+                array![setup.accounts.carol_account.contract_address.into()].span(),
             );
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.alice_account.contract_address,
             );
             setup.alice_identity.add_key(carol_address_hash, 2, 1);
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -230,14 +236,15 @@ pub mod execute {
             let mut spy = spy_events();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.carol_account.contract_address
+                setup.alice_identity.contract_address,
+                setup.accounts.carol_account.contract_address,
             );
             let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
             stop_cheat_caller_address(setup.alice_identity.contract_address);
 
             assert!(
                 simple_storage_dispatcher.get_value() == 'test_val_to_store',
-                "Didnt execute the call"
+                "Didnt execute the call",
             );
 
             spy
@@ -246,18 +253,18 @@ pub mod execute {
                         (
                             setup.alice_identity.contract_address,
                             ierc734::ERC734Event::Approved(
-                                ierc734::Approved { execution_id, approved: true }
-                            )
+                                ierc734::Approved { execution_id, approved: true },
+                            ),
                         ),
                         (
                             setup.alice_identity.contract_address,
                             ierc734::ERC734Event::Executed(
                                 ierc734::Executed {
-                                    execution_id, to, selector, data: calldata.span()
-                                }
-                            )
-                        )
-                    ]
+                                    execution_id, to, selector, data: calldata.span(),
+                                },
+                            ),
+                        ),
+                    ],
                 );
         }
 
@@ -271,11 +278,11 @@ pub mod execute {
     }
 
     pub mod when_non_action_key {
-        use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc734};
         use crate::common::setup_identity;
+        use onchain_id_starknet::interface::{ierc734, iidentity::IdentityABIDispatcherTrait};
         use snforge_std::{
-            start_cheat_caller_address, stop_cheat_caller_address, spy_events,
-            EventSpyAssertionsTrait
+            EventSpyAssertionsTrait, spy_events, start_cheat_caller_address,
+            stop_cheat_caller_address,
         };
         use super::super::deploy_simple_storage;
 
@@ -290,7 +297,7 @@ pub mod execute {
             let mut spy = spy_events();
 
             start_cheat_caller_address(
-                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+                setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
             );
             let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -302,11 +309,11 @@ pub mod execute {
                             setup.alice_identity.contract_address,
                             ierc734::ERC734Event::ExecutionRequested(
                                 ierc734::ExecutionRequested {
-                                    execution_id, to, selector, data: calldata.span()
-                                }
-                            )
+                                    execution_id, to, selector, data: calldata.span(),
+                                },
+                            ),
                         ),
-                    ]
+                    ],
                 );
         }
     }
@@ -314,11 +321,11 @@ pub mod execute {
 
 pub mod approve {
     use core::poseidon::poseidon_hash_span;
-    use onchain_id_starknet::interface::{iidentity::IdentityABIDispatcherTrait, ierc734};
-    use onchain_id_starknet::mocks::mock_simple_storage::ISimpleStorageDispatcherTrait;
     use crate::common::setup_identity;
+    use onchain_id_starknet::interface::{ierc734, iidentity::IdentityABIDispatcherTrait};
+    use onchain_id_starknet::mocks::mock_simple_storage::ISimpleStorageDispatcherTrait;
     use snforge_std::{
-        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
     use super::deploy_simple_storage;
 
@@ -340,7 +347,7 @@ pub mod approve {
         let calldata = array!['test_val_to_store'];
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address,
         );
         let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
         // approving already executed execution should panic
@@ -359,7 +366,7 @@ pub mod approve {
         let calldata = array!['test_val_to_store'];
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
         );
         let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
         setup.alice_identity.approve(execution_id, true);
@@ -376,17 +383,17 @@ pub mod approve {
         let calldata = array![
             poseidon_hash_span(array![setup.accounts.bob_account.contract_address.into()].span()),
             1,
-            1
+            1,
         ];
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
         );
         let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
         stop_cheat_caller_address(setup.alice_identity.contract_address);
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.david_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.david_account.contract_address,
         );
         setup.alice_identity.approve(execution_id, true);
         stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -399,12 +406,12 @@ pub mod approve {
         let to = setup.alice_identity.contract_address;
         let selector = selector!("add_key");
         let bob_address_hash = poseidon_hash_span(
-            array![setup.accounts.bob_account.contract_address.into()].span()
+            array![setup.accounts.bob_account.contract_address.into()].span(),
         );
         let calldata = array![bob_address_hash, 1, 1];
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
         );
         let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
         stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -412,14 +419,14 @@ pub mod approve {
         let mut spy = spy_events();
         // Approve with management key
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address,
         );
         setup.alice_identity.approve(execution_id, true);
         stop_cheat_caller_address(setup.alice_identity.contract_address);
 
         assert!(
             setup.alice_identity.get_key_purposes(bob_address_hash) == array![1].span(),
-            "Key purposes does not match"
+            "Key purposes does not match",
         );
 
         spy
@@ -428,16 +435,16 @@ pub mod approve {
                     (
                         setup.alice_identity.contract_address,
                         ierc734::ERC734Event::Approved(
-                            ierc734::Approved { execution_id, approved: true }
-                        )
+                            ierc734::Approved { execution_id, approved: true },
+                        ),
                     ),
                     (
                         setup.alice_identity.contract_address,
                         ierc734::ERC734Event::Executed(
-                            ierc734::Executed { execution_id, to, selector, data: calldata.span() }
-                        )
-                    )
-                ]
+                            ierc734::Executed { execution_id, to, selector, data: calldata.span() },
+                        ),
+                    ),
+                ],
             );
     }
 
@@ -452,7 +459,7 @@ pub mod approve {
         let calldata = array![value_to_store];
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
         );
         let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
         stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -460,7 +467,7 @@ pub mod approve {
         let mut spy = spy_events();
         // Approve with action key
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.david_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.david_account.contract_address,
         );
         setup.alice_identity.approve(execution_id, true);
         stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -473,16 +480,16 @@ pub mod approve {
                     (
                         setup.alice_identity.contract_address,
                         ierc734::ERC734Event::Approved(
-                            ierc734::Approved { execution_id, approved: true }
-                        )
+                            ierc734::Approved { execution_id, approved: true },
+                        ),
                     ),
                     (
                         setup.alice_identity.contract_address,
                         ierc734::ERC734Event::Executed(
-                            ierc734::Executed { execution_id, to, selector, data: calldata.span() }
-                        )
-                    )
-                ]
+                            ierc734::Executed { execution_id, to, selector, data: calldata.span() },
+                        ),
+                    ),
+                ],
             );
     }
 
@@ -497,7 +504,7 @@ pub mod approve {
         let calldata = array![value_to_store];
 
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
         );
         let execution_id = setup.alice_identity.execute(to, selector, calldata.span());
         stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -505,13 +512,13 @@ pub mod approve {
         let mut spy = spy_events();
         // Approve with action key
         start_cheat_caller_address(
-            setup.alice_identity.contract_address, setup.accounts.david_account.contract_address
+            setup.alice_identity.contract_address, setup.accounts.david_account.contract_address,
         );
         setup.alice_identity.approve(execution_id, false);
         stop_cheat_caller_address(setup.alice_identity.contract_address);
 
         assert!(
-            simple_storage_dispatcher.get_value() == '', "Call executed when expected otherwise"
+            simple_storage_dispatcher.get_value() == '', "Call executed when expected otherwise",
         );
 
         spy
@@ -520,10 +527,10 @@ pub mod approve {
                     (
                         setup.alice_identity.contract_address,
                         ierc734::ERC734Event::Approved(
-                            ierc734::Approved { execution_id, approved: false }
-                        )
+                            ierc734::Approved { execution_id, approved: false },
+                        ),
                     ),
-                ]
+                ],
             );
     }
 }

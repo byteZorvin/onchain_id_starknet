@@ -38,7 +38,7 @@ mod Identity {
         #[substorage(v0)]
         upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
-        identity: IdentityComponent::Storage
+        identity: IdentityComponent::Storage,
     }
 
     #[event]
@@ -51,14 +51,14 @@ mod Identity {
         #[flat]
         VersionManagerEvent: VersionManagerComponent::Event,
         #[flat]
-        UpgradeableEvent: UpgradeableComponent::Event
+        UpgradeableEvent: UpgradeableComponent::Event,
     }
 
     #[constructor]
     fn constructor(
         ref self: ContractState,
         implementation_authority: ContractAddress,
-        initial_management_key_hash: ContractAddress
+        initial_management_key_hash: ContractAddress,
     ) {
         self.version_manager.initialize(implementation_authority);
         self.identity.initialize(initial_management_key_hash);

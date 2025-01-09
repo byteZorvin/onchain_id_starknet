@@ -1,7 +1,7 @@
 pub mod constructor {
     use core::num::traits::Zero;
     use crate::common::setup_factory;
-    use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+    use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
     #[test]
     #[should_panic]
     fn test_should_panic_when_deployment_when_implementation_authority_zero_address() {
@@ -25,8 +25,8 @@ pub mod constructor {
 
 pub mod create_identity {
     use core::num::traits::Zero;
-    use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
     use crate::common::{setup_factory, setup_identity};
+    use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
     use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 
     #[test]
@@ -41,7 +41,7 @@ pub mod create_identity {
     fn test_should_panic_when_wallet_zero_address() {
         let setup = setup_factory();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup.identity_factory.create_identity(Zero::zero(), 'salt');
         stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -52,7 +52,7 @@ pub mod create_identity {
     fn test_should_panic_when_salt_is_zero() {
         let setup = setup_factory();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup
             .identity_factory
@@ -65,7 +65,7 @@ pub mod create_identity {
     fn test_should_panic_when_salt_is_taken() {
         let setup = setup_factory();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup
             .identity_factory
@@ -81,7 +81,7 @@ pub mod create_identity {
     fn test_should_panic_when_wallet_already_linked_to_an_identity() {
         let setup = setup_identity();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup
             .identity_factory
@@ -92,15 +92,15 @@ pub mod create_identity {
 
 pub mod create_identity_with_management_keys {
     use core::poseidon::poseidon_hash_span;
+    use crate::common::setup_identity;
     use onchain_id_starknet::factory::id_factory::IdFactory;
     use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
     use onchain_id_starknet::interface::ierc734;
     use onchain_id_starknet::interface::iidentity::{
-        IdentityABIDispatcher, IdentityABIDispatcherTrait
+        IdentityABIDispatcher, IdentityABIDispatcherTrait,
     };
-    use crate::common::setup_identity;
     use snforge_std::{
-        start_cheat_caller_address, stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait
+        EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
 
     #[test]
@@ -108,12 +108,12 @@ pub mod create_identity_with_management_keys {
     fn test_should_panic_when_no_management_keys_are_provided() {
         let setup = setup_identity();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         setup
             .identity_factory
             .create_identity_with_management_keys(
-                setup.accounts.david_account.contract_address, 'salt1', array![]
+                setup.accounts.david_account.contract_address, 'salt1', array![],
             );
         stop_cheat_caller_address(setup.identity_factory.contract_address);
     }
@@ -123,18 +123,18 @@ pub mod create_identity_with_management_keys {
     fn test_should_panic_when_wallet_is_included_in_management_keys() {
         let setup = setup_identity();
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         let dummy_key_1_hash = poseidon_hash_span(array!['dummy_key_1'].span());
         let david_account_address_hash = poseidon_hash_span(
-            array![setup.accounts.david_account.contract_address.into()].span()
+            array![setup.accounts.david_account.contract_address.into()].span(),
         );
         setup
             .identity_factory
             .create_identity_with_management_keys(
                 setup.accounts.david_account.contract_address,
                 'salt1',
-                array![dummy_key_1_hash, david_account_address_hash]
+                array![dummy_key_1_hash, david_account_address_hash],
             );
         stop_cheat_caller_address(setup.identity_factory.contract_address);
     }
@@ -145,7 +145,7 @@ pub mod create_identity_with_management_keys {
         let dummy_key_1_hash = poseidon_hash_span(array!['dummy_key_1'].span());
         let dummy_key_2_hash = poseidon_hash_span(array!['dummy_key_2'].span());
         start_cheat_caller_address(
-            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address
+            setup.identity_factory.contract_address, setup.accounts.owner_account.contract_address,
         );
         let mut spy = spy_events();
         let deployed_address = setup
@@ -153,11 +153,11 @@ pub mod create_identity_with_management_keys {
             .create_identity_with_management_keys(
                 setup.accounts.david_account.contract_address,
                 'salt1',
-                array![dummy_key_1_hash, dummy_key_2_hash]
+                array![dummy_key_1_hash, dummy_key_2_hash],
             );
         stop_cheat_caller_address(setup.identity_factory.contract_address);
         let factory_address_hash = poseidon_hash_span(
-            array![setup.identity_factory.contract_address.into()].span()
+            array![setup.identity_factory.contract_address.into()].span(),
         );
         spy
             .assert_emitted(
@@ -165,30 +165,32 @@ pub mod create_identity_with_management_keys {
                     (
                         deployed_address,
                         ierc734::ERC734Event::KeyAdded(
-                            ierc734::KeyAdded { key: factory_address_hash, purpose: 1, key_type: 1 }
-                        )
+                            ierc734::KeyAdded {
+                                key: factory_address_hash, purpose: 1, key_type: 1,
+                            },
+                        ),
                     ),
                     (
                         deployed_address,
                         ierc734::ERC734Event::KeyAdded(
-                            ierc734::KeyAdded { key: dummy_key_1_hash, purpose: 1, key_type: 1 }
-                        )
+                            ierc734::KeyAdded { key: dummy_key_1_hash, purpose: 1, key_type: 1 },
+                        ),
                     ),
                     (
                         deployed_address,
                         ierc734::ERC734Event::KeyAdded(
-                            ierc734::KeyAdded { key: dummy_key_2_hash, purpose: 1, key_type: 1 }
-                        )
+                            ierc734::KeyAdded { key: dummy_key_2_hash, purpose: 1, key_type: 1 },
+                        ),
                     ),
                     (
                         deployed_address,
                         ierc734::ERC734Event::KeyRemoved(
                             ierc734::KeyRemoved {
-                                key: factory_address_hash, purpose: 1, key_type: 1
-                            }
-                        )
-                    )
-                ]
+                                key: factory_address_hash, purpose: 1, key_type: 1,
+                            },
+                        ),
+                    ),
+                ],
             );
 
         spy
@@ -196,23 +198,23 @@ pub mod create_identity_with_management_keys {
                 @array![
                     (
                         setup.identity_factory.contract_address,
-                        IdFactory::Event::Deployed(IdFactory::Deployed { deployed_address })
+                        IdFactory::Event::Deployed(IdFactory::Deployed { deployed_address }),
                     ),
                     (
                         setup.identity_factory.contract_address,
                         IdFactory::Event::WalletLinked(
                             IdFactory::WalletLinked {
                                 wallet: setup.accounts.david_account.contract_address,
-                                identity: deployed_address
-                            }
-                        )
-                    )
-                ]
+                                identity: deployed_address,
+                            },
+                        ),
+                    ),
+                ],
             );
 
         let david_identity = IdentityABIDispatcher { contract_address: deployed_address };
         assert!(
-            !david_identity.key_has_purpose(factory_address_hash, 1), "Factory key not removed"
+            !david_identity.key_has_purpose(factory_address_hash, 1), "Factory key not removed",
         );
         assert!(david_identity.key_has_purpose(dummy_key_1_hash, 1), "dummy key 1 not registered");
         assert!(david_identity.key_has_purpose(dummy_key_2_hash, 1), "dummy key 2 not registered");
@@ -222,12 +224,12 @@ pub mod create_identity_with_management_keys {
 pub mod link_unlink_wallet {
     pub mod link_wallet {
         use core::num::traits::Zero;
+        use crate::common::setup_identity;
         use onchain_id_starknet::factory::id_factory::IdFactory;
         use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
-        use crate::common::setup_identity;
         use snforge_std::{
-            start_cheat_caller_address, stop_cheat_caller_address, spy_events,
-            EventSpyAssertionsTrait
+            EventSpyAssertionsTrait, spy_events, start_cheat_caller_address,
+            stop_cheat_caller_address,
         };
 
         #[test]
@@ -236,7 +238,7 @@ pub mod link_unlink_wallet {
             let setup = setup_identity();
             start_cheat_caller_address(
                 setup.identity_factory.contract_address,
-                setup.accounts.alice_account.contract_address
+                setup.accounts.alice_account.contract_address,
             );
             setup.identity_factory.link_wallet(Zero::zero());
             stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -248,7 +250,7 @@ pub mod link_unlink_wallet {
             let setup = setup_identity();
             start_cheat_caller_address(
                 setup.identity_factory.contract_address,
-                setup.accounts.david_account.contract_address
+                setup.accounts.david_account.contract_address,
             );
             setup.identity_factory.link_wallet(setup.accounts.david_account.contract_address);
             stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -259,7 +261,8 @@ pub mod link_unlink_wallet {
         fn test_should_revert_when_new_wallet_already_linked_identity() {
             let setup = setup_identity();
             start_cheat_caller_address(
-                setup.identity_factory.contract_address, setup.accounts.bob_account.contract_address
+                setup.identity_factory.contract_address,
+                setup.accounts.bob_account.contract_address,
             );
             setup.identity_factory.link_wallet(setup.accounts.alice_account.contract_address);
             stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -271,7 +274,8 @@ pub mod link_unlink_wallet {
             let setup = setup_identity();
 
             start_cheat_caller_address(
-                setup.identity_factory.contract_address, setup.accounts.bob_account.contract_address
+                setup.identity_factory.contract_address,
+                setup.accounts.bob_account.contract_address,
             );
             setup.identity_factory.link_wallet(setup.token_address);
             stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -285,7 +289,7 @@ pub mod link_unlink_wallet {
 
             start_cheat_caller_address(
                 setup.identity_factory.contract_address,
-                setup.accounts.alice_account.contract_address
+                setup.accounts.alice_account.contract_address,
             );
             setup.identity_factory.link_wallet(setup.accounts.david_account.contract_address);
             stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -298,32 +302,32 @@ pub mod link_unlink_wallet {
                             IdFactory::Event::WalletLinked(
                                 IdFactory::WalletLinked {
                                     wallet: setup.accounts.david_account.contract_address,
-                                    identity: setup.alice_identity.contract_address
-                                }
-                            )
-                        )
-                    ]
+                                    identity: setup.alice_identity.contract_address,
+                                },
+                            ),
+                        ),
+                    ],
                 );
 
             let wallets = setup.identity_factory.get_wallets(setup.alice_identity.contract_address);
             assert!(
                 wallets == array![
                     setup.accounts.alice_account.contract_address,
-                    setup.accounts.david_account.contract_address
+                    setup.accounts.david_account.contract_address,
                 ],
-                "key not linked"
+                "key not linked",
             );
         }
     }
 
     pub mod unlink_wallet {
         use core::num::traits::Zero;
+        use crate::common::setup_identity;
         use onchain_id_starknet::factory::id_factory::IdFactory;
         use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcherTrait;
-        use crate::common::setup_identity;
         use snforge_std::{
-            start_cheat_caller_address, stop_cheat_caller_address, spy_events,
-            EventSpyAssertionsTrait
+            EventSpyAssertionsTrait, spy_events, start_cheat_caller_address,
+            stop_cheat_caller_address,
         };
 
         #[test]
@@ -332,7 +336,7 @@ pub mod link_unlink_wallet {
             let setup = setup_identity();
             start_cheat_caller_address(
                 setup.identity_factory.contract_address,
-                setup.accounts.alice_account.contract_address
+                setup.accounts.alice_account.contract_address,
             );
             setup.identity_factory.unlink_wallet(Zero::zero());
             stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -344,7 +348,7 @@ pub mod link_unlink_wallet {
             let setup = setup_identity();
             start_cheat_caller_address(
                 setup.identity_factory.contract_address,
-                setup.accounts.alice_account.contract_address
+                setup.accounts.alice_account.contract_address,
             );
             setup.identity_factory.unlink_wallet(setup.accounts.alice_account.contract_address);
             stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -355,7 +359,7 @@ pub mod link_unlink_wallet {
             let setup = setup_identity();
             start_cheat_caller_address(
                 setup.identity_factory.contract_address,
-                setup.accounts.david_account.contract_address
+                setup.accounts.david_account.contract_address,
             );
             setup.identity_factory.unlink_wallet(setup.accounts.alice_account.contract_address);
             stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -369,7 +373,7 @@ pub mod link_unlink_wallet {
 
             start_cheat_caller_address(
                 setup.identity_factory.contract_address,
-                setup.accounts.alice_account.contract_address
+                setup.accounts.alice_account.contract_address,
             );
             setup.identity_factory.link_wallet(setup.accounts.david_account.contract_address);
             let wallets_mid = setup
@@ -378,9 +382,9 @@ pub mod link_unlink_wallet {
             assert!(
                 wallets_mid == array![
                     setup.accounts.alice_account.contract_address,
-                    setup.accounts.david_account.contract_address
+                    setup.accounts.david_account.contract_address,
                 ],
-                "key not linked"
+                "key not linked",
             );
             setup.identity_factory.unlink_wallet(setup.accounts.david_account.contract_address);
             stop_cheat_caller_address(setup.identity_factory.contract_address);
@@ -393,18 +397,18 @@ pub mod link_unlink_wallet {
                             IdFactory::Event::WalletUnlinked(
                                 IdFactory::WalletUnlinked {
                                     wallet: setup.accounts.david_account.contract_address,
-                                    identity: setup.alice_identity.contract_address
-                                }
-                            )
-                        )
-                    ]
+                                    identity: setup.alice_identity.contract_address,
+                                },
+                            ),
+                        ),
+                    ],
                 );
             let wallets_after = setup
                 .identity_factory
                 .get_wallets(setup.alice_identity.contract_address);
             assert!(
                 wallets_after == array![setup.accounts.alice_account.contract_address],
-                "key not unlinked"
+                "key not unlinked",
             );
         }
     }
