@@ -31,7 +31,7 @@ pub mod verify {
         assert(true, '');
     }
     #[test]
-    fn test_should_return_flase_when_verifier_expect_multiple_claim_topic_and_allow_multiple_trusted_issuers_when_identity_is_not_compliant() {
+    fn test_should_return_false_when_verifier_expect_multiple_claim_topic_and_allow_multiple_trusted_issuers_when_identity_is_not_compliant() {
         assert(true, '');
     }
 }

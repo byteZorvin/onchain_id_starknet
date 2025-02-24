@@ -103,13 +103,13 @@ pub mod ClaimIssuer {
                 return false;
             }
             // NOTE: How about comply with SNIP12
-            let mut seralized_claim: Array<felt252> = array![];
-            identity.serialize(ref seralized_claim);
-            seralized_claim.append(claim_topic);
-            data.serialize(ref seralized_claim);
+            let mut serialized_claim: Array<felt252> = array![];
+            identity.serialize(ref serialized_claim);
+            serialized_claim.append(claim_topic);
+            data.serialize(ref serialized_claim);
             // TODO: Add prefix
             let data_hash = poseidon_hash_span(
-                array!['Starknet Message', poseidon_hash_span(seralized_claim.span())].span(),
+                array!['Starknet Message', poseidon_hash_span(serialized_claim.span())].span(),
             );
             is_valid_signature(data_hash, signature)
         }
