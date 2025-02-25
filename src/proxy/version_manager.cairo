@@ -3,7 +3,7 @@ pub trait IUpgradeable<TContractState> {
     fn upgrade(ref self: TContractState) -> bool;
 }
 //! TODO: Implement time windowed upgrades to allow users to have sometime to sync their
-//! implemenation.
+//! implementation.
 #[starknet::component]
 pub mod VersionManagerComponent {
     use core::num::traits::Zero;

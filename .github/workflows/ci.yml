@@ -5,6 +5,11 @@ on:
       - main
   pull_request:
 jobs:
+  typos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crate-ci/typos@master
   check:
     runs-on: ubuntu-latest
     steps:

@@ -234,7 +234,7 @@ pub mod Gateway {
         ///
         /// # Arguments
         ///
-        /// * `identity_owner` - A `ContractAddress` respresenting the address to be added as
+        /// * `identity_owner` - A `ContractAddress` representing the address to be added as
         /// MANAGEMENT key.
         /// * `salt` - A `felt252` representing the salt used while deployment.
         /// * `signature_expiry`- A `u64` representing the block timestamp where the signature will
@@ -268,8 +268,8 @@ pub mod Gateway {
             }
             /// TODO: comply with  SNIP12
             let mut serialized_message: Array<felt252> = array![];
-            let seperator: ByteArray = "Authorize ONCHAINID deployment";
-            seperator.serialize(ref serialized_message);
+            let separator: ByteArray = "Authorize ONCHAINID deployment";
+            separator.serialize(ref serialized_message);
             identity_owner.serialize(ref serialized_message);
             salt.serialize(ref serialized_message);
             signature_expiry.serialize(ref serialized_message);
@@ -301,7 +301,7 @@ pub mod Gateway {
         ///
         /// # Arguments
         ///
-        /// * `identity_owner` - A `ContractAddress` respresenting the address to be added as
+        /// * `identity_owner` - A `ContractAddress` representing the address to be added as
         /// MANAGEMENT key.
         /// * `salt` - A `felt252` representing the salt used while deployment.
         /// * `signature_expiry`- A `u64` representing the block timestamp where the signature will
@@ -339,8 +339,8 @@ pub mod Gateway {
             }
             /// TODO: comply with  SNIP12
             let mut serialized_message: Array<felt252> = array![];
-            let seperator: ByteArray = "Authorize ONCHAINID deployment";
-            seperator.serialize(ref serialized_message);
+            let separator: ByteArray = "Authorize ONCHAINID deployment";
+            separator.serialize(ref serialized_message);
             identity_owner.serialize(ref serialized_message);
             salt.serialize(ref serialized_message);
             management_keys.serialize(ref serialized_message);
@@ -369,7 +369,7 @@ pub mod Gateway {
         ///
         /// # Arguments
         ///
-        /// * `identity_owner` - A `ContractAddress` respresenting the address to be added as
+        /// * `identity_owner` - A `ContractAddress` representing the address to be added as
         /// MANAGEMENT key and will be used as salt value.
         ///
         /// # Requirements
@@ -470,7 +470,7 @@ pub mod Gateway {
         ///
         /// # Returns
         ///
-        /// A `bool` representing wether if signer is apprroved or not. true if approved.
+        /// A `bool` representing whether if signer is approved or not. true if approved.
         fn is_approved_signer(self: @ContractState, signer: felt252) -> bool {
             self.approved_signers.entry(signer).read()
         }
@@ -479,7 +479,7 @@ pub mod Gateway {
         ///
         /// # Returns
         ///
-        /// A `bool` representing wether the signature is revoked. true if revoked.
+        /// A `bool` representing whether the signature is revoked. true if revoked.
         fn is_revoked_signature(self: @ContractState, signature: Signature) -> bool {
             self.revoked_signatures.entry(signature).read()
         }

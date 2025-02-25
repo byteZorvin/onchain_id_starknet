@@ -78,13 +78,13 @@ pub mod IdentityComponent {
                 return false;
             }
             // NOTE: How about comply with SNIP12
-            let mut seralized_claim: Array<felt252> = array![];
-            identity.serialize(ref seralized_claim);
-            seralized_claim.append(claim_topic);
-            data.serialize(ref seralized_claim);
+            let mut serialized_claim: Array<felt252> = array![];
+            identity.serialize(ref serialized_claim);
+            serialized_claim.append(claim_topic);
+            data.serialize(ref serialized_claim);
             // TODO: Add prefix
             let data_hash = poseidon_hash_span(
-                array!['Starknet Message', poseidon_hash_span(seralized_claim.span())].span(),
+                array!['Starknet Message', poseidon_hash_span(serialized_claim.span())].span(),
             );
 
             is_valid_signature(data_hash, signature)
@@ -113,7 +113,7 @@ pub mod IdentityComponent {
         ///
         /// # Returns
         ///
-        /// A `bool` indicating wether key is added succesfully or not
+        /// A `bool` indicating whether key is added successfully or not
         fn add_key(
             ref self: ComponentState<TContractState>,
             key: felt252,
@@ -156,7 +156,7 @@ pub mod IdentityComponent {
         ///
         /// # Returns
         ///
-        /// A `bool` indicating wether key is removed succesfully or not
+        /// A `bool` indicating whether key is removed successfully or not
         fn remove_key(
             ref self: ComponentState<TContractState>, key: felt252, purpose: felt252,
         ) -> bool {

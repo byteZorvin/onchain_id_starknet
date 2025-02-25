@@ -99,7 +99,7 @@ pub mod IdFactory {
         pub const TOKEN_OWNER_IS_ZERO_ADDRESS: felt252 = 'token owner address zero';
         pub const OWNER_IS_ZERO_ADDRESS: felt252 = 'owner is zero address';
         pub const IMPLEMENTATION_AUTH_ZERO_ADDRESS: felt252 = 'impl. auth. zero address';
-        pub const WALLET_IS_ZERO_ADDRES: felt252 = 'wallet is zero address';
+        pub const WALLET_IS_ZERO_ADDRESS: felt252 = 'wallet is zero address';
         pub const ALREADY_FACTORY: felt252 = 'already a factory';
         pub const NOT_FACTORY: felt252 = 'not a factory';
         pub const WALLET_ALREADY_LINKED: felt252 = 'wallet already linked';
@@ -130,7 +130,7 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `factory` - A 'ContractAddress' respresenting the address to be registered as token
+        /// * `factory` - A 'ContractAddress' representing the address to be registered as token
         /// factory.
         ///
         /// # Requirements
@@ -150,7 +150,7 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `factory` - A 'ContractAddress' respresenting the address of token factory to be
+        /// * `factory` - A 'ContractAddress' representing the address of token factory to be
         /// unregistered.
         ///
         /// # Requirements
@@ -170,7 +170,7 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `wallet` - A `ContractAddress` respresenting the address to be added as MANAGEMENT
+        /// * `wallet` - A `ContractAddress` representing the address to be added as MANAGEMENT
         /// key.
         /// * `salt` - A `felt252` representing the salt used while deployment.
         ///
@@ -184,7 +184,7 @@ pub mod IdFactory {
             ref self: ContractState, wallet: ContractAddress, salt: felt252,
         ) -> ContractAddress {
             self.ownable.assert_only_owner();
-            assert(wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRES);
+            assert(wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRESS);
             assert(
                 salt.is_non_zero(), Errors::SALT_IS_ZERO,
             ); // decide felt252 ok for salt or ByteArray needed
@@ -211,7 +211,7 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `wallet` - A `ContractAddress` respresenting the primary owner of deployed identity
+        /// * `wallet` - A `ContractAddress` representing the primary owner of deployed identity
         /// contract.
         /// * `salt` - A `felt252` representing the salt used while deployment.
         /// * `management_keys` - A `Array<felt252>` representing the array of keys hash(poseidon
@@ -231,7 +231,7 @@ pub mod IdFactory {
             management_keys: Array<felt252>,
         ) -> ContractAddress {
             self.ownable.assert_only_owner();
-            assert(wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRES);
+            assert(wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRESS);
             assert(
                 salt.is_non_zero(), Errors::SALT_IS_ZERO,
             ); // decide felt252 ok for salt or ByteArray needed
@@ -278,8 +278,8 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `token` - A `ContractAddress` respresenting the address of the token contract.
-        /// * `token_owner` - A `ContractAddress` respresenting the address of the owner of token.
+        /// * `token` - A `ContractAddress` representing the address of the token contract.
+        /// * `token_owner` - A `ContractAddress` representing the address of the owner of token.
         /// * `salt` - A `felt252` representing the salt used while deployment.
         ///
         /// # Requirements
@@ -332,7 +332,7 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `new_wallet` - A 'ContractAddress' respresenting the address of wallet to link.
+        /// * `new_wallet` - A 'ContractAddress' representing the address of wallet to link.
         ///
         /// # Requirements
         ///
@@ -341,7 +341,7 @@ pub mod IdFactory {
         /// - `new_wallet` must not be already linked to an identity.
         /// - `new_wallet` must not be zero address.
         fn link_wallet(ref self: ContractState, new_wallet: ContractAddress) {
-            assert(new_wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRES);
+            assert(new_wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRESS);
             let caller_user_identity = self
                 .user_identity
                 .entry(starknet::get_caller_address())
@@ -372,7 +372,7 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `old_wallet` - A 'ContractAddress' respresenting the address of wallet to unlink.
+        /// * `old_wallet` - A 'ContractAddress' representing the address of wallet to unlink.
         ///
         /// # Requirements
         ///
@@ -380,7 +380,7 @@ pub mod IdFactory {
         /// Caller address cannot be `old_wallet` to keep at least 1 wallet linked to any identity.
         /// `old_wallet` cannot be zero address.
         fn unlink_wallet(ref self: ContractState, old_wallet: ContractAddress) {
-            assert(old_wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRES);
+            assert(old_wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRESS);
             let caller = starknet::get_caller_address();
             assert(old_wallet != caller, Errors::CANNOT_REMOVE_CALLER);
             let old_wallet_user_identity_storage_path = self.user_identity.entry(old_wallet);
@@ -406,7 +406,7 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `wallet` - A 'ContractAddress' respresenting the address of wallet/token to query for.
+        /// * `wallet` - A 'ContractAddress' representing the address of wallet/token to query for.
         ///
         /// # Returns
         ///
@@ -424,7 +424,7 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `identity` - A 'ContractAddress' respresenting the address of identity.
+        /// * `identity` - A 'ContractAddress' representing the address of identity.
         ///
         /// # Returns
         ///
@@ -438,7 +438,7 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `identity` - A 'ContractAddress' respresenting the address of identity.
+        /// * `identity` - A 'ContractAddress' representing the address of identity.
         ///
         /// # Returns
         ///
@@ -451,11 +451,11 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `factory` - A 'ContractAddress' respresenting the address to check.
+        /// * `factory` - A 'ContractAddress' representing the address to check.
         ///
         /// # Returns
         ///
-        /// A `bool` - representing wether given address is registered as token factory. True if
+        /// A `bool` - representing whether given address is registered as token factory. True if
         /// registered as token factory.
         fn is_token_factory(self: @ContractState, factory: ContractAddress) -> bool {
             self.token_factories.entry(factory).read()
@@ -465,11 +465,11 @@ pub mod IdFactory {
         ///
         /// # Arguments
         ///
-        /// * `salt` - A 'felt252' respresenting the salt to check.
+        /// * `salt` - A 'felt252' representing the salt to check.
         ///
         /// # Returns
         ///
-        /// A `bool` - representing wether salt is taken. True for taken.
+        /// A `bool` - representing whether salt is taken. True for taken.
         fn is_salt_taken(self: @ContractState, salt: felt252) -> bool {
             self.salt_taken.entry(salt).read()
         }

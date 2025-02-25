@@ -1,5 +1,5 @@
 //! TODO: Implement time windowed upgrades to allow users to have sometime to sync their
-//! implemenation.
+//! implementation.
 #[starknet::contract]
 pub mod ImplementationAuthority {
     use core::num::traits::Zero;

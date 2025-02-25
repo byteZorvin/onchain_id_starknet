@@ -68,7 +68,7 @@ fn test_should_panic_when_class_hash_does_not_match() {
 }
 
 #[test]
-fn test_should_uprade_implementation() {
+fn test_should_upgrade_implementation() {
     let (mut implementation_authority, mut mock_version_manager) = setup_version_manager();
     start_cheat_caller_address(implementation_authority.contract_address, OWNER_ADDRESS());
     let class_hash_to_update = get_class_hash(implementation_authority.contract_address);

@@ -287,7 +287,7 @@ pub mod execute {
         use super::super::deploy_simple_storage;
 
         #[test]
-        fn test_should_create_pending_execution_requset() {
+        fn test_should_create_pending_execution_request() {
             let setup = setup_identity();
             let simple_storage_dispatcher = deploy_simple_storage();
 

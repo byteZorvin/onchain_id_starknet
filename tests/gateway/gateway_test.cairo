@@ -303,8 +303,8 @@ pub mod deploy_identity_with_salt {
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -336,8 +336,8 @@ pub mod deploy_identity_with_salt {
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
 
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -406,8 +406,8 @@ pub mod deploy_identity_with_salt {
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
 
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -479,8 +479,8 @@ pub mod deploy_identity_with_salt {
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
 
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -517,8 +517,8 @@ pub mod deploy_identity_with_salt {
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
 
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -611,8 +611,8 @@ pub mod deploy_identity_with_salt_and_management_keys {
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -649,8 +649,8 @@ pub mod deploy_identity_with_salt_and_management_keys {
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -740,8 +740,8 @@ pub mod deploy_identity_with_salt_and_management_keys {
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -834,8 +834,8 @@ pub mod deploy_identity_with_salt_and_management_keys {
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -883,8 +883,8 @@ pub mod deploy_identity_with_salt_and_management_keys {
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -1155,8 +1155,8 @@ pub mod revoke_signature {
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
 
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -1183,8 +1183,8 @@ pub mod revoke_signature {
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
 
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -1215,8 +1215,8 @@ pub mod revoke_signature {
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
 
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -1272,8 +1272,8 @@ pub mod approve_signature {
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
 
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -1305,8 +1305,8 @@ pub mod approve_signature {
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
 
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);
@@ -1335,8 +1335,8 @@ pub mod approve_signature {
         let setup = setup_gateway(factory_setup, array![carol_pub_key].span());
 
         let mut serialized_message: Array<felt252> = array![];
-        let seperator: ByteArray = "Authorize ONCHAINID deployment";
-        seperator.serialize(ref serialized_message);
+        let separator: ByteArray = "Authorize ONCHAINID deployment";
+        separator.serialize(ref serialized_message);
         setup.accounts.alice_account.contract_address.serialize(ref serialized_message);
         let salt = 'salt_to_use';
         salt.serialize(ref serialized_message);

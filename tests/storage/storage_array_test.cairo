@@ -204,7 +204,7 @@ fn test_delete_from_vec_felt252() {
 }
 
 #[test]
-fn test_delet_from_vec_contract_address() {
+fn test_delete_from_vec_contract_address() {
     StorageArrayHolder::__external::append_vec_contract_address(
         serialized(starknet::contract_address_const::<'first_address'>()),
     );
