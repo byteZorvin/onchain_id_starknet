@@ -17,4 +17,5 @@ jobs:
       - uses: foundry-rs/setup-snfoundry@v4
       - uses: software-mansion/setup-scarb@v1.5.0
       - run: scarb fmt --check
+      - run: scarb lint
       - run: snforge test
