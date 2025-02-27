@@ -2,18 +2,18 @@
 name = "onchain_id_starknet"
 version = "0.1.0"
 edition = "2024_07"
-cairo-version = "2.9.4"
-scarb-version = "2.9.4"
+cairo-version = "2.10.1"
+scarb-version = "2.10.1"
 
 [dependencies]
-starknet = "2.9.4"
+starknet = "2.10.1"
 openzeppelin_access = "1.0.0"
 openzeppelin_introspection = "1.0.0"
 openzeppelin_upgrades = "1.0.0"
 openzeppelin_account = "1.0.0"
 
 [dev-dependencies]
-snforge_std = "0.37.0"
+snforge_std = "0.38.0"
 
 [lib]
 sierra = true
@@ -28,3 +28,6 @@ sort-module-level-items = true
 
 [scripts]
 test = "snforge test"
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
