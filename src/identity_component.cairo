@@ -17,8 +17,9 @@ pub mod IdentityComponent {
             StorageArrayFelt252IndexView, StorageArrayTrait,
         },
         structs::{
-            Claim, Execution, Key, Signature, delete_claim, delete_key, get_public_key_hash,
-            is_valid_signature,
+            Claim, Execution, Key, Signature, add_purpose, get_all_purposes, get_public_key_hash,
+            has_purpose, is_valid_signature, pack_purposes_and_key_type, remove_purpose,
+            split_purposes_and_key_type,
         },
     };
     use onchain_id_starknet::version::version::VersionComponent;
@@ -122,18 +123,28 @@ pub mod IdentityComponent {
         ) -> bool {
             self.only_manager();
             let mut key_storage_path = self.Identity_keys.entry(key);
+            let purpose_index: u8 = purpose.try_into().unwrap();
             if key_storage_path.key.read() == key {
-                let purposes_storage_path = key_storage_path.purposes.deref();
-                for i in 0..purposes_storage_path.len() {
-                    assert(
-                        purpose != purposes_storage_path[i].read(), Errors::KEY_ALREADY_HAS_PURPOSE,
+                let purposes_and_key_type_storage_path = key_storage_path
+                    .purposes_and_key_type
+                    .deref();
+                let (purposes, key_type) = split_purposes_and_key_type(
+                    purposes_and_key_type_storage_path.read(),
+                );
+                assert(!has_purpose(purposes, purpose_index), Errors::KEY_ALREADY_HAS_PURPOSE);
+                let updated_purposes = add_purpose(purposes, purpose_index);
+                purposes_and_key_type_storage_path
+                    .write(
+                        pack_purposes_and_key_type(updated_purposes, key_type.try_into().unwrap()),
                     );
-                };
-                purposes_storage_path.append().write(purpose);
             } else {
                 key_storage_path.key.write(key);
-                key_storage_path.key_type.write(key_type);
-                key_storage_path.purposes.deref().append().write(purpose);
+                let updated_purposes = add_purpose(Zero::zero(), purpose_index);
+                key_storage_path
+                    .purposes_and_key_type
+                    .write(
+                        pack_purposes_and_key_type(updated_purposes, key_type.try_into().unwrap()),
+                    );
             }
             self.Identity_keys_by_purpose.entry(purpose).append().write(key);
             self.emit(ERC734Event::KeyAdded(ierc734::KeyAdded { key, purpose, key_type }));
@@ -164,42 +175,41 @@ pub mod IdentityComponent {
             let key_storage_path = self.Identity_keys.entry(key);
             assert(key_storage_path.key.read() == key, Errors::KEY_NOT_REGISTERED);
 
-            let purposes_storage_path = key_storage_path.purposes.deref();
-            let purpose_size = purposes_storage_path.len();
-            let mut purpose_index = Option::None;
-            for i in 0..purpose_size {
-                if purpose == purposes_storage_path[i].read() {
-                    purpose_index = Option::Some(i);
-                    break;
-                }
-            };
-            assert(purpose_index != Option::None, Errors::KEY_DOES_NOT_HAVE_PURPOSE);
-            purposes_storage_path.delete(purpose_index.unwrap());
+            let purpose_index: u8 = purpose.try_into().unwrap();
+            let purposes_and_key_type_storage_path = key_storage_path.purposes_and_key_type.deref();
+            let purposes_and_key_type = purposes_and_key_type_storage_path.read();
+            let (purposes, key_type) = split_purposes_and_key_type(purposes_and_key_type);
+            assert(has_purpose(purposes, purpose_index), Errors::KEY_DOES_NOT_HAVE_PURPOSE);
+
+            let updated_purposes = remove_purpose(purposes, purpose_index);
+            if updated_purposes.is_zero() {
+                purposes_and_key_type_storage_path.write(Zero::zero());
+                key_storage_path.key.write(Zero::zero());
+            } else {
+                purposes_and_key_type_storage_path
+                    .write(pack_purposes_and_key_type(updated_purposes, key_type));
+            }
 
             let keys_by_purpose_key_storage_path = self.Identity_keys_by_purpose.entry(purpose);
-            let mut keys_len = keys_by_purpose_key_storage_path.len();
             // MOTE: this loops assumes that whenever key is added to keys mapping it
             // keys_by_purpose mapping is also updated thus no need to check for
             // purpose exist for key or not if this invariant holds check for
             // removal above should guarantee purpose exist for key
             let mut key_index = 0;
-            for i in 0..keys_len {
+            for i in 0..keys_by_purpose_key_storage_path.len() {
                 if keys_by_purpose_key_storage_path[i].read() == key {
                     key_index = i;
                     break;
                 }
             };
             keys_by_purpose_key_storage_path.delete(key_index);
-            let key_type = key_storage_path.key_type.read();
 
-            /// if (_purposes.length - 1 == 0) {
-            ///     delete _keys[_key];
-            ///}
-            if purposes_storage_path.len().is_zero() {
-                delete_key(key_storage_path);
-            }
-
-            self.emit(ERC734Event::KeyRemoved(ierc734::KeyRemoved { key, purpose, key_type }));
+            self
+                .emit(
+                    ERC734Event::KeyRemoved(
+                        ierc734::KeyRemoved { key, purpose, key_type: key_type.into() },
+                    ),
+                );
             true
         }
 
@@ -239,6 +249,7 @@ pub mod IdentityComponent {
             if !approve {
                 return false;
             }
+            /// Might invalidate the storage to avoid mailicous executions on idle requests
             execution_storage_path.approved.write(true);
             let selector = execution_storage_path.selector.read();
             let calldata: Span<felt252> = Into::<
@@ -327,8 +338,9 @@ pub mod IdentityComponent {
             self: @ComponentState<TContractState>, key: felt252,
         ) -> (Span<felt252>, felt252, felt252) {
             let key_storage_path = self.Identity_keys.entry(key);
-            let purposes: Array<felt252> = key_storage_path.purposes.deref().into();
-            (purposes.span(), key_storage_path.key_type.read(), key_storage_path.key.read())
+            let purposes_and_key_type = key_storage_path.purposes_and_key_type.read();
+            let (purposes, key_type) = split_purposes_and_key_type(purposes_and_key_type);
+            (get_all_purposes(purposes).span(), key_type.into(), key_storage_path.key.read())
         }
 
         /// Returns the purposes given key has.
@@ -341,10 +353,9 @@ pub mod IdentityComponent {
         ///
         /// A `Span<felt252>` representing the array of purposes given key has.
         fn get_key_purposes(self: @ComponentState<TContractState>, key: felt252) -> Span<felt252> {
-            Into::<
-                StoragePath<StorageArrayFelt252>, Array<felt252>,
-            >::into(self.Identity_keys.entry(key).purposes.deref())
-                .span()
+            let purposes_and_key_type = self.Identity_keys.entry(key).purposes_and_key_type.read();
+            let (purposes, _) = split_purposes_and_key_type(purposes_and_key_type);
+            get_all_purposes(purposes).span()
         }
 
         /// Returns the keys which has given purpose.
@@ -378,20 +389,9 @@ pub mod IdentityComponent {
         fn key_has_purpose(
             self: @ComponentState<TContractState>, key: felt252, purpose: felt252,
         ) -> bool {
-            let key_storage_path = self.Identity_keys.entry(key);
-            if key_storage_path.key.read().is_zero() {
-                return false;
-            }
-            let purposes_storage_path = key_storage_path.purposes.deref();
-            let mut has_purpose = false;
-            for i in 0..purposes_storage_path.len() {
-                let _purpose = purposes_storage_path[i].read();
-                if _purpose == 1 || purpose == _purpose {
-                    has_purpose = true;
-                    break;
-                }
-            };
-            has_purpose
+            let purposes_and_key_type = self.Identity_keys.entry(key).purposes_and_key_type.read();
+            let (purposes, _) = split_purposes_and_key_type(purposes_and_key_type);
+            has_purpose(purposes, 1) || has_purpose(purposes, purpose.try_into().unwrap())
         }
     }
 
@@ -489,7 +489,15 @@ pub mod IdentityComponent {
                         },
                     ),
                 );
-            delete_claim(claim_storage_path);
+
+            /// Delete claim data
+            claim_storage_path.topic.write(Default::default());
+            claim_storage_path.scheme.write(Default::default());
+            claim_storage_path.issuer.write(Zero::zero());
+            // TODO: Clear signature from storage
+            //self.signature.write(Default::default());
+            claim_storage_path.data.write(Default::default());
+            claim_storage_path.uri.write(Default::default());
             true
         }
 
@@ -655,8 +663,7 @@ pub mod IdentityComponent {
             );
             let key_storage_path = self.Identity_keys.entry(initial_management_key_hash);
             key_storage_path.key.write(initial_management_key_hash);
-            key_storage_path.key_type.write(1);
-            key_storage_path.purposes.deref().append().write(1);
+            key_storage_path.purposes_and_key_type.write(pack_purposes_and_key_type(2, 1));
 
             self.Identity_keys_by_purpose.entry(1).append().write(initial_management_key_hash);
             self

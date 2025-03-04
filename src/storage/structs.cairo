@@ -1,8 +1,7 @@
-use core::num::traits::Zero;
+use core::num::traits::{Pow, Zero};
 use core::poseidon::poseidon_hash_span;
 use onchain_id_starknet::storage::storage::StorageArrayFelt252;
 use starknet::ContractAddress;
-use starknet::storage::{Mutable, StoragePath, StoragePointerWriteAccess};
 use starknet::storage_access::{
     StorageBaseAddress, storage_address_from_base, storage_base_address_from_felt252,
 };
@@ -12,14 +11,54 @@ use starknet::{Store, SyscallResult, SyscallResultTrait};
 #[starknet::storage_node]
 pub struct Key {
     /// Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION.
-    pub purposes: StorageArrayFelt252,
-    /// The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 =
+    /// u64 The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA,
+    /// 2 =
     /// RSA, etc.
-    pub key_type: felt252,
+    pub purposes_and_key_type: u128,
     /// Hash of the public key or ContractAddress
     pub key: felt252,
 }
 
+pub const SHIFT_64: u128 = 0x10000000000000000;
+pub const MASK_u64: u128 = 0xFFFFFFFFFFFFFFFF;
+
+pub fn split_purposes_and_key_type(bitmap: u128) -> (u64, u64) {
+    let purposes = bitmap & MASK_u64;
+    let key_type = bitmap / SHIFT_64;
+    (purposes.try_into().unwrap(), key_type.try_into().unwrap())
+}
+
+pub fn pack_purposes_and_key_type(purposes: u64, key_type: u64) -> u128 {
+    purposes.into() + (key_type.into() * SHIFT_64)
+}
+
+pub fn has_purpose(purposes: u64, purpose_index: u8) -> bool {
+    (purposes / 2_u64.pow(purpose_index.into()) & 1).is_non_zero()
+}
+
+pub fn add_purpose(purposes: u64, purpose_index: u8) -> u64 {
+    purposes | 2_u64.pow(purpose_index.into())
+}
+
+pub fn remove_purpose(purposes: u64, purpose_index: u8) -> u64 {
+    purposes & (~2_u64.pow(purpose_index.into()))
+}
+
+pub fn get_all_purposes(purposes: u64) -> Array<felt252> {
+    let mut index = 0;
+    let mut all_purposes = array![];
+    let mut purpouse_invariant = purposes;
+    while purpouse_invariant.is_non_zero() {
+        if (purpouse_invariant & 1).is_non_zero() {
+            all_purposes.append(index.into());
+        }
+        purpouse_invariant /= 2;
+        index += 1;
+    };
+    all_purposes
+}
+
+/// TODO: Storage Pack booleans
 #[starknet::storage_node]
 pub struct Execution {
     /// The address of contract to call.
@@ -59,22 +98,6 @@ pub struct Claim {
     pub uri: ByteArray,
 }
 // NOTE: Implement StoragePacking if this type of sig can comply with compact signatures
-
-// Note: Assumes purposes are already cleared
-pub fn delete_key(self: StoragePath<Mutable<Key>>) {
-    self.key_type.write(Zero::zero());
-    self.key.write(Zero::zero());
-}
-
-pub fn delete_claim(self: StoragePath<Mutable<Claim>>) {
-    self.topic.write(Default::default());
-    self.scheme.write(Default::default());
-    self.issuer.write(Zero::zero());
-    // TODO: Clear signature from storage
-    //self.signature.write(Default::default());
-    self.data.write(Default::default());
-    self.uri.write(Default::default());
-}
 
 #[derive(Copy, Drop, Serde, Hash, Default, starknet::Store)]
 pub struct StarkSignature {
