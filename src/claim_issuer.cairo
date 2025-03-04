@@ -63,11 +63,9 @@ pub mod ClaimIssuer {
     impl ClaimIssuerImpl of IClaimIssuer<ContractState> {
         fn revoke_claim_by_signature(ref self: ContractState, signature: Signature) {
             self.identity.only_manager();
-            let revoked_claim_storage_path = self.revoked_claims.entry(signature);
-            assert(!revoked_claim_storage_path.read(), Errors::CLAIM_ALREADY_REVOKED);
-            revoked_claim_storage_path.write(true);
-            self.emit(ClaimRevoked { signature });
+            self._revoke_claim_by_signature(signature);
         }
+
         // NOTE: Deprecated - see
         // {https://docs.onchainid.com/docs/developers/contracts/claim-issuer#revocation-of-a-claim}
         fn revoke_claim(
@@ -76,10 +74,7 @@ pub mod ClaimIssuer {
             self.identity.only_manager();
             let (_, _, _, signature, _, _) = IERC735Dispatcher { contract_address: identity }
                 .get_claim(claim_id);
-            let revoked_claim_storage_path = self.revoked_claims.entry(signature);
-            assert(!revoked_claim_storage_path.read(), Errors::CLAIM_ALREADY_REVOKED);
-            revoked_claim_storage_path.write(true);
-            self.emit(ClaimRevoked { signature });
+            self._revoke_claim_by_signature(signature);
             true
         }
 
@@ -101,6 +96,17 @@ pub mod ClaimIssuer {
                 return false;
             }
             self.identity.is_claim_valid(identity, claim_topic, signature, data)
+        }
+    }
+
+    #[generate_trait]
+    impl InternalImpl of InternalTrait {
+        #[inline]
+        fn _revoke_claim_by_signature(ref self: ContractState, signature: Signature) {
+            let revoked_claim_storage_path = self.revoked_claims.entry(signature);
+            assert(!revoked_claim_storage_path.read(), Errors::CLAIM_ALREADY_REVOKED);
+            revoked_claim_storage_path.write(true);
+            self.emit(ClaimRevoked { signature });
         }
     }
 }
