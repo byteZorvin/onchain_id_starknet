@@ -1,5 +1,6 @@
 use core::num::traits::{Pow, Zero};
 use core::poseidon::poseidon_hash_span;
+use core::starknet::storage_access::StorePacking;
 use onchain_id_starknet::storage::storage::StorageArrayFelt252;
 use starknet::ContractAddress;
 use starknet::storage_access::{
@@ -7,44 +8,48 @@ use starknet::storage_access::{
 };
 use starknet::{Store, SyscallResult, SyscallResultTrait};
 
-// TODO: Go over comments
-#[starknet::storage_node]
-pub struct Key {
-    /// Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION.
-    /// u64 The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA,
-    /// 2 =
-    /// RSA, etc.
-    pub purposes_and_key_type: u128,
-    /// Hash of the public key or ContractAddress
-    pub key: felt252,
+/// Struct that holds details about key.
+#[derive(Drop, Copy)]
+pub struct KeyDetails {
+    /// 128 bit bitmap. Capable of holding 128 purposes for a single key.
+    pub purposes: u128,
+    /// Indicates the type of the key.
+    pub key_type: u64,
 }
 
-pub const SHIFT_64: u128 = 0x10000000000000000;
-pub const MASK_u64: u128 = 0xFFFFFFFFFFFFFFFF;
+pub impl KeyDetailsPacking of StorePacking<KeyDetails, felt252> {
+    fn pack(value: KeyDetails) -> felt252 {
+        u256 { low: value.purposes, high: value.key_type.into() }.try_into().unwrap()
+    }
 
-pub fn split_purposes_and_key_type(bitmap: u128) -> (u64, u64) {
-    let purposes = bitmap & MASK_u64;
-    let key_type = bitmap / SHIFT_64;
-    (purposes.try_into().unwrap(), key_type.try_into().unwrap())
+    fn unpack(value: felt252) -> KeyDetails {
+        let value_u256: u256 = value.into();
+        KeyDetails { purposes: value_u256.low, key_type: value_u256.high.try_into().unwrap() }
+    }
 }
 
-pub fn pack_purposes_and_key_type(purposes: u64, key_type: u64) -> u128 {
-    purposes.into() + (key_type.into() * SHIFT_64)
+pub trait BitmapTrait<T> {
+    fn set(bitmap: T, index: usize) -> T;
+    fn unset(bitmap: T, index: usize) -> T;
+    fn get(bitmap: T, index: usize) -> bool;
 }
 
-pub fn has_purpose(purposes: u64, purpose_index: u8) -> bool {
-    (purposes / 2_u64.pow(purpose_index.into()) & 1).is_non_zero()
+impl BitmapTraitImpl of BitmapTrait<u128> {
+    fn set(bitmap: u128, index: usize) -> u128 {
+        bitmap | 2_u128.pow(index)
+    }
+
+    fn unset(bitmap: u128, index: usize) -> u128 {
+        bitmap & (~2_u128.pow(index))
+    }
+
+    fn get(bitmap: u128, index: usize) -> bool {
+        (bitmap & 2_u128.pow(index)).is_non_zero()
+    }
 }
 
-pub fn add_purpose(purposes: u64, purpose_index: u8) -> u64 {
-    purposes | 2_u64.pow(purpose_index.into())
-}
-
-pub fn remove_purpose(purposes: u64, purpose_index: u8) -> u64 {
-    purposes & (~2_u64.pow(purpose_index.into()))
-}
-
-pub fn get_all_purposes(purposes: u64) -> Array<felt252> {
+/// Returns all the purposes stored in bitmap.
+pub fn get_all_purposes(purposes: u128) -> Array<felt252> {
     let mut index = 0;
     let mut all_purposes = array![];
     let mut purpouse_invariant = purposes;
