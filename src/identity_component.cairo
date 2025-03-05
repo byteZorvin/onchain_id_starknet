@@ -268,10 +268,10 @@ pub mod IdentityComponent {
                     false
                 },
             };
-            
+
             if execution_result {
                 execution_request_status_bitmap =
-                    BitmapTrait::set(execution_request_status_bitmap, 0);
+                    BitmapTrait::set(execution_request_status_bitmap, 2);
             }
             execution_storage_path.execution_request_status.write(execution_request_status_bitmap);
 
