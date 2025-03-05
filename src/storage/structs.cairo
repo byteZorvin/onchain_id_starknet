@@ -63,7 +63,6 @@ pub fn get_all_purposes(purposes: u128) -> Array<felt252> {
     all_purposes
 }
 
-/// TODO: Storage Pack booleans
 #[starknet::storage_node]
 pub struct Execution {
     /// The address of contract to call.
@@ -72,10 +71,9 @@ pub struct Execution {
     pub selector: felt252,
     /// The calldata to pass to entry point.
     pub calldata: StorageArrayFelt252,
-    /// The bool that indicates if execution is approved or not.
-    pub approved: bool,
-    /// The bool that indicates if execution is already executed or not.
-    pub executed: bool,
+    /// Bitmap that holds execution request status. index 0 is approved, index 1 is rejected, index
+    /// 2 is executed.
+    pub execution_request_status: u128,
 }
 // TODO: Go over comments
 #[starknet::storage_node]
