@@ -2,7 +2,7 @@ use core::num::traits::Zero;
 use onchain_id_starknet::interface::iimplementation_authority::{
     IImplementationAuthorityDispatcher, IImplementationAuthorityDispatcherTrait,
 };
-use onchain_id_starknet::proxy::implementation_authority::ImplementationAuthority;
+use onchain_id_starknet::proxy::implementation_authority::IdentityImplementationAuthority;
 use openzeppelin_access::ownable::interface::{
     IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait,
 };
@@ -26,7 +26,7 @@ pub fn OWNER_ADDRESS() -> ContractAddress {
 }
 
 fn deploy() -> IImplementationAuthorityDispatcher {
-    let implementation_authority_contract = declare("ImplementationAuthority")
+    let implementation_authority_contract = declare("IdentityImplementationAuthority")
         .unwrap()
         .contract_class();
     let (implementation_authority_address, _) = implementation_authority_contract
@@ -68,7 +68,7 @@ fn test_should_panic_when_update_implementation_when_caller_not_owner() {
 }
 
 #[test]
-#[should_panic(expected: 'class hash zero')]
+#[should_panic(expected: 'Class hash zero')]
 fn test_should_panic_when_update_implementation_when_class_hash_zero() {
     let mut implementation_authority = deploy();
     start_cheat_caller_address(implementation_authority.contract_address, OWNER_ADDRESS());
@@ -93,8 +93,8 @@ fn test_should_update_implementation() {
             @array![
                 (
                     implementation_authority.contract_address,
-                    ImplementationAuthority::Event::UpdatedImplementation(
-                        ImplementationAuthority::UpdatedImplementation {
+                    IdentityImplementationAuthority::Event::UpdatedImplementation(
+                        IdentityImplementationAuthority::UpdatedImplementation {
                             new_class_hash: UPDATED_CLASS_HASH(),
                         },
                     ),

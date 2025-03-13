@@ -7,7 +7,7 @@ pub mod ClaimIssuer {
         iidentity::IIdentity,
     };
     use onchain_id_starknet::storage::structs::{Signature, get_public_key_hash, is_valid_signature};
-    use onchain_id_starknet::version::version::VersionComponent;
+    use onchain_id_starknet::version::version;
     use starknet::ContractAddress;
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
@@ -21,18 +21,14 @@ pub mod ClaimIssuer {
     impl ERC735Impl = IdentityComponent::ERC735Impl<ContractState>;
     impl IdentityInternalImpl = IdentityComponent::InternalImpl<ContractState>;
 
-    component!(path: VersionComponent, storage: version, event: VersionEvent);
-
     #[abi(embed_v0)]
-    impl VersionImpl = VersionComponent::VersionImpl<ContractState>;
+    impl VersionImpl = version::VersionImpl<ContractState>;
 
     #[storage]
     struct Storage {
         revoked_claims: Map<Signature, bool>,
         #[substorage(v0)]
         identity: IdentityComponent::Storage,
-        #[substorage(v0)]
-        version: VersionComponent::Storage,
     }
 
     #[event]
@@ -40,8 +36,6 @@ pub mod ClaimIssuer {
     pub enum Event {
         #[flat]
         IdentityEvent: IdentityComponent::Event,
-        #[flat]
-        VersionEvent: VersionComponent::Event,
         ClaimRevoked: ClaimRevoked,
     }
 
