@@ -21,7 +21,6 @@ pub mod interface {
 
 pub mod proxy {
     pub mod implementation_authority;
-    pub mod version_manager;
 }
 
 pub mod storage {
@@ -41,5 +40,4 @@ pub mod mocks {
     pub mod mock_account;
     pub mod mock_simple_storage;
     pub mod mock_verifier;
-    pub mod mock_with_version_manager;
 }
