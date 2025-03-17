@@ -52,12 +52,12 @@ impl BitmapTraitImpl of BitmapTrait<u128> {
 pub fn get_all_purposes(purposes: u128) -> Array<felt252> {
     let mut index = 0;
     let mut all_purposes = array![];
-    let mut purpouse_invariant = purposes;
-    while purpouse_invariant.is_non_zero() {
-        if (purpouse_invariant & 1).is_non_zero() {
+    let mut _purpose = purposes;
+    while _purpose.is_non_zero() {
+        if (_purpose & 1).is_non_zero() {
             all_purposes.append(index.into());
         }
-        purpouse_invariant /= 2;
+        _purpose /= 2;
         index += 1;
     };
     all_purposes
