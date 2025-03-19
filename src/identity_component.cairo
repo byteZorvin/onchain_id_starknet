@@ -17,8 +17,8 @@ pub mod IdentityComponent {
             StorageArrayFelt252IndexView,
         },
         structs::{
-            BitmapTrait, Claim, Execution, KeyDetails, Signature, get_all_purposes,
-            get_public_key_hash, is_valid_signature,
+            BitmapTrait, Claim, Execution, ExecutionRequestStatus, KeyDetails, Signature,
+            get_all_purposes, get_public_key_hash, is_valid_signature,
         },
     };
     use onchain_id_starknet::version::version::VersionComponent;
@@ -212,12 +212,17 @@ pub mod IdentityComponent {
                 Errors::NON_EXISTING_EXECUTION,
             );
             let execution_storage_path = self.Identity_executions.entry(execution_id);
-            let mut execution_request_status_bitmap = execution_storage_path
+            let mut execution_request_status = execution_storage_path
                 .execution_request_status
                 .read();
-            assert(!BitmapTrait::get(execution_request_status_bitmap, 2), Errors::ALREADY_EXECUTED);
+
             assert(
-                !BitmapTrait::get(execution_request_status_bitmap, 1), Errors::EXECUTION_REJECTED,
+                execution_request_status != ExecutionRequestStatus::Executed,
+                Errors::ALREADY_EXECUTED,
+            );
+            assert(
+                execution_request_status != ExecutionRequestStatus::Rejected,
+                Errors::EXECUTION_REJECTED,
             );
             let caller_hash = poseidon_hash_span(
                 array![starknet::get_caller_address().into()].span(),
@@ -232,11 +237,11 @@ pub mod IdentityComponent {
             if !approve {
                 execution_storage_path
                     .execution_request_status
-                    .write(BitmapTrait::set(execution_request_status_bitmap, 1));
+                    .write(ExecutionRequestStatus::Rejected);
                 return false;
             }
 
-            execution_request_status_bitmap = BitmapTrait::set(execution_request_status_bitmap, 0);
+            execution_request_status = ExecutionRequestStatus::Approved;
             let selector = execution_storage_path.selector.read();
             let calldata: Span<felt252> = Into::<
                 StoragePath<Mutable<StorageArrayFelt252>>, Array<felt252>,
@@ -270,10 +275,9 @@ pub mod IdentityComponent {
             };
 
             if execution_result {
-                execution_request_status_bitmap =
-                    BitmapTrait::set(execution_request_status_bitmap, 2);
+                execution_request_status = ExecutionRequestStatus::Executed;
             }
-            execution_storage_path.execution_request_status.write(execution_request_status_bitmap);
+            execution_storage_path.execution_request_status.write(execution_request_status);
 
             execution_result
         }
@@ -719,16 +723,18 @@ pub mod IdentityComponent {
                 },
             };
 
-            let mut execution_request_status_bitmap = BitmapTrait::set(Zero::zero(), 0);
+            let status = 
             if execution_result {
-                execution_request_status_bitmap =
-                    BitmapTrait::set(execution_request_status_bitmap, 2);
-            }
+                ExecutionRequestStatus::Executed
+            } else {
+                ExecutionRequestStatus::Approved
+            };
+
             self
                 .Identity_executions
                 .entry(execution_id)
                 .execution_request_status
-                .write(execution_request_status_bitmap);
+                .write(status);
             execution_result
         }
     }

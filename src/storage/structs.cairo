@@ -63,6 +63,15 @@ pub fn get_all_purposes(purposes: u128) -> Array<felt252> {
     all_purposes
 }
 
+#[derive(Drop, Copy, Serde, starknet::Store, PartialEq)]
+pub enum ExecutionRequestStatus {
+    #[default]
+    PendingApproval,
+    Approved,
+    Rejected,
+    Executed,
+}
+
 #[starknet::storage_node]
 pub struct Execution {
     /// The address of contract to call.
@@ -71,9 +80,8 @@ pub struct Execution {
     pub selector: felt252,
     /// The calldata to pass to entry point.
     pub calldata: StorageArrayFelt252,
-    /// Bitmap that holds execution request status. index 0 is approved, index 1 is rejected, index
-    /// 2 is executed.
-    pub execution_request_status: u128,
+    /// Enum that stores information about status of execution request
+    pub execution_request_status: ExecutionRequestStatus,
 }
 // TODO: Go over comments
 #[starknet::storage_node]
