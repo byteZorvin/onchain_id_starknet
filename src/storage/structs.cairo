@@ -29,21 +29,29 @@ pub impl KeyDetailsPacking of StorePacking<KeyDetails, felt252> {
 }
 
 pub trait BitmapTrait<T> {
-    fn set(bitmap: T, index: usize) -> T;
-    fn unset(bitmap: T, index: usize) -> T;
+    fn new() -> T;
+    fn set(ref bitmap: T, index: usize);
+    fn unset(ref bitmap: T, index: usize);
     fn get(bitmap: T, index: usize) -> bool;
 }
 
 impl BitmapTraitImpl of BitmapTrait<u128> {
-    fn set(bitmap: u128, index: usize) -> u128 {
-        bitmap | 2_u128.pow(index)
+    fn new() -> u128 {
+        0
     }
 
-    fn unset(bitmap: u128, index: usize) -> u128 {
-        bitmap & (~2_u128.pow(index))
+    fn set(ref bitmap: u128, index: usize) {
+        assert(index < 128, 'Index out of range');
+        bitmap = bitmap | 2_u128.pow(index);
+    }
+
+    fn unset(ref bitmap: u128, index: usize) {
+        assert(index < 128, 'Index out of range');
+        bitmap = bitmap & (~2_u128.pow(index));
     }
 
     fn get(bitmap: u128, index: usize) -> bool {
+        assert(index < 128, 'Index out of range');
         (bitmap & 2_u128.pow(index)).is_non_zero()
     }
 }
@@ -54,7 +62,7 @@ pub fn get_all_purposes(purposes: u128) -> Array<felt252> {
     let mut all_purposes = array![];
     let mut _purpose = purposes;
     while _purpose.is_non_zero() {
-        if (_purpose & 1).is_non_zero() {
+        if (_purpose % 2).is_non_zero() {
             all_purposes.append(index.into());
         }
         _purpose /= 2;

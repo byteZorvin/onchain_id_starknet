@@ -118,12 +118,11 @@ pub mod IdentityComponent {
             let key_storage_path = self.Identity_keys.entry(key);
             let mut key_details = key_storage_path.read();
             let purpose_bit_index = purpose.try_into().expect('Invalid Purpose');
-            assert(purpose_bit_index < 128, 'Purpose is not in valid range');
             assert(
                 !BitmapTrait::get(key_details.purposes, purpose_bit_index),
                 Errors::KEY_ALREADY_HAS_PURPOSE,
             );
-            key_details.purposes = BitmapTrait::set(key_details.purposes, purpose_bit_index);
+            BitmapTrait::set(ref key_details.purposes, purpose_bit_index);
             key_details.key_type = key_type.try_into().expect('Invalid Key Type');
             key_storage_path.write(key_details);
 
@@ -162,7 +161,7 @@ pub mod IdentityComponent {
                 Errors::KEY_DOES_NOT_HAVE_PURPOSE,
             );
 
-            key_details.purposes = BitmapTrait::unset(key_details.purposes, purpose_bit_index);
+            BitmapTrait::unset(ref key_details.purposes, purpose_bit_index);
 
             let key_type: felt252 = key_details.key_type.into();
             if key_details.purposes.is_zero() {
@@ -589,18 +588,13 @@ pub mod IdentityComponent {
                 },
             };
 
-            let status = 
-            if execution_result {
+            let status = if execution_result {
                 ExecutionRequestStatus::Executed
             } else {
                 ExecutionRequestStatus::Approved
             };
 
-            self
-                .Identity_executions
-                .entry(execution_id)
-                .execution_request_status
-                .write(status);
+            self.Identity_executions.entry(execution_id).execution_request_status.write(status);
             execution_result
         }
     }
