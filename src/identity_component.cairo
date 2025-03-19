@@ -4,11 +4,7 @@ pub mod IdentityComponent {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::interface::{
         ierc734, ierc734::{ERC734Event, IERC734}, ierc735, ierc735::{ERC735Event, IERC735},
-        iidentity::{IIdentity, IIdentityDispatcher, IIdentityDispatcherTrait, IdentityABI},
-    };
-    use onchain_id_starknet::proxy::version_manager::{
-        VersionManagerComponent,
-        VersionManagerComponent::InternalTrait as VersionManagerInternalTrait,
+        iidentity::{IIdentity, IIdentityDispatcher, IIdentityDispatcherTrait},
     };
     use onchain_id_starknet::storage::{
         storage::{
@@ -21,8 +17,6 @@ pub mod IdentityComponent {
             is_valid_signature,
         },
     };
-    use onchain_id_starknet::version::version::VersionComponent;
-    use openzeppelin_upgrades::upgradeable::UpgradeableComponent;
     use starknet::ContractAddress;
     use starknet::storage::{
         Map, Mutable, StoragePath, StoragePathEntry, StoragePointerReadAccess,
@@ -511,134 +505,6 @@ pub mod IdentityComponent {
             self: @ComponentState<TContractState>, topic: felt252,
         ) -> Array<felt252> {
             self.Identity_claims_by_topic.entry(topic).into()
-        }
-    }
-
-    #[embeddable_as(IdentityABICentralyUpgradeableImpl)]
-    impl IdentityABICentralyUpgradeable<
-        TContractState,
-        +Drop<TContractState>,
-        +HasComponent<TContractState>,
-        +VersionComponent::HasComponent<TContractState>,
-        impl VersionManagerImpl: VersionManagerComponent::HasComponent<TContractState>,
-        +UpgradeableComponent::HasComponent<TContractState>,
-    > of IdentityABI<ComponentState<TContractState>> {
-        fn is_claim_valid(
-            ref self: ComponentState<TContractState>,
-            identity: ContractAddress,
-            claim_topic: felt252,
-            signature: Signature,
-            data: ByteArray,
-        ) -> bool {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            Identity::is_claim_valid(@self, identity, claim_topic, signature, data)
-        }
-        // IERC734
-        fn add_key(
-            ref self: ComponentState<TContractState>,
-            key: felt252,
-            purpose: felt252,
-            key_type: felt252,
-        ) -> bool {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC734::add_key(ref self, key, purpose, key_type)
-        }
-
-        fn remove_key(
-            ref self: ComponentState<TContractState>, key: felt252, purpose: felt252,
-        ) -> bool {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC734::remove_key(ref self, key, purpose)
-        }
-
-        fn approve(
-            ref self: ComponentState<TContractState>, execution_id: felt252, approve: bool,
-        ) -> bool {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC734::approve(ref self, execution_id, approve)
-        }
-
-        fn execute(
-            ref self: ComponentState<TContractState>,
-            to: ContractAddress,
-            selector: felt252,
-            calldata: Span<felt252>,
-        ) -> felt252 {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC734::execute(ref self, to, selector, calldata)
-        }
-
-        fn get_key(
-            ref self: ComponentState<TContractState>, key: felt252,
-        ) -> (Span<felt252>, felt252, felt252) {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC734::get_key(@self, key)
-        }
-
-        fn get_key_purposes(
-            ref self: ComponentState<TContractState>, key: felt252,
-        ) -> Span<felt252> {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC734::get_key_purposes(@self, key)
-        }
-
-        fn get_keys_by_purpose(
-            ref self: ComponentState<TContractState>, purpose: felt252,
-        ) -> Span<felt252> {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC734::get_keys_by_purpose(@self, purpose)
-        }
-
-        fn key_has_purpose(
-            ref self: ComponentState<TContractState>, key: felt252, purpose: felt252,
-        ) -> bool {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC734::key_has_purpose(@self, key, purpose)
-        }
-        // IERC735
-        fn add_claim(
-            ref self: ComponentState<TContractState>,
-            topic: felt252,
-            scheme: felt252,
-            issuer: ContractAddress,
-            signature: Signature,
-            data: ByteArray,
-            uri: ByteArray,
-        ) -> felt252 {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC735::add_claim(ref self, topic, scheme, issuer, signature, data, uri)
-        }
-
-        fn remove_claim(ref self: ComponentState<TContractState>, claim_id: felt252) -> bool {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC735::remove_claim(ref self, claim_id)
-        }
-
-        fn get_claim(
-            ref self: ComponentState<TContractState>, claim_id: felt252,
-        ) -> (felt252, felt252, ContractAddress, Signature, ByteArray, ByteArray) {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC735::get_claim(@self, claim_id)
-        }
-
-        fn get_claim_ids_by_topics(
-            ref self: ComponentState<TContractState>, topic: felt252,
-        ) -> Array<felt252> {
-            let mut version_manager_comp = get_dep_component_mut!(ref self, VersionManagerImpl);
-            version_manager_comp.assert_up_to_date_implementation();
-            ERC735::get_claim_ids_by_topics(@self, topic)
         }
     }
 
