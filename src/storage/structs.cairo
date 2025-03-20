@@ -1,23 +1,103 @@
-use core::num::traits::Zero;
+use core::num::traits::{Pow, Zero};
 use core::poseidon::poseidon_hash_span;
+use core::starknet::storage_access::StorePacking;
 use onchain_id_starknet::storage::storage::StorageArrayFelt252;
 use starknet::ContractAddress;
-use starknet::storage::{Mutable, StoragePath, StoragePointerWriteAccess};
 use starknet::storage_access::{
     StorageBaseAddress, storage_address_from_base, storage_base_address_from_felt252,
 };
 use starknet::{Store, SyscallResult, SyscallResultTrait};
 
-// TODO: Go over comments
-#[starknet::storage_node]
-pub struct Key {
-    /// Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION.
-    pub purposes: StorageArrayFelt252,
-    /// The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 =
-    /// RSA, etc.
-    pub key_type: felt252,
-    /// Hash of the public key or ContractAddress
-    pub key: felt252,
+/// Struct that holds details about key.
+#[derive(Drop, Copy)]
+pub struct KeyDetails {
+    /// 128 bit bitmap. Capable of holding 128 purposes for a single key.
+    pub purposes: u128,
+    /// Indicates the type of the key.
+    pub key_type: u64,
+}
+
+pub impl KeyDetailsPacking of StorePacking<KeyDetails, felt252> {
+    fn pack(value: KeyDetails) -> felt252 {
+        u256 { low: value.purposes, high: value.key_type.into() }.try_into().unwrap()
+    }
+
+    fn unpack(value: felt252) -> KeyDetails {
+        let value_u256: u256 = value.into();
+        KeyDetails { purposes: value_u256.low, key_type: value_u256.high.try_into().unwrap() }
+    }
+}
+
+pub trait KeyDetailsTrait {
+    fn grant_purpose(ref self: KeyDetails, purpose: felt252);
+    fn revoke_purpose(ref self: KeyDetails, purpose: felt252);
+    fn has_purpose(self: @KeyDetails, purpose: felt252) -> bool;
+    fn get_all_purposes(self: @KeyDetails) -> Array<felt252>;
+}
+
+impl KeyDetailsImpl of KeyDetailsTrait {
+    fn grant_purpose(ref self: KeyDetails, purpose: felt252) {
+        BitmapTrait::set(ref self.purposes, purpose.try_into().expect('Invalid purpose'));
+    }
+
+    fn revoke_purpose(ref self: KeyDetails, purpose: felt252) {
+        BitmapTrait::unset(ref self.purposes, purpose.try_into().expect('Invalid purpose'));
+    }
+
+    fn has_purpose(self: @KeyDetails, purpose: felt252) -> bool {
+        BitmapTrait::get(*self.purposes, purpose.try_into().expect('Invalid purpose'))
+    }
+
+    fn get_all_purposes(self: @KeyDetails) -> Array<felt252> {
+        let mut index = 0;
+        let mut all_purposes = array![];
+        let mut purposes = *self.purposes;
+        while purposes.is_non_zero() {
+            if (purposes % 2).is_non_zero() {
+                all_purposes.append(index.into());
+            }
+            purposes /= 2;
+            index += 1;
+        };
+        all_purposes
+    }
+}
+
+trait BitmapTrait<T> {
+    fn new() -> T;
+    fn set(ref bitmap: T, index: usize);
+    fn unset(ref bitmap: T, index: usize);
+    fn get(bitmap: T, index: usize) -> bool;
+}
+
+impl BitmapTraitImpl of BitmapTrait<u128> {
+    fn new() -> u128 {
+        0
+    }
+
+    fn set(ref bitmap: u128, index: usize) {
+        assert(index < 128, 'Index out of range');
+        bitmap = bitmap | 2_u128.pow(index);
+    }
+
+    fn unset(ref bitmap: u128, index: usize) {
+        assert(index < 128, 'Index out of range');
+        bitmap = bitmap & (~2_u128.pow(index));
+    }
+
+    fn get(bitmap: u128, index: usize) -> bool {
+        assert(index < 128, 'Index out of range');
+        (bitmap & 2_u128.pow(index)).is_non_zero()
+    }
+}
+
+#[derive(Drop, Copy, Serde, starknet::Store, PartialEq)]
+pub enum ExecutionRequestStatus {
+    #[default]
+    PendingApproval,
+    Approved,
+    Rejected,
+    Executed,
 }
 
 #[starknet::storage_node]
@@ -28,10 +108,8 @@ pub struct Execution {
     pub selector: felt252,
     /// The calldata to pass to entry point.
     pub calldata: StorageArrayFelt252,
-    /// The bool that indicates if execution is approved or not.
-    pub approved: bool,
-    /// The bool that indicates if execution is already executed or not.
-    pub executed: bool,
+    /// Enum that stores information about status of execution request
+    pub execution_request_status: ExecutionRequestStatus,
 }
 // TODO: Go over comments
 #[starknet::storage_node]
@@ -59,22 +137,6 @@ pub struct Claim {
     pub uri: ByteArray,
 }
 // NOTE: Implement StoragePacking if this type of sig can comply with compact signatures
-
-// Note: Assumes purposes are already cleared
-pub fn delete_key(self: StoragePath<Mutable<Key>>) {
-    self.key_type.write(Zero::zero());
-    self.key.write(Zero::zero());
-}
-
-pub fn delete_claim(self: StoragePath<Mutable<Claim>>) {
-    self.topic.write(Default::default());
-    self.scheme.write(Default::default());
-    self.issuer.write(Zero::zero());
-    // TODO: Clear signature from storage
-    //self.signature.write(Default::default());
-    self.data.write(Default::default());
-    self.uri.write(Default::default());
-}
 
 #[derive(Copy, Drop, Serde, Hash, Default, starknet::Store)]
 pub struct StarkSignature {
