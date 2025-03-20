@@ -13,7 +13,7 @@ pub mod IdentityComponent {
             StorageArrayFelt252IndexView,
         },
         structs::{
-            KeyDetailsTrait, Claim, Execution, ExecutionRequestStatus, KeyDetails, Signature,
+            Claim, Execution, ExecutionRequestStatus, KeyDetails, KeyDetailsTrait, Signature,
             get_public_key_hash, is_valid_signature,
         },
     };
@@ -124,10 +124,7 @@ pub mod IdentityComponent {
             let key_storage_path = self.Identity_keys.entry(key);
             let mut key_details = key_storage_path.read();
             let purpose_bit_index = purpose.try_into().expect('Invalid Purpose');
-            assert(
-                !key_details.has_purpose(purpose_bit_index),
-                Errors::KEY_ALREADY_HAS_PURPOSE,
-            );
+            assert(!key_details.has_purpose(purpose_bit_index), Errors::KEY_ALREADY_HAS_PURPOSE);
             key_details.grant_purpose(purpose_bit_index);
             key_details.key_type = key_type.try_into().expect('Invalid Key Type');
             key_storage_path.write(key_details);
@@ -160,10 +157,7 @@ pub mod IdentityComponent {
             let key_storage_path = self.Identity_keys.entry(key);
             let mut key_details = key_storage_path.read();
             assert(key_details.purposes.is_non_zero(), Errors::KEY_NOT_REGISTERED);
-            assert(
-                key_details.has_purpose(purpose),
-                Errors::KEY_DOES_NOT_HAVE_PURPOSE,
-            );
+            assert(key_details.has_purpose(purpose), Errors::KEY_DOES_NOT_HAVE_PURPOSE);
 
             key_details.revoke_purpose(purpose);
 
@@ -226,9 +220,14 @@ pub mod IdentityComponent {
             );
             let to_address = execution_storage_path.to.read();
             if to_address == starknet::get_contract_address() {
-                assert(self.key_has_purpose(caller_hash, Purpose::MANAGEMENT), Errors::NOT_HAVE_MANAGEMENT_KEY);
+                assert(
+                    self.key_has_purpose(caller_hash, Purpose::MANAGEMENT),
+                    Errors::NOT_HAVE_MANAGEMENT_KEY,
+                );
             } else {
-                assert(self.key_has_purpose(caller_hash, Purpose::ACTION), Errors::NOT_HAVE_ACTION_KEY);
+                assert(
+                    self.key_has_purpose(caller_hash, Purpose::ACTION), Errors::NOT_HAVE_ACTION_KEY,
+                );
             }
             self.emit(ERC734Event::Approved(ierc734::Approved { execution_id, approved: approve }));
             if !approve {
@@ -309,7 +308,8 @@ pub mod IdentityComponent {
                 array![starknet::get_caller_address().into()].span(),
             );
 
-            if to != starknet::get_contract_address() && self.key_has_purpose(caller_hash, Purpose::ACTION) {
+            if to != starknet::get_contract_address()
+                && self.key_has_purpose(caller_hash, Purpose::ACTION) {
                 self._approve(execution_nonce, to, selector, calldata);
             } else if self.key_has_purpose(caller_hash, Purpose::MANAGEMENT) {
                 self._approve(execution_nonce, to, selector, calldata);
@@ -546,7 +546,10 @@ pub mod IdentityComponent {
             let caller = starknet::get_caller_address();
             assert(
                 caller == starknet::get_contract_address()
-                    || self.key_has_purpose(poseidon_hash_span(array![caller.into()].span()), Purpose::MANAGEMENT),
+                    || self
+                        .key_has_purpose(
+                            poseidon_hash_span(array![caller.into()].span()), Purpose::MANAGEMENT,
+                        ),
                 Errors::NOT_HAVE_MANAGEMENT_KEY,
             );
         }
@@ -555,7 +558,10 @@ pub mod IdentityComponent {
             let caller = starknet::get_caller_address();
             assert(
                 caller == starknet::get_contract_address()
-                    || self.key_has_purpose(poseidon_hash_span(array![caller.into()].span()), Purpose::CLAIM),
+                    || self
+                        .key_has_purpose(
+                            poseidon_hash_span(array![caller.into()].span()), Purpose::CLAIM,
+                        ),
                 Errors::NOT_HAVE_CLAIM_KEY,
             );
         }
