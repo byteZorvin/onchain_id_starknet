@@ -28,7 +28,42 @@ pub impl KeyDetailsPacking of StorePacking<KeyDetails, felt252> {
     }
 }
 
-pub trait BitmapTrait<T> {
+pub trait KeyDetailsTrait {
+    fn grant_purpose(ref self: KeyDetails, purpose: felt252);
+    fn revoke_purpose(ref self: KeyDetails, purpose: felt252);
+    fn has_purpose(self: @KeyDetails, purpose: felt252) -> bool;
+    fn get_all_purposes(self: @KeyDetails) -> Array<felt252>;
+}
+
+impl KeyDetailsImpl of KeyDetailsTrait {
+    fn grant_purpose(ref self: KeyDetails, purpose: felt252) {
+        BitmapTrait::set(ref self.purposes, purpose.try_into().expect('Invalid purpose'));
+    }
+
+    fn revoke_purpose(ref self: KeyDetails, purpose: felt252) {
+        BitmapTrait::unset(ref self.purposes, purpose.try_into().expect('Invalid purpose'));
+    }
+
+    fn has_purpose(self: @KeyDetails, purpose: felt252) -> bool {
+        BitmapTrait::get(*self.purposes, purpose.try_into().expect('Invalid purpose'))
+    }
+
+    fn get_all_purposes(self: @KeyDetails) -> Array<felt252> {
+        let mut index = 0;
+        let mut all_purposes = array![];
+        let mut purposes = *self.purposes;
+        while purposes.is_non_zero() {
+            if (purposes % 2).is_non_zero() {
+                all_purposes.append(index.into());
+            }
+            purposes /= 2;
+            index += 1;
+        };
+        all_purposes
+    }
+}
+
+trait BitmapTrait<T> {
     fn new() -> T;
     fn set(ref bitmap: T, index: usize);
     fn unset(ref bitmap: T, index: usize);
@@ -54,21 +89,6 @@ impl BitmapTraitImpl of BitmapTrait<u128> {
         assert(index < 128, 'Index out of range');
         (bitmap & 2_u128.pow(index)).is_non_zero()
     }
-}
-
-/// Returns all the purposes stored in bitmap.
-pub fn get_all_purposes(purposes: u128) -> Array<felt252> {
-    let mut index = 0;
-    let mut all_purposes = array![];
-    let mut _purpose = purposes;
-    while _purpose.is_non_zero() {
-        if (_purpose % 2).is_non_zero() {
-            all_purposes.append(index.into());
-        }
-        _purpose /= 2;
-        index += 1;
-    };
-    all_purposes
 }
 
 #[derive(Drop, Copy, Serde, starknet::Store, PartialEq)]
