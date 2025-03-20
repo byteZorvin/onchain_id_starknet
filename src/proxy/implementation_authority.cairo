@@ -1,11 +1,11 @@
 #[starknet::contract]
 pub mod IdentityImplementationAuthority {
     use core::num::traits::Zero;
-    use crate::interface::iimplementation_authority::IImplementationAuthority;
     use openzeppelin_access::ownable::ownable::OwnableComponent;
     use openzeppelin_upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDispatcherTrait};
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
+    use crate::interface::iimplementation_authority::IImplementationAuthority;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]

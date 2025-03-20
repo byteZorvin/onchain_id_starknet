@@ -1,5 +1,4 @@
 use core::num::traits::Zero;
-use crate::common::setup_identity;
 use onchain_id_starknet::interface::iidentity::IdentityABIDispatcherTrait;
 use onchain_id_starknet::interface::iimplementation_authority::{
     IImplementationAuthorityDispatcher, IImplementationAuthorityDispatcherTrait,
@@ -12,19 +11,19 @@ use snforge_std::{
     CheatSpan, ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait,
     cheat_caller_address, declare, spy_events,
 };
-use starknet::ClassHash;
-use starknet::ContractAddress;
+use starknet::{ClassHash, ContractAddress};
+use crate::common::setup_identity;
 
 pub fn INITIAL_CLASS_HASH() -> ClassHash {
-    starknet::class_hash::class_hash_const::<'initial_class_hash'>()
+    'initial_class_hash'.try_into().unwrap()
 }
 
 pub fn UPDATED_CLASS_HASH() -> ClassHash {
-    starknet::class_hash::class_hash_const::<'updated_class_hash'>()
+    'updated_class_hash'.try_into().unwrap()
 }
 
 pub fn OWNER_ADDRESS() -> ContractAddress {
-    starknet::contract_address_const::<'owner'>()
+    'owner'.try_into().unwrap()
 }
 
 fn deploy() -> IImplementationAuthorityDispatcher {

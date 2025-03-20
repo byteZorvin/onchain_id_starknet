@@ -1,12 +1,10 @@
 use core::num::traits::{Pow, Zero};
 use core::poseidon::poseidon_hash_span;
-use core::starknet::storage_access::StorePacking;
 use onchain_id_starknet::storage::storage::StorageArrayFelt252;
-use starknet::ContractAddress;
 use starknet::storage_access::{
-    StorageBaseAddress, storage_address_from_base, storage_base_address_from_felt252,
+    StorageBaseAddress, StorePacking, storage_address_from_base, storage_base_address_from_felt252,
 };
-use starknet::{Store, SyscallResult, SyscallResultTrait};
+use starknet::{ContractAddress, Store, SyscallResult, SyscallResultTrait};
 
 /// Struct that holds details about key.
 #[derive(Drop, Copy)]
@@ -58,7 +56,7 @@ impl KeyDetailsImpl of KeyDetailsTrait {
             }
             purposes /= 2;
             index += 1;
-        };
+        }
         all_purposes
     }
 }

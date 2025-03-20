@@ -1,10 +1,9 @@
 #[starknet::contract]
 pub mod ClaimIssuer {
     use onchain_id_starknet::identity_component::IdentityComponent;
-    use onchain_id_starknet::interface::{
-        iclaim_issuer::IClaimIssuer, ierc735::{IERC735Dispatcher, IERC735DispatcherTrait},
-        iidentity::IIdentity,
-    };
+    use onchain_id_starknet::interface::iclaim_issuer::IClaimIssuer;
+    use onchain_id_starknet::interface::ierc735::{IERC735Dispatcher, IERC735DispatcherTrait};
+    use onchain_id_starknet::interface::iidentity::IIdentity;
     use onchain_id_starknet::storage::structs::Signature;
     use onchain_id_starknet::version::version;
     use starknet::ContractAddress;
