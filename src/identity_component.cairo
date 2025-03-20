@@ -2,20 +2,20 @@
 pub mod IdentityComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
-    use onchain_id_starknet::interface::{
-        ierc734, ierc734::{ERC734Event, IERC734}, ierc735, ierc735::{ERC735Event, IERC735},
-        iidentity::{IIdentity, IIdentityDispatcher, IIdentityDispatcherTrait},
+    use onchain_id_starknet::interface::ierc734::{ERC734Event, IERC734};
+    use onchain_id_starknet::interface::ierc735::{ERC735Event, IERC735};
+    use onchain_id_starknet::interface::iidentity::{
+        IIdentity, IIdentityDispatcher, IIdentityDispatcherTrait,
     };
-    use onchain_id_starknet::storage::{
-        storage::{
-            Felt252VecToFelt252Array, MutableFelt252VecToFelt252Array,
-            MutableStorageArrayFelt252IndexView, MutableStorageArrayTrait, StorageArrayFelt252,
-            StorageArrayFelt252IndexView,
-        },
-        structs::{
-            Claim, Execution, ExecutionRequestStatus, KeyDetails, KeyDetailsTrait, Signature,
-            get_public_key_hash, is_valid_signature,
-        },
+    use onchain_id_starknet::interface::{ierc734, ierc735};
+    use onchain_id_starknet::storage::storage::{
+        Felt252VecToFelt252Array, MutableFelt252VecToFelt252Array,
+        MutableStorageArrayFelt252IndexView, MutableStorageArrayTrait, StorageArrayFelt252,
+        StorageArrayFelt252IndexView,
+    };
+    use onchain_id_starknet::storage::structs::{
+        Claim, Execution, ExecutionRequestStatus, KeyDetails, KeyDetailsTrait, Signature,
+        get_public_key_hash, is_valid_signature,
     };
     use starknet::ContractAddress;
     use starknet::storage::{
@@ -175,7 +175,7 @@ pub mod IdentityComponent {
                     keys_by_purpose_key_storage_path.delete(i);
                     break;
                 }
-            };
+            }
 
             self.emit(ERC734Event::KeyRemoved(ierc734::KeyRemoved { key, purpose, key_type }));
             true
@@ -293,7 +293,7 @@ pub mod IdentityComponent {
             let calldata_storage_path = execution_storage_path.calldata.deref();
             for chunk in calldata.clone() {
                 calldata_storage_path.append().write(*chunk);
-            };
+            }
 
             self
                 .emit(
@@ -461,7 +461,7 @@ pub mod IdentityComponent {
                     claim_index = Option::Some(i);
                     break;
                 }
-            };
+            }
             assert(
                 claim_index != Option::None, Errors::CLAIM_DOES_NOT_EXIST,
             ); // NOTE: this check might not be necessary due to above assertion we might assume claim_id will always be there

@@ -1,12 +1,12 @@
 #[starknet::contract]
 mod Identity {
     use core::num::traits::Zero;
-    use crate::identity_component::IdentityComponent;
-    use crate::version::version;
     use openzeppelin_upgrades::interface::IUpgradeable;
     use openzeppelin_upgrades::upgradeable::UpgradeableComponent;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
+    use crate::identity_component::IdentityComponent;
+    use crate::version::version;
 
     #[abi(embed_v0)]
     impl VersionImpl = version::VersionImpl<ContractState>;
