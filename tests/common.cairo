@@ -7,6 +7,7 @@ use onchain_id_starknet::interface::iidentity::{IdentityABIDispatcher, IdentityA
 use onchain_id_starknet::interface::iimplementation_authority::IImplementationAuthorityDispatcher;
 use onchain_id_starknet::interface::iverifier::{VerifierABIDispatcher, VerifierABIDispatcherTrait};
 use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
+use openzeppelin_account::interface::AccountABIDispatcher;
 use snforge_std::signature::stark_curve::{
     StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl,
 };
@@ -16,7 +17,6 @@ use snforge_std::{
     stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
-use starknet::account::AccountContractDispatcher;
 
 #[derive(Drop)]
 pub struct TestAccounts {

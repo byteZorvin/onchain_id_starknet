@@ -1,9 +1,8 @@
 use core::num::traits::{Pow, Zero};
 use core::poseidon::poseidon_hash_span;
-use core::starknet::storage_access::StorePacking;
 use onchain_id_starknet::storage::storage::StorageArrayFelt252;
 use starknet::storage_access::{
-    StorageBaseAddress, storage_address_from_base, storage_base_address_from_felt252,
+    StorageBaseAddress, StorePacking, storage_address_from_base, storage_base_address_from_felt252,
 };
 use starknet::{ContractAddress, Store, SyscallResult, SyscallResultTrait};
 
