@@ -5,7 +5,7 @@ pub mod IdFactory {
     use onchain_id_starknet::factory::iid_factory::IIdFactory;
     use onchain_id_starknet::interface::ierc734::{IERC734Dispatcher, IERC734DispatcherTrait};
     use onchain_id_starknet::interface::iimplementation_authority::{
-        IImplementationAuthorityDispatcher, IImplementationAuthorityDispatcherTrait,
+        IIdentityImplementationAuthorityDispatcher, IIdentityImplementationAuthorityDispatcherTrait,
     };
     use onchain_id_starknet::storage::storage::{
         ContractAddressVecToContractAddressArray, MutableStorageArrayContractAddressIndexView,
@@ -506,7 +506,7 @@ pub mod IdFactory {
             wallet: ContractAddress,
         ) -> ContractAddress {
             let implementation_class_hash: starknet::ClassHash =
-                IImplementationAuthorityDispatcher {
+                IIdentityImplementationAuthorityDispatcher {
                 contract_address: implementation_authority,
             }
                 .get_implementation();

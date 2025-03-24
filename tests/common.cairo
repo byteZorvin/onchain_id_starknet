@@ -4,7 +4,7 @@ use onchain_id_starknet::interface::iclaim_issuer::{
     ClaimIssuerABIDispatcher, ClaimIssuerABIDispatcherTrait,
 };
 use onchain_id_starknet::interface::iidentity::{IdentityABIDispatcher, IdentityABIDispatcherTrait};
-use onchain_id_starknet::interface::iimplementation_authority::IImplementationAuthorityDispatcher;
+use onchain_id_starknet::interface::iimplementation_authority::IIdentityImplementationAuthorityDispatcher;
 use onchain_id_starknet::interface::iverifier::{VerifierABIDispatcher, VerifierABIDispatcherTrait};
 use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
 use openzeppelin_account::interface::AccountABIDispatcher;
@@ -40,7 +40,7 @@ pub struct TestAccounts {
 pub struct FactorySetup {
     pub identity_factory: IIdFactoryDispatcher,
     pub identity_contract: starknet::ClassHash,
-    pub implementation_authority: IImplementationAuthorityDispatcher,
+    pub implementation_authority: IIdentityImplementationAuthorityDispatcher,
     pub accounts: TestAccounts,
 }
 
@@ -48,7 +48,7 @@ pub struct FactorySetup {
 pub struct IdentitySetup {
     pub identity_factory: IIdFactoryDispatcher,
     pub identity_contract: starknet::ClassHash,
-    pub implementation_authority: IImplementationAuthorityDispatcher,
+    pub implementation_authority: IIdentityImplementationAuthorityDispatcher,
     pub claim_issuer: ClaimIssuerABIDispatcher,
     pub accounts: TestAccounts,
     pub alice_identity: IdentityABIDispatcher,
@@ -159,7 +159,7 @@ pub fn setup_factory() -> FactorySetup {
     let (implementation_authority_address, _) = implementation_authority_contract
         .deploy(@implementation_authority_ctor_data)
         .unwrap();
-    let mut implementation_authority_dispatcher = IImplementationAuthorityDispatcher {
+    let mut implementation_authority_dispatcher = IIdentityImplementationAuthorityDispatcher {
         contract_address: implementation_authority_address,
     };
     // Declare and Deploy IdFactory

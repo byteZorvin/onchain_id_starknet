@@ -1,6 +1,6 @@
 use onchain_id_starknet::factory::iid_factory::IIdFactoryDispatcher;
 use onchain_id_starknet::gateway::gateway::IGatewayDispatcher;
-use onchain_id_starknet::interface::iimplementation_authority::IImplementationAuthorityDispatcher;
+use onchain_id_starknet::interface::iimplementation_authority::IIdentityImplementationAuthorityDispatcher;
 use openzeppelin_access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
@@ -15,7 +15,7 @@ pub struct GatewaySetup {
     pub gateway: IGatewayDispatcher,
     pub identity_factory: IIdFactoryDispatcher,
     pub identity_contract: starknet::ClassHash,
-    pub implementation_authority: IImplementationAuthorityDispatcher,
+    pub implementation_authority: IIdentityImplementationAuthorityDispatcher,
     pub accounts: TestAccounts,
 }
 
