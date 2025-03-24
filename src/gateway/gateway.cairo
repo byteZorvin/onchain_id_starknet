@@ -9,7 +9,7 @@ pub mod Gateway {
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use crate::factory::iid_factory::{IIdFactoryDispatcher, IIdFactoryDispatcherTrait};
+    use crate::factory::interface::{IIdFactoryDispatcher, IIdFactoryDispatcherTrait};
     use crate::gateway::interface::{IGateway, Signature};
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);

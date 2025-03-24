@@ -7,15 +7,16 @@ pub mod IdentityComponent {
         Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
         Vec, VecTrait,
     };
-    use crate::interface::ierc734::{ERC734Event, IERC734};
-    use crate::interface::ierc735::{ERC735Event, IERC735};
-    use crate::interface::iidentity::{IIdentity, IIdentityDispatcher, IIdentityDispatcherTrait};
-    use crate::interface::{ierc734, ierc735};
+    use crate::identity::interface::ierc734::{ERC734Event, IERC734};
+    use crate::identity::interface::ierc735::{ERC735Event, IERC735};
+    use crate::identity::interface::iidentity::{
+        IIdentity, IIdentityDispatcher, IIdentityDispatcherTrait,
+    };
+    use crate::identity::interface::{ierc734, ierc735};
     use crate::storage::signature::{get_public_key_hash, is_valid_signature};
     use crate::storage::structs::{
         Claim, Execution, ExecutionRequestStatus, KeyDetails, KeyDetailsTrait,
     };
-    use crate::storage::vec_ext::{VecClearTrait, VecDeleteTrait, VecToArrayTrait};
 
     #[storage]
     pub struct Storage {

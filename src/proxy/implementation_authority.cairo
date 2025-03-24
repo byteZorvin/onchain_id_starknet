@@ -5,7 +5,8 @@ pub mod IdentityImplementationAuthority {
     use openzeppelin_upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDispatcherTrait};
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
-    use crate::interface::iimplementation_authority::IIdentityImplementationAuthority;
+    use crate::proxy::interface::IIdentityImplementationAuthority;
+
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]

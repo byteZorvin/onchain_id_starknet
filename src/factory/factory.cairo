@@ -8,9 +8,9 @@ pub mod IdFactory {
         Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
         Vec, VecTrait,
     };
-    use crate::factory::iid_factory::IIdFactory;
-    use crate::interface::ierc734::{IERC734Dispatcher, IERC734DispatcherTrait};
-    use crate::interface::iimplementation_authority::{
+    use crate::factory::interface::IIdFactory;
+    use crate::identity::interface::ierc734::{IERC734Dispatcher, IERC734DispatcherTrait};
+    use crate::proxy::interface::{
         IIdentityImplementationAuthorityDispatcher, IIdentityImplementationAuthorityDispatcherTrait,
     };
 
