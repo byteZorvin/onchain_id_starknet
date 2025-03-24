@@ -143,7 +143,7 @@ pub mod revoke_claim {
 pub mod is_claim_valid {
     use core::poseidon::poseidon_hash_span;
     use onchain_id_starknet::interface::iclaim_issuer::ClaimIssuerABIDispatcherTrait;
-    use onchain_id_starknet::storage::structs::{Signature, StarkSignature};
+    use onchain_id_starknet::storage::signature::{Signature, StarkSignature};
     use snforge_std::signature::SignerTrait;
     use snforge_std::signature::stark_curve::{
         StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl,
@@ -163,11 +163,13 @@ pub mod is_claim_valid {
         );
         test_claim.issuer = setup.accounts.bob_account.contract_address;
         let (r, s) = setup.accounts.bob_key.sign(hashed_claim).unwrap();
-        test_claim
-            .signature =
-                Signature::StarkSignature(
-                    StarkSignature { r, s, public_key: setup.accounts.bob_key.public_key },
-                );
+        let signature = Signature::StarkSignature(
+            StarkSignature { r, s, public_key: setup.accounts.bob_key.public_key },
+        );
+        let mut serialized_signature = Default::default();
+        signature.serialize(ref serialized_signature);
+
+        test_claim.signature = serialized_signature.span();
 
         let is_claim_valid = setup
             .claim_issuer
@@ -212,11 +214,12 @@ pub mod is_claim_valid {
             array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span(),
         );
         let (r, s) = setup.accounts.claim_issuer_key.sign(hashed_invalid_claim).unwrap();
-        test_claim
-            .signature =
-                Signature::StarkSignature(
-                    StarkSignature { r, s, public_key: setup.accounts.claim_issuer_key.public_key },
-                );
+        let signature = Signature::StarkSignature(
+            StarkSignature { r, s, public_key: setup.accounts.claim_issuer_key.public_key },
+        );
+        let mut serialized_signature = Default::default();
+        signature.serialize(ref serialized_signature);
+        test_claim.signature = serialized_signature.span();
 
         let is_claim_valid = setup
             .claim_issuer
