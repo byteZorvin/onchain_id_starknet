@@ -2,20 +2,20 @@
 pub mod IdentityComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
-    use onchain_id_starknet::interface::ierc734::{ERC734Event, IERC734};
-    use onchain_id_starknet::interface::ierc735::{ERC735Event, IERC735};
-    use onchain_id_starknet::interface::iidentity::{
-        IIdentity, IIdentityDispatcher, IIdentityDispatcherTrait,
-    };
-    use onchain_id_starknet::interface::{ierc734, ierc735};
-    use onchain_id_starknet::storage::signature::{get_public_key_hash, is_valid_signature};
-    use onchain_id_starknet::storage::structs::{
-        Claim, Execution, ExecutionRequestStatus, KeyDetails, KeyDetailsTrait,
-    };
     use starknet::ContractAddress;
     use starknet::storage::{
         Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
         Vec, VecTrait,
+    };
+    use crate::identity::interface::ierc734::{ERC734Event, IERC734};
+    use crate::identity::interface::ierc735::{ERC735Event, IERC735};
+    use crate::identity::interface::iidentity::{
+        IIdentity, IIdentityDispatcher, IIdentityDispatcherTrait,
+    };
+    use crate::identity::interface::{ierc734, ierc735};
+    use crate::storage::signature::{get_public_key_hash, is_valid_signature};
+    use crate::storage::structs::{
+        Claim, Execution, ExecutionRequestStatus, KeyDetails, KeyDetailsTrait,
     };
 
     #[storage]

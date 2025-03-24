@@ -5,8 +5,8 @@ pub trait IMockVerifier<TContractState> {
 
 #[starknet::contract]
 pub mod MockVerifier {
-    use onchain_id_starknet::verifiers::verifier::VerifierComponent;
     use openzeppelin_access::ownable::ownable::OwnableComponent;
+    use crate::verifiers::verifier::VerifierComponent;
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 

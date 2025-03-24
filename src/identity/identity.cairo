@@ -5,7 +5,7 @@ mod Identity {
     use openzeppelin_upgrades::upgradeable::UpgradeableComponent;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
-    use crate::identity_component::IdentityComponent;
+    use crate::identity::component::IdentityComponent;
     use crate::version::version;
 
     #[abi(embed_v0)]
