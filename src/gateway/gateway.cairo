@@ -44,15 +44,13 @@ pub mod Gateway {
     use core::ecdsa::recover_public_key;
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
-    use onchain_id_starknet::factory::iid_factory::{
-        IIdFactoryDispatcher, IIdFactoryDispatcherTrait,
-    };
     use openzeppelin_access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
     use openzeppelin_access::ownable::ownable::OwnableComponent;
     use starknet::ContractAddress;
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
+    use crate::factory::iid_factory::{IIdFactoryDispatcher, IIdFactoryDispatcherTrait};
     use super::Signature;
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);

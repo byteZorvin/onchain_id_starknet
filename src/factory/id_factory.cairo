@@ -2,16 +2,16 @@
 pub mod IdFactory {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
-    use onchain_id_starknet::factory::iid_factory::IIdFactory;
-    use onchain_id_starknet::interface::ierc734::{IERC734Dispatcher, IERC734DispatcherTrait};
-    use onchain_id_starknet::interface::iimplementation_authority::{
-        IIdentityImplementationAuthorityDispatcher, IIdentityImplementationAuthorityDispatcherTrait,
-    };
     use openzeppelin_access::ownable::ownable::OwnableComponent;
     use starknet::ContractAddress;
     use starknet::storage::{
         Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
         Vec, VecTrait,
+    };
+    use crate::factory::iid_factory::IIdFactory;
+    use crate::interface::ierc734::{IERC734Dispatcher, IERC734DispatcherTrait};
+    use crate::interface::iimplementation_authority::{
+        IIdentityImplementationAuthorityDispatcher, IIdentityImplementationAuthorityDispatcherTrait,
     };
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
