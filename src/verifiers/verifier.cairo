@@ -79,6 +79,7 @@ pub mod VerifierComponent {
         pub const TRUSTED_ISSUER_DOES_NOT_EXIST: felt252 = 'trusted issuer does not exist';
         pub const SENDER_IS_NOT_VERIFIED: felt252 = 'sender is not verified';
         pub const TOPIC_EXIST: felt252 = 'topic exist';
+        pub const CLAIM_TOPIC_DOES_NOT_EXIST: felt252 = 'Claim topic does not exists';
     }
 
     #[embeddable_as(VerifierImpl)]
@@ -131,7 +132,7 @@ pub mod VerifierComponent {
                                     let (found_claim_topic, _, issuer, sig, data, _) =
                                         identity_dispatcher
                                         .get_claim(claim_id);
-                                    
+
                                     if found_claim_topic != claim_topic {
                                         return false;
                                     }
@@ -193,7 +194,7 @@ pub mod VerifierComponent {
                         required_claim_topic.read() == claim_topic
                     },
                 )
-                .expect('Claim topic not exists');
+                .expect(Errors::CLAIM_TOPIC_DOES_NOT_EXIST);
 
             required_claim_topics_storage_path.pop_swap(index.into());
 
