@@ -99,12 +99,12 @@ pub mod VerifierComponent {
             }
             let identity_dispatcher = IERC735Dispatcher { contract_address: identity };
             let mut required_claims_iterator = required_claim_topics_storage_path
-                .into_iter_full_range();
+                .into_iter_full_range()
+                .map(|claim_storage| claim_storage.read());
 
             required_claims_iterator
                 .all(
-                    |claim_storage| {
-                        let claim_topic = claim_storage.read();
+                    |claim_topic| {
                         let mut claim_topics_to_trusted_issuers_storage_path =
                             claim_topics_to_trusted_issuers_storage_path
                             .entry(claim_topic);
@@ -116,11 +116,11 @@ pub mod VerifierComponent {
                         let mut claim_ids = claim_topics_to_trusted_issuers_storage_path
                             .into_iter_full_range()
                             .map(
-                                |
-                                    claim_issuer,
-                                | poseidon_hash_span(
-                                    array![claim_issuer.read().into(), claim_topic].span(),
-                                ),
+                                |claim_issuer| {
+                                    poseidon_hash_span(
+                                        array![claim_issuer.read().into(), claim_topic].span(),
+                                    )
+                                },
                             )
                             .collect::<Array<_>>();
 
@@ -131,6 +131,7 @@ pub mod VerifierComponent {
                                     let (found_claim_topic, _, issuer, sig, data, _) =
                                         identity_dispatcher
                                         .get_claim(claim_id);
+                                    
                                     if found_claim_topic != claim_topic {
                                         return false;
                                     }
