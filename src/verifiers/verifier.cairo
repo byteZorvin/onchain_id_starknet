@@ -16,6 +16,9 @@ pub mod VerifierComponent {
         IClaimTopicsRegistry, ITrustedIssuersRegistry, IVerifier, VerifierABI,
     };
 
+    const TOPIC_LENGTH_LIMIT: u32 = 15;
+    const TRUSTED_ISSERS_LENGTH_LIMIT: u32 = 50;
+
     #[storage]
     pub struct Storage {
         pub Verifier_required_claim_topics: Vec<felt252>,
@@ -160,7 +163,8 @@ pub mod VerifierComponent {
             let ownable_comp = get_dep_component!(@self, Owner);
             ownable_comp.assert_only_owner();
             assert(
-                self.Verifier_required_claim_topics.len() < 15, Errors::TOPIC_LENGTH_EXCEEDS_LIMIT,
+                self.Verifier_required_claim_topics.len() < TOPIC_LENGTH_LIMIT.into(),
+                Errors::TOPIC_LENGTH_EXCEEDS_LIMIT,
             );
             let mut iterator = self.Verifier_required_claim_topics.deref().into_iter_full_range();
 
@@ -224,8 +228,11 @@ pub mod VerifierComponent {
             assert(!trusted_issuer.is_zero(), Errors::ZERO_ADDRESS);
             assert(trusted_issuer_claim_topics_storage_path.len() == 0, Errors::ISSUER_EXIST);
             assert(claim_topics.len() > 0, Errors::ZERO_TOPICS);
-            assert(claim_topics.len() <= 15, Errors::TOPIC_LENGTH_EXCEEDS_LIMIT);
-            assert(trusted_issuers_storage_path.len() < 50, Errors::TRUSTED_ISSUERS_EXCEEDS_LIMIT);
+            assert(claim_topics.len() <= TOPIC_LENGTH_LIMIT, Errors::TOPIC_LENGTH_EXCEEDS_LIMIT);
+            assert(
+                trusted_issuers_storage_path.len() < TRUSTED_ISSERS_LENGTH_LIMIT.into(),
+                Errors::TRUSTED_ISSUERS_EXCEEDS_LIMIT,
+            );
 
             trusted_issuers_storage_path.push(trusted_issuer);
 
@@ -308,7 +315,7 @@ pub mod VerifierComponent {
                 .entry(trusted_issuer);
             assert(trusted_issuer_claim_topics_storage_path.len() != 0, Errors::NO_TOPICS);
             assert(claim_topics.len() > 0, Errors::ZERO_TOPICS);
-            assert(claim_topics.len() <= 15, Errors::TOPIC_LENGTH_EXCEEDS_LIMIT);
+            assert(claim_topics.len() <= TOPIC_LENGTH_LIMIT, Errors::TOPIC_LENGTH_EXCEEDS_LIMIT);
 
             let claim_topics_to_trusted_issuers_storage_path = self
                 .Verifier_claim_topics_to_trusted_issuers
