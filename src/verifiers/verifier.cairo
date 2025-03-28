@@ -40,13 +40,13 @@ pub mod VerifierComponent {
     #[derive(Drop, starknet::Event)]
     pub struct ClaimTopicAdded {
         #[key]
-        claim_topic: felt252,
+        pub claim_topic: felt252,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct ClaimTopicRemoved {
         #[key]
-        claim_topic: felt252,
+        pub claim_topic: felt252,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -59,7 +59,7 @@ pub mod VerifierComponent {
     #[derive(Drop, starknet::Event)]
     pub struct TrustedIssuerRemoved {
         #[key]
-        trusted_issuer: ContractAddress,
+        pub trusted_issuer: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
