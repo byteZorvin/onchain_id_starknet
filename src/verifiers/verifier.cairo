@@ -166,7 +166,7 @@ pub mod VerifierComponent {
                 self.Verifier_required_claim_topics.len() < TOPIC_LENGTH_LIMIT.into(),
                 Errors::TOPIC_LENGTH_EXCEEDS_LIMIT,
             );
-            let mut iterator = self.Verifier_required_claim_topics.deref().into_iter_full_range();
+            let mut iterator = self.Verifier_required_claim_topics.into_iter_full_range();
 
             let is_topics_exist = iterator.any(|_claim_topic| _claim_topic.read() == claim_topic);
             assert(!is_topics_exist, Errors::CLAIM_TOPIC_ALREADY_EXIST);
@@ -344,7 +344,7 @@ pub mod VerifierComponent {
                 claim_topics_to_trusted_issuers_storage.entry(*claim_topic).push(trusted_issuer);
             }
 
-            self.emit(TrustedIssuerAdded { trusted_issuer: trusted_issuer, claim_topics });
+            self.emit(ClaimTopicsUpdated { trusted_issuer: trusted_issuer, claim_topics });
         }
 
         fn get_trusted_issuers(self: @ComponentState<TContractState>) -> Span<ContractAddress> {
