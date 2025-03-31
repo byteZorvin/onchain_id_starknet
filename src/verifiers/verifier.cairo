@@ -95,8 +95,8 @@ pub mod VerifierComponent {
                 .Verifier_claim_topics_to_trusted_issuers
                 .as_path();
 
-            if (required_claim_topics_storage.len() == 0) {
-                return false;
+            if required_claim_topics_storage.len().is_zero() {
+                return true;
             }
             let identity_dispatcher = IERC735Dispatcher { contract_address: identity };
             let mut required_claims_iterator = required_claim_topics_storage
@@ -110,7 +110,7 @@ pub mod VerifierComponent {
                             claim_topics_to_trusted_issuers_storage
                             .entry(claim_topic);
 
-                        if claim_topics_to_trusted_issuers_storage.len() == 0 {
+                        if claim_topics_to_trusted_issuers_storage.len().is_zero() {
                             return false;
                         }
 
@@ -219,7 +219,7 @@ pub mod VerifierComponent {
             ownable_comp.assert_only_owner();
 
             assert(!trusted_issuer.is_zero(), Errors::ZERO_ADDRESS);
-            assert(claim_topics.len() > 0, Errors::ZERO_TOPICS);
+            assert(claim_topics.len().is_non_zero(), Errors::ZERO_TOPICS);
             assert(claim_topics.len() <= TOPIC_LENGTH_LIMIT, Errors::TOPIC_LENGTH_EXCEEDS_LIMIT);
 
             let trusted_issuer_claim_topics_storage = self
@@ -227,7 +227,10 @@ pub mod VerifierComponent {
                 .entry(trusted_issuer);
             let trusted_issuers_storage = self.Verifier_trusted_issuers.as_path();
 
-            assert(trusted_issuer_claim_topics_storage.len() == 0, Errors::ISSUER_ALREADY_EXIST);
+            assert(
+                trusted_issuer_claim_topics_storage.len().is_zero(), Errors::ISSUER_ALREADY_EXIST,
+            );
+
             assert(
                 trusted_issuers_storage.len() < TRUSTED_ISSERS_LENGTH_LIMIT.into(),
                 Errors::TRUSTED_ISSUERS_EXCEEDS_LIMIT,
@@ -255,7 +258,7 @@ pub mod VerifierComponent {
                 .Verifier_trusted_issuer_claim_topics
                 .entry(trusted_issuer);
             assert(
-                trusted_issuer_claim_topics_storage.len() != 0,
+                trusted_issuer_claim_topics_storage.len().is_non_zero(),
                 Errors::TRUSTED_ISSUER_DOES_NOT_EXIST,
             );
 
@@ -304,14 +307,14 @@ pub mod VerifierComponent {
             let ownable_comp = get_dep_component!(@self, Owner);
             ownable_comp.assert_only_owner();
             assert(!trusted_issuer.is_zero(), Errors::ZERO_ADDRESS);
-            assert(claim_topics.len() > 0, Errors::ZERO_TOPICS);
+            assert(claim_topics.len().is_non_zero(), Errors::ZERO_TOPICS);
             assert(claim_topics.len() <= TOPIC_LENGTH_LIMIT, Errors::TOPIC_LENGTH_EXCEEDS_LIMIT);
 
             let trusted_issuer_claim_topics_storage = self
                 .Verifier_trusted_issuer_claim_topics
                 .entry(trusted_issuer);
             assert(
-                trusted_issuer_claim_topics_storage.len() != 0,
+                trusted_issuer_claim_topics_storage.len().is_non_zero(),
                 Errors::TRUSTED_ISSUER_DOES_NOT_EXIST,
             );
 

@@ -236,7 +236,7 @@ pub mod IdFactory {
                 self.token_identity.entry(wallet).read().is_zero(),
                 Errors::ADDRESS_ALREADY_LINKED_TOKEN,
             ); // solidity does not have this check ensure required
-            assert(management_keys.len() > 0, Errors::MANAGEMENT_KEYS_EMPTY);
+            assert(management_keys.len().is_non_zero(), Errors::MANAGEMENT_KEYS_EMPTY);
 
             let identity = self
                 .deploy_identity(

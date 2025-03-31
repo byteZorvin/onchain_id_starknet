@@ -503,13 +503,11 @@ pub mod IdentityComponent {
             self: @ComponentState<TContractState>, claim_id: felt252,
         ) -> (felt252, felt252, ContractAddress, Span<felt252>, ByteArray, ByteArray) {
             let claim_storage_path = self.Identity_claims.entry(claim_id);
-            let signature = claim_storage_path.signature.to_array().span();
-
             (
                 claim_storage_path.topic.read(),
                 claim_storage_path.scheme.read(),
                 claim_storage_path.issuer.read(),
-                signature,
+                claim_storage_path.signature.to_array().span(),
                 claim_storage_path.data.read(),
                 claim_storage_path.uri.read(),
             )

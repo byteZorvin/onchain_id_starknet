@@ -219,7 +219,8 @@ pub mod Gateway {
                 Errors::ZeroAddress();
             }
 
-            if signature_expiry != 0 && signature_expiry < starknet::get_block_timestamp() {
+            if signature_expiry.is_non_zero()
+                && signature_expiry < starknet::get_block_timestamp() {
                 Errors::ExpiredSignature();
             }
             /// TODO: comply with  SNIP12
@@ -290,7 +291,8 @@ pub mod Gateway {
                 Errors::ZeroAddress();
             }
 
-            if signature_expiry != 0 && signature_expiry < starknet::get_block_timestamp() {
+            if signature_expiry.is_non_zero()
+                && signature_expiry < starknet::get_block_timestamp() {
                 Errors::ExpiredSignature();
             }
             /// TODO: comply with  SNIP12
