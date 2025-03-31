@@ -11,7 +11,7 @@ pub mod VerifierComponent {
     };
     use crate::identity::interface::ierc735::{IERC735Dispatcher, IERC735DispatcherTrait};
     use crate::identity::interface::iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait};
-    use crate::storage::vec_ext::{VecClearTrait, VecDeleteTrait, VecToArrayTrait};
+    use crate::storage::vec_ext::{VecDeleteTrait, VecToArrayTrait};
     use crate::verifiers::interface::{
         IClaimTopicsRegistry, ITrustedIssuersRegistry, IVerifier, VerifierABI,
     };
@@ -255,44 +255,41 @@ pub mod VerifierComponent {
         ) {
             let ownable_comp = get_dep_component!(@self, Owner);
             ownable_comp.assert_only_owner();
-            let trusted_issuer_claim_topics_storage_path = self
+            assert(!trusted_issuer.is_zero(), Errors::ZERO_ADDRESS);
+            let trusted_issuer_claim_topics_storage = self
                 .Verifier_trusted_issuer_claim_topics
                 .as_path()
                 .entry(trusted_issuer);
-            assert(!trusted_issuer.is_zero(), Errors::ZERO_ADDRESS);
             assert(
-                trusted_issuer_claim_topics_storage_path.len() != 0,
+                trusted_issuer_claim_topics_storage.len() != 0,
                 Errors::TRUSTED_ISSUER_DOES_NOT_EXIST,
             );
-            let trusted_issuers_storage_path = self.Verifier_trusted_issuers.as_path();
-            let claim_topics_to_trusted_issuers_storage_path = self
+
+            let claim_topics_to_trusted_issuers_storage = self
                 .Verifier_claim_topics_to_trusted_issuers
                 .as_path();
 
-            /// Clear claim topics to trusted issuer for each claim issuer trusted for
-            for i in 0..trusted_issuer_claim_topics_storage_path.len() {
-                let mut claim_topic = trusted_issuer_claim_topics_storage_path.at(i).read();
-                // get the issuer of each claim topic
-                let claim_topic_trusted_issuers_storage =
-                    claim_topics_to_trusted_issuers_storage_path
-                    .entry(claim_topic);
-                let claim_topic_trusted_issuers_len = claim_topic_trusted_issuers_storage.len();
-                for j in 0..claim_topic_trusted_issuers_len {
-                    //check the issuer and remove it
-                    if trusted_issuer == claim_topic_trusted_issuers_storage.at(j).read() {
-                        claim_topic_trusted_issuers_storage.pop_swap(j);
-                        break;
-                    };
-                };
+            /// Clear issuer claim topics and collect them in an array
+            let mut issuer_claim_topics = array![];
+            for _ in 0..trusted_issuer_claim_topics_storage.len() {
+                issuer_claim_topics.append(trusted_issuer_claim_topics_storage.pop().unwrap());
             }
 
-            /// Clear trusted issuer claim topics
-            trusted_issuer_claim_topics_storage_path.clear();
+            // Remove issuer from trusted issuers by claim topics list
+            for trusted_issuer_for_claim_topic_storage in issuer_claim_topics
+                .into_iter()
+                .map(|topic| claim_topics_to_trusted_issuers_storage.entry(topic)) {
+                for i in 0..trusted_issuer_for_claim_topic_storage.len() {
+                    if trusted_issuer == trusted_issuer_for_claim_topic_storage.at(i).read() {
+                        trusted_issuer_for_claim_topic_storage.pop_swap(i);
+                        break;
+                    }
+                }
+            }
 
             /// Remove issuer from trusted issuers
-            let mut issuer_iterator = trusted_issuers_storage_path
-                .into_iter_full_range()
-                .enumerate();
+            let trusted_issuers_storage = self.Verifier_trusted_issuers.as_path();
+            let mut issuer_iterator = trusted_issuers_storage.into_iter_full_range().enumerate();
             let (index, _) = issuer_iterator
                 .find(|iter| {
                     let (_, storage) = iter;
@@ -300,7 +297,7 @@ pub mod VerifierComponent {
                 })
                 .expect(Errors::TRUSTED_ISSUER_DOES_NOT_EXIST);
 
-            trusted_issuers_storage_path.pop_swap(index.into());
+            trusted_issuers_storage.pop_swap(index.into());
 
             self.emit(TrustedIssuerRemoved { trusted_issuer: trusted_issuer });
         }
@@ -313,43 +310,44 @@ pub mod VerifierComponent {
             let ownable_comp = get_dep_component!(@self, Owner);
             ownable_comp.assert_only_owner();
             assert(!trusted_issuer.is_zero(), Errors::ZERO_ADDRESS);
-            let trusted_issuer_claim_topics_storage_path = self
-                .Verifier_trusted_issuer_claim_topics
-                .as_path()
-                .entry(trusted_issuer);
-            assert(trusted_issuer_claim_topics_storage_path.len() != 0, Errors::NO_TOPICS);
             assert(claim_topics.len() > 0, Errors::ZERO_TOPICS);
             assert(claim_topics.len() <= TOPIC_LENGTH_LIMIT, Errors::TOPIC_LENGTH_EXCEEDS_LIMIT);
 
-            let claim_topics_to_trusted_issuers_storage_path = self
+            let trusted_issuer_claim_topics_storage = self
+                .Verifier_trusted_issuer_claim_topics
+                .as_path()
+                .entry(trusted_issuer);
+            assert(
+                trusted_issuer_claim_topics_storage.len() != 0,
+                Errors::TRUSTED_ISSUER_DOES_NOT_EXIST,
+            );
+
+            /// Clear issuer claim topics and collect them in an array
+            let mut issuer_claim_topics = array![];
+            for _ in 0..trusted_issuer_claim_topics_storage.len() {
+                issuer_claim_topics.append(trusted_issuer_claim_topics_storage.pop().unwrap());
+            }
+
+            let claim_topics_to_trusted_issuers_storage = self
                 .Verifier_claim_topics_to_trusted_issuers
                 .as_path();
 
             // Remove issuer from trusted issuers by claim topics list
-            for i in 0..trusted_issuer_claim_topics_storage_path.len() {
-                let claim_topic = trusted_issuer_claim_topics_storage_path.at(i).read();
-                let mut trusted_issuer_for_claim_topic_storage =
-                    claim_topics_to_trusted_issuers_storage_path
-                    .entry(claim_topic);
-                let trusted_issuer_for_claim_topic_len = trusted_issuer_for_claim_topic_storage
-                    .len();
-                for j in 0..trusted_issuer_for_claim_topic_len {
-                    if trusted_issuer == trusted_issuer_for_claim_topic_storage.at(j).read() {
-                        trusted_issuer_for_claim_topic_storage.pop_swap(j);
+            for trusted_issuer_for_claim_topic_storage in issuer_claim_topics
+                .into_iter()
+                .map(|topic| claim_topics_to_trusted_issuers_storage.entry(topic)) {
+                for i in 0..trusted_issuer_for_claim_topic_storage.len() {
+                    if trusted_issuer == trusted_issuer_for_claim_topic_storage.at(i).read() {
+                        trusted_issuer_for_claim_topic_storage.pop_swap(i);
                         break;
                     }
                 }
             }
 
-            // Clear trusted issuer claim topics
-            trusted_issuer_claim_topics_storage_path.clear();
-
             // Registers trusted issuers claim topics and registers issuer for claim topic
             for claim_topic in claim_topics.clone() {
-                trusted_issuer_claim_topics_storage_path.push(claim_topic);
-                claim_topics_to_trusted_issuers_storage_path
-                    .entry(claim_topic)
-                    .push(trusted_issuer);
+                trusted_issuer_claim_topics_storage.push(claim_topic);
+                claim_topics_to_trusted_issuers_storage.entry(claim_topic).push(trusted_issuer);
             }
 
             self.emit(TrustedIssuerAdded { trusted_issuer: trusted_issuer, claim_topics });
