@@ -348,7 +348,7 @@ pub fn setup_verifier(
     }
 
     for (issuer, claim_topics) in add_issuer_entries {
-        verifier_dispatcher.add_trusted_issuer(*issuer, claim_topics.clone());
+        verifier_dispatcher.add_trusted_issuer(*issuer, claim_topics.span());
     }
     stop_cheat_caller_address(mock_verifier_address);
 
