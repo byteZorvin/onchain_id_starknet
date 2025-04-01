@@ -55,11 +55,11 @@ mod Identity {
     fn constructor(
         ref self: ContractState,
         implementation_authority: ContractAddress,
-        initial_management_key_hash: ContractAddress,
+        initial_management_key: ContractAddress,
     ) {
         assert(implementation_authority.is_non_zero(), Errors::IMPLEMENTATION_AUTH_ZERO_ADDRESS);
         self.implementation_authority.write(implementation_authority);
-        self.identity.initialize(initial_management_key_hash);
+        self.identity.initialize(initial_management_key);
     }
 
     #[abi(embed_v0)]
