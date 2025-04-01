@@ -113,7 +113,7 @@ pub mod create_identity_with_management_keys {
         setup
             .identity_factory
             .create_identity_with_management_keys(
-                setup.accounts.david_account.contract_address, 'salt1', array![],
+                setup.accounts.david_account.contract_address, 'salt1', [].span(),
             );
         stop_cheat_caller_address(setup.identity_factory.contract_address);
     }
@@ -134,7 +134,7 @@ pub mod create_identity_with_management_keys {
             .create_identity_with_management_keys(
                 setup.accounts.david_account.contract_address,
                 'salt1',
-                array![dummy_key_1_hash, david_account_address_hash],
+                [dummy_key_1_hash, david_account_address_hash].span(),
             );
         stop_cheat_caller_address(setup.identity_factory.contract_address);
     }
@@ -153,7 +153,7 @@ pub mod create_identity_with_management_keys {
             .create_identity_with_management_keys(
                 setup.accounts.david_account.contract_address,
                 'salt1',
-                array![dummy_key_1_hash, dummy_key_2_hash],
+                [dummy_key_1_hash, dummy_key_2_hash].span(),
             );
         stop_cheat_caller_address(setup.identity_factory.contract_address);
         let factory_address_hash = poseidon_hash_span(

@@ -9,7 +9,7 @@ pub trait IIdFactory<TContractState> {
         ref self: TContractState,
         wallet: ContractAddress,
         salt: felt252,
-        management_keys: Array<felt252>,
+        management_keys: Span<felt252>,
     ) -> ContractAddress;
     fn create_token_identity(
         ref self: TContractState,

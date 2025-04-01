@@ -52,8 +52,8 @@ pub mod VerifierComponent {
     #[derive(Drop, starknet::Event)]
     pub struct TrustedIssuerAdded {
         #[key]
-        trusted_issuer: ContractAddress,
-        claim_topics: Array<felt252>,
+        pub trusted_issuer: ContractAddress,
+        pub claim_topics: Span<felt252>,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -65,8 +65,8 @@ pub mod VerifierComponent {
     #[derive(Drop, starknet::Event)]
     pub struct ClaimTopicsUpdated {
         #[key]
-        trusted_issuer: ContractAddress,
-        claim_topics: Array<felt252>,
+        pub trusted_issuer: ContractAddress,
+        pub claim_topics: Span<felt252>,
     }
 
     mod Errors {
@@ -198,9 +198,8 @@ pub mod VerifierComponent {
             self.emit(ClaimTopicRemoved { claim_topic });
         }
 
-        /// TODO: return span instead
-        fn get_claim_topics(self: @ComponentState<TContractState>) -> Array<felt252> {
-            self.Verifier_required_claim_topics.to_array()
+        fn get_claim_topics(self: @ComponentState<TContractState>) -> Span<felt252> {
+            self.Verifier_required_claim_topics.to_array().span()
         }
     }
 
@@ -213,7 +212,7 @@ pub mod VerifierComponent {
         fn add_trusted_issuer(
             ref self: ComponentState<TContractState>,
             trusted_issuer: ContractAddress,
-            claim_topics: Array<felt252>,
+            claim_topics: Span<felt252>,
         ) {
             let ownable_comp = get_dep_component!(@self, Owner);
             ownable_comp.assert_only_owner();
@@ -241,9 +240,9 @@ pub mod VerifierComponent {
             for claim_topic in claim_topics.clone() {
                 self
                     .Verifier_claim_topics_to_trusted_issuers
-                    .entry(claim_topic)
+                    .entry(*claim_topic)
                     .push(trusted_issuer);
-                trusted_issuer_claim_topics_storage.push(claim_topic);
+                trusted_issuer_claim_topics_storage.push(*claim_topic);
             }
             self.emit(TrustedIssuerAdded { trusted_issuer: trusted_issuer, claim_topics })
         }
@@ -302,7 +301,7 @@ pub mod VerifierComponent {
         fn update_issuer_claim_topics(
             ref self: ComponentState<TContractState>,
             trusted_issuer: ContractAddress,
-            claim_topics: Array<felt252>,
+            claim_topics: Span<felt252>,
         ) {
             let ownable_comp = get_dep_component!(@self, Owner);
             ownable_comp.assert_only_owner();
@@ -342,21 +341,21 @@ pub mod VerifierComponent {
 
             // Registers trusted issuers claim topics and registers issuer for claim topic
             for claim_topic in claim_topics.clone() {
-                trusted_issuer_claim_topics_storage.push(claim_topic);
-                claim_topics_to_trusted_issuers_storage.entry(claim_topic).push(trusted_issuer);
+                trusted_issuer_claim_topics_storage.push(*claim_topic);
+                claim_topics_to_trusted_issuers_storage.entry(*claim_topic).push(trusted_issuer);
             }
 
             self.emit(TrustedIssuerAdded { trusted_issuer: trusted_issuer, claim_topics });
         }
 
-        fn get_trusted_issuers(self: @ComponentState<TContractState>) -> Array<ContractAddress> {
-            self.Verifier_trusted_issuers.to_array()
+        fn get_trusted_issuers(self: @ComponentState<TContractState>) -> Span<ContractAddress> {
+            self.Verifier_trusted_issuers.to_array().span()
         }
 
         fn get_trusted_issuers_for_claim_topic(
             self: @ComponentState<TContractState>, claim_topic: felt252,
-        ) -> Array<ContractAddress> {
-            self.Verifier_claim_topics_to_trusted_issuers.entry(claim_topic).to_array()
+        ) -> Span<ContractAddress> {
+            self.Verifier_claim_topics_to_trusted_issuers.entry(claim_topic).to_array().span()
         }
 
         fn is_trusted_issuer(
@@ -367,13 +366,13 @@ pub mod VerifierComponent {
 
         fn get_trusted_issuer_claim_topics(
             self: @ComponentState<TContractState>, trusted_issuer: ContractAddress,
-        ) -> Array<felt252> {
+        ) -> Span<felt252> {
             let claim_topics_storage = self
                 .Verifier_trusted_issuer_claim_topics
                 .entry(trusted_issuer);
             assert(claim_topics_storage.len().is_non_zero(), Errors::TRUSTED_ISSUER_DOES_NOT_EXIST);
 
-            claim_topics_storage.to_array()
+            claim_topics_storage.to_array().span()
         }
 
         fn has_claim_topic(
@@ -414,14 +413,14 @@ pub mod VerifierComponent {
             ClaimTopicsRegistry::remove_claim_topic(ref self, claim_topic);
         }
 
-        fn get_claim_topics(self: @ComponentState<TContractState>) -> Array<felt252> {
+        fn get_claim_topics(self: @ComponentState<TContractState>) -> Span<felt252> {
             ClaimTopicsRegistry::get_claim_topics(self)
         }
         // ITrustedIssuerRegistry
         fn add_trusted_issuer(
             ref self: ComponentState<TContractState>,
             trusted_issuer: ContractAddress,
-            claim_topics: Array<felt252>,
+            claim_topics: Span<felt252>,
         ) {
             TrustedIssuerRegistry::add_trusted_issuer(ref self, trusted_issuer, claim_topics);
         }
@@ -435,20 +434,20 @@ pub mod VerifierComponent {
         fn update_issuer_claim_topics(
             ref self: ComponentState<TContractState>,
             trusted_issuer: ContractAddress,
-            claim_topics: Array<felt252>,
+            claim_topics: Span<felt252>,
         ) {
             TrustedIssuerRegistry::update_issuer_claim_topics(
                 ref self, trusted_issuer, claim_topics,
             );
         }
 
-        fn get_trusted_issuers(self: @ComponentState<TContractState>) -> Array<ContractAddress> {
+        fn get_trusted_issuers(self: @ComponentState<TContractState>) -> Span<ContractAddress> {
             TrustedIssuerRegistry::get_trusted_issuers(self)
         }
 
         fn get_trusted_issuers_for_claim_topic(
             self: @ComponentState<TContractState>, claim_topic: felt252,
-        ) -> Array<ContractAddress> {
+        ) -> Span<ContractAddress> {
             TrustedIssuerRegistry::get_trusted_issuers_for_claim_topic(self, claim_topic)
         }
 
@@ -460,7 +459,7 @@ pub mod VerifierComponent {
 
         fn get_trusted_issuer_claim_topics(
             self: @ComponentState<TContractState>, trusted_issuer: ContractAddress,
-        ) -> Array<felt252> {
+        ) -> Span<felt252> {
             TrustedIssuerRegistry::get_trusted_issuer_claim_topics(self, trusted_issuer)
         }
 

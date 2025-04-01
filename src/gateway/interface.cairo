@@ -22,7 +22,7 @@ pub trait IGateway<TContractState> {
         ref self: TContractState,
         identity_owner: ContractAddress,
         salt: felt252,
-        management_keys: Array<felt252>,
+        management_keys: Span<felt252>,
         signature_expiry: u64,
         signature: Signature,
     ) -> ContractAddress;

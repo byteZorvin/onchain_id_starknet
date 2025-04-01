@@ -103,7 +103,7 @@ pub mod Gateway {
     fn constructor(
         ref self: ContractState,
         id_factory_address: ContractAddress,
-        signers_to_approve: Array<felt252>,
+        signers_to_approve: Span<felt252>,
         owner: ContractAddress,
     ) {
         if owner.is_zero() {
@@ -121,7 +121,7 @@ pub mod Gateway {
         self.ownable.initializer(owner);
 
         for signer in signers_to_approve {
-            self.approved_signers.entry(signer).write(true);
+            self.approved_signers.entry(*signer).write(true);
         }
 
         self.id_factory.write(id_factory_address);
@@ -264,7 +264,7 @@ pub mod Gateway {
         /// * `signature_expiry`- A `u64` representing the block timestamp where the signature will
         /// expire.
         /// * `signature` - A `Signature` representing the signature of the deployment message.
-        /// * `management_keys` - A `Array<felt252>` representing the array of keys hash(poseidon
+        /// * `management_keys` - A `Span<felt252>` representing the array of keys hash(poseidon
         /// hash) to add as MANAGEMENT keys.
         ///
         /// # Requirements
@@ -283,7 +283,7 @@ pub mod Gateway {
             ref self: ContractState,
             identity_owner: ContractAddress,
             salt: felt252,
-            management_keys: Array<felt252>,
+            management_keys: Span<felt252>,
             signature_expiry: u64,
             signature: Signature,
         ) -> ContractAddress {

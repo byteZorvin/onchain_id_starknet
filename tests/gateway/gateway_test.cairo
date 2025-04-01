@@ -575,7 +575,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
             .deploy_identity_with_salt_and_management_keys(
                 Zero::zero(),
                 'salt1',
-                array![],
+                [].span(),
                 starknet::get_block_timestamp() + super::YEAR,
                 Signature { r: Zero::zero(), s: Zero::zero(), y_parity: false },
             );
@@ -593,7 +593,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
             .deploy_identity_with_salt_and_management_keys(
                 setup.accounts.alice_account.contract_address,
                 'salt1',
-                array![],
+                [].span(),
                 starknet::get_block_timestamp() + super::YEAR,
                 Signature { r: Zero::zero(), s: Zero::zero(), y_parity: false },
             );
@@ -634,7 +634,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
             .deploy_identity_with_salt_and_management_keys(
                 setup.accounts.alice_account.contract_address,
                 salt,
-                management_keys,
+                management_keys.span(),
                 signature_expiry,
                 Signature { r, s, y_parity },
             );
@@ -674,7 +674,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
             .deploy_identity_with_salt_and_management_keys(
                 setup.accounts.alice_account.contract_address,
                 salt,
-                management_keys,
+                management_keys.span(),
                 signature_expiry,
                 Signature { r, s, y_parity },
             );
@@ -765,7 +765,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
             .deploy_identity_with_salt_and_management_keys(
                 setup.accounts.alice_account.contract_address,
                 salt,
-                management_keys,
+                management_keys.span(),
                 signature_expiry,
                 Signature { r, s, y_parity },
             );
@@ -865,7 +865,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
             .deploy_identity_with_salt_and_management_keys(
                 setup.accounts.alice_account.contract_address,
                 salt,
-                management_keys,
+                management_keys.span(),
                 signature_expiry,
                 signature,
             );
@@ -907,7 +907,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
             .deploy_identity_with_salt_and_management_keys(
                 setup.accounts.alice_account.contract_address,
                 salt,
-                management_keys,
+                management_keys.span(),
                 signature_expiry,
                 Signature { r, s, y_parity },
             );

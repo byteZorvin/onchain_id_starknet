@@ -208,7 +208,7 @@ pub mod IdFactory {
         /// * `wallet` - A `ContractAddress` representing the primary owner of deployed identity
         /// contract.
         /// * `salt` - A `felt252` representing the salt used while deployment.
-        /// * `management_keys` - A `Array<felt252>` representing the array of keys hash(poseidon
+        /// * `management_keys` - A `Span<felt252>` representing the array of keys hash(poseidon
         /// hash) to add as MANAGEMENT keys.
         ///
         /// # Requirements
@@ -222,7 +222,7 @@ pub mod IdFactory {
             ref self: ContractState,
             wallet: ContractAddress,
             salt: felt252,
-            management_keys: Array<felt252>,
+            management_keys: Span<felt252>,
         ) -> ContractAddress {
             self.ownable.assert_only_owner();
             assert(wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRESS);
@@ -250,10 +250,10 @@ pub mod IdFactory {
                 // NOTE: Why not let wallet to be registered as management key, is this a flaw?
                 // wallet will not be initial key but will be linked wallet?
                 assert!(
-                    key != poseidon_hash_span(array![wallet.into()].span()),
+                    *key != poseidon_hash_span(array![wallet.into()].span()),
                     "wallet is also listed in management keys",
                 );
-                identity_dispatcher.add_key(key, 1, 1);
+                identity_dispatcher.add_key(*key, 1, 1);
             }
             identity_dispatcher
                 .remove_key(
@@ -422,7 +422,7 @@ pub mod IdFactory {
         ///
         /// # Returns
         ///
-        /// A `Array<ContractAddress>` - representing the addresses linked to given identity.
+        /// A `Span<ContractAddress>` - representing the addresses linked to given identity.
         fn get_wallets(self: @ContractState, identity: ContractAddress) -> Span<ContractAddress> {
             self.wallets.entry(identity).to_array().span()
         }

@@ -726,22 +726,14 @@ pub mod remove_claim {
         // Remove claim
         stop_cheat_caller_address(setup.alice_identity.contract_address);
 
-        let (topic, scheme, issuer, _, data, uri) = setup
+        let (topic, scheme, issuer, signature, data, uri) = setup
             .alice_identity
             .get_claim(test_claim.claim_id);
 
         assert!(topic == Zero::zero(), "Stored claim topic not cleaned");
         assert!(scheme == Zero::zero(), "Stored scheme not cleaned");
         assert!(issuer == Zero::zero(), "Stored issuer not cleaned");
-        // TODO: Clear signature from storage
-        //if let Signature::StarkSignature(stored_sig) = signature {
-        //        assert!(
-        //            stored_sig.r == Zero::zero()
-        //                && stored_sig.s == Zero::zero()
-        //                && stored_sig.public_key == Zero::zero(),
-        //            "Stored signature not cleaned"
-        //        );
-        //}
+        assert(signature == [].span(), 'Signature not cleaned');
         assert!(data == Default::default(), "Stored data not cleaned");
         assert!(uri == Default::default(), "Stored uri not cleaned");
 
