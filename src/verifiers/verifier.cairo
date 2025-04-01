@@ -70,15 +70,14 @@ pub mod VerifierComponent {
     }
 
     mod Errors {
-        pub const TOPIC_LENGTH_EXCEEDS_LIMIT: felt252 = 'Topic length should < 15';
+        pub const TOPIC_LENGTH_EXCEEDS_LIMIT: felt252 = 'Topic length should be < 16';
         pub const ZERO_ADDRESS: felt252 = 'Invalid argument - zero address';
-        pub const NO_TOPICS: felt252 = 'No topics available';
-        pub const ZERO_TOPICS: felt252 = 'Topics should not be empty';
+        pub const ZERO_TOPICS: felt252 = 'Topics should be > 0';
         pub const ISSUER_ALREADY_EXIST: felt252 = 'Issuer already exist';
-        pub const TRUSTED_ISSUERS_EXCEEDS_LIMIT: felt252 = 'Trusted issuer should < 50';
+        pub const TRUSTED_ISSUERS_EXCEEDS_LIMIT: felt252 = 'Trusted issuers should be < 50';
         pub const TRUSTED_ISSUER_DOES_NOT_EXIST: felt252 = 'Trusted issuer does not exist';
         pub const SENDER_IS_NOT_VERIFIED: felt252 = 'Sender is not verified';
-        pub const TOPIC_ALREADY_EXIST: felt252 = 'Topic already exist';
+        pub const CLAIM_TOPIC_ALREADY_EXIST: felt252 = 'Topic exists';
         pub const CLAIM_TOPIC_DOES_NOT_EXIST: felt252 = 'Claim topic does not exist';
     }
 
@@ -170,7 +169,7 @@ pub mod VerifierComponent {
             let mut iterator = self.Verifier_required_claim_topics.deref().into_iter_full_range();
 
             let is_topics_exist = iterator.any(|_claim_topic| _claim_topic.read() == claim_topic);
-            assert(!is_topics_exist, Errors::TOPIC_ALREADY_EXIST);
+            assert(!is_topics_exist, Errors::CLAIM_TOPIC_ALREADY_EXIST);
 
             self.Verifier_required_claim_topics.push(claim_topic);
             self.emit(ClaimTopicAdded { claim_topic });
