@@ -179,7 +179,7 @@ pub mod add_claim_topic {
         verifier.add_claim_topic(claim_topic);
         stop_cheat_caller_address(verifier.contract_address);
 
-        assert(verifier.get_claim_topics() == array![claim_topic], 'Topic not removed');
+        assert(verifier.get_claim_topics() == [claim_topic].span(), 'Topic not removed');
 
         spy
             .assert_emitted(
@@ -243,7 +243,7 @@ pub mod remove_claim_topic {
         verifier.remove_claim_topic(claim_topic);
         stop_cheat_caller_address(verifier.contract_address);
 
-        assert(verifier.get_claim_topics() == array![], 'Topic not removed');
+        assert(verifier.get_claim_topics() == [].span(), 'Topic not removed');
 
         spy
             .assert_emitted(
@@ -275,7 +275,7 @@ pub mod add_trusted_issuer {
         let verifier = setup_verifier(@setup, [].span(), [].span());
         let claim_topic = 'CLAIM_TOPIC';
 
-        verifier.add_trusted_issuer(Zero::zero(), array![claim_topic]);
+        verifier.add_trusted_issuer(Zero::zero(), [claim_topic].span());
     }
 
     #[test]
@@ -288,7 +288,7 @@ pub mod add_trusted_issuer {
         start_cheat_caller_address(
             verifier.contract_address, setup.accounts.owner_account.contract_address,
         );
-        verifier.add_trusted_issuer(Zero::zero(), array![claim_topic]);
+        verifier.add_trusted_issuer(Zero::zero(), [claim_topic].span());
         stop_cheat_caller_address(verifier.contract_address);
     }
 
@@ -305,7 +305,7 @@ pub mod add_trusted_issuer {
         start_cheat_caller_address(
             verifier.contract_address, setup.accounts.owner_account.contract_address,
         );
-        verifier.add_trusted_issuer(issuer, array![claim_topic]);
+        verifier.add_trusted_issuer(issuer, [claim_topic].span());
         stop_cheat_caller_address(verifier.contract_address);
     }
 
@@ -319,7 +319,7 @@ pub mod add_trusted_issuer {
         start_cheat_caller_address(
             verifier.contract_address, setup.accounts.owner_account.contract_address,
         );
-        verifier.add_trusted_issuer(issuer, array![]);
+        verifier.add_trusted_issuer(issuer, [].span());
         stop_cheat_caller_address(verifier.contract_address);
     }
 
@@ -335,7 +335,7 @@ pub mod add_trusted_issuer {
         );
         verifier
             .add_trusted_issuer(
-                issuer, (0..16_u8).into_iter().map(|x| x.into()).collect::<Array<felt252>>(),
+                issuer, (0..16_u8).into_iter().map(|x| x.into()).collect::<Array<felt252>>().span(),
             );
         stop_cheat_caller_address(verifier.contract_address);
     }
@@ -365,7 +365,7 @@ pub mod add_trusted_issuer {
         start_cheat_caller_address(
             verifier.contract_address, setup.accounts.owner_account.contract_address,
         );
-        verifier.add_trusted_issuer(issuer, issuer_claim_topics);
+        verifier.add_trusted_issuer(issuer, issuer_claim_topics.span());
         stop_cheat_caller_address(verifier.contract_address);
     }
 
@@ -380,16 +380,16 @@ pub mod add_trusted_issuer {
         start_cheat_caller_address(
             verifier.contract_address, setup.accounts.owner_account.contract_address,
         );
-        verifier.add_trusted_issuer(issuer, array![claim_topic]);
+        verifier.add_trusted_issuer(issuer, [claim_topic].span());
         stop_cheat_caller_address(verifier.contract_address);
 
-        assert(verifier.get_trusted_issuers() == array![issuer], 'Issuer mismatch');
+        assert(verifier.get_trusted_issuers() == [issuer].span(), 'Issuer mismatch');
         assert(
-            verifier.get_trusted_issuer_claim_topics(issuer) == array![claim_topic],
+            verifier.get_trusted_issuer_claim_topics(issuer) == [claim_topic].span(),
             'Claim topics does not match',
         );
         assert(
-            verifier.get_trusted_issuers_for_claim_topic(claim_topic) == array![issuer],
+            verifier.get_trusted_issuers_for_claim_topic(claim_topic) == [issuer].span(),
             'Issuer for claim topic mismatch',
         );
 
@@ -400,7 +400,7 @@ pub mod add_trusted_issuer {
                         verifier.contract_address,
                         VerifierComponent::Event::TrustedIssuerAdded(
                             VerifierComponent::TrustedIssuerAdded {
-                                trusted_issuer: issuer, claim_topics: array![claim_topic],
+                                trusted_issuer: issuer, claim_topics: [claim_topic].span(),
                             },
                         ),
                     ),
@@ -472,9 +472,9 @@ pub mod remove_trusted_issuer {
         verifier.remove_trusted_issuer(issuer);
         stop_cheat_caller_address(verifier.contract_address);
 
-        assert(verifier.get_trusted_issuers() == array![], 'Issuer mismatch');
+        assert(verifier.get_trusted_issuers() == [].span(), 'Issuer mismatch');
         assert(
-            verifier.get_trusted_issuers_for_claim_topic(claim_topic) == array![],
+            verifier.get_trusted_issuers_for_claim_topic(claim_topic) == [].span(),
             'Issuer for claim topic mismatch',
         );
 
@@ -514,7 +514,7 @@ pub mod update_issuer_claim_topics {
             @setup, [initial_claim_topic].span(), [(issuer, array![initial_claim_topic])].span(),
         );
 
-        verifier.update_issuer_claim_topics(issuer, new_claim_topics);
+        verifier.update_issuer_claim_topics(issuer, new_claim_topics.span());
     }
 
     #[test]
@@ -532,7 +532,7 @@ pub mod update_issuer_claim_topics {
         start_cheat_caller_address(
             verifier.contract_address, setup.accounts.owner_account.contract_address,
         );
-        verifier.update_issuer_claim_topics(Zero::zero(), new_claim_topics);
+        verifier.update_issuer_claim_topics(Zero::zero(), new_claim_topics.span());
         stop_cheat_caller_address(verifier.contract_address);
     }
 
@@ -548,7 +548,7 @@ pub mod update_issuer_claim_topics {
         start_cheat_caller_address(
             verifier.contract_address, setup.accounts.owner_account.contract_address,
         );
-        verifier.update_issuer_claim_topics(issuer, new_claim_topics);
+        verifier.update_issuer_claim_topics(issuer, new_claim_topics.span());
         stop_cheat_caller_address(verifier.contract_address);
     }
 
@@ -567,7 +567,7 @@ pub mod update_issuer_claim_topics {
         start_cheat_caller_address(
             verifier.contract_address, setup.accounts.owner_account.contract_address,
         );
-        verifier.update_issuer_claim_topics(issuer, new_claim_topics);
+        verifier.update_issuer_claim_topics(issuer, new_claim_topics.span());
         stop_cheat_caller_address(verifier.contract_address);
     }
 
@@ -586,7 +586,7 @@ pub mod update_issuer_claim_topics {
         start_cheat_caller_address(
             verifier.contract_address, setup.accounts.owner_account.contract_address,
         );
-        verifier.update_issuer_claim_topics(issuer, new_claim_topics);
+        verifier.update_issuer_claim_topics(issuer, new_claim_topics.span());
         stop_cheat_caller_address(verifier.contract_address);
     }
 
@@ -605,18 +605,19 @@ pub mod update_issuer_claim_topics {
         start_cheat_caller_address(
             verifier.contract_address, setup.accounts.owner_account.contract_address,
         );
-        verifier.update_issuer_claim_topics(issuer, new_claim_topics.clone());
+        verifier.update_issuer_claim_topics(issuer, new_claim_topics.span());
         stop_cheat_caller_address(verifier.contract_address);
 
-        assert(verifier.get_trusted_issuers() == array![issuer], 'Issuer mismatch');
+        assert(verifier.get_trusted_issuers() == [issuer].span(), 'Issuer mismatch');
         assert(
-            verifier.get_trusted_issuer_claim_topics(issuer) == new_claim_topics.clone(),
+            verifier.get_trusted_issuer_claim_topics(issuer) == new_claim_topics.span(),
             'Claim topics does not match',
         );
         assert(
-            verifier.get_trusted_issuers_for_claim_topic(*new_claim_topics.at(0)) == array![issuer]
+            verifier.get_trusted_issuers_for_claim_topic(*new_claim_topics.at(0)) == [issuer].span()
                 && verifier
-                    .get_trusted_issuers_for_claim_topic(*new_claim_topics.at(1)) == array![issuer],
+                    .get_trusted_issuers_for_claim_topic(*new_claim_topics.at(1)) == [issuer]
+                    .span(),
             'Issuer for claim topic mismatch',
         );
 
@@ -627,7 +628,7 @@ pub mod update_issuer_claim_topics {
                         verifier.contract_address,
                         VerifierComponent::Event::ClaimTopicsUpdated(
                             VerifierComponent::ClaimTopicsUpdated {
-                                trusted_issuer: issuer, claim_topics: new_claim_topics,
+                                trusted_issuer: issuer, claim_topics: new_claim_topics.span(),
                             },
                         ),
                     ),
@@ -660,7 +661,7 @@ pub mod get_trusted_issuer_claim_topics {
         );
 
         assert(
-            verifier.get_trusted_issuer_claim_topics(issuer) == array![claim_topic],
+            verifier.get_trusted_issuer_claim_topics(issuer) == [claim_topic].span(),
             'Claim topics mismatch',
         );
     }
@@ -690,7 +691,7 @@ pub mod get_trusted_issuers {
                 .span(),
         );
 
-        assert(verifier.get_trusted_issuers() == issuers, 'Issuers mismatch');
+        assert(verifier.get_trusted_issuers() == issuers.span(), 'Issuers mismatch');
     }
 }
 
@@ -719,7 +720,7 @@ pub mod get_trusted_issuers_for_claim_topic {
         );
 
         assert(
-            verifier.get_trusted_issuers_for_claim_topic(claim_topic) == issuers,
+            verifier.get_trusted_issuers_for_claim_topic(claim_topic) == issuers.span(),
             'Issuers mismatch',
         );
     }
