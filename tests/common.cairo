@@ -370,7 +370,7 @@ pub fn setup_verifier() -> VerifierSetup {
     verifier_dispatcher.add_claim_topic(alice_claim_666.topic);
     verifier_dispatcher
         .add_trusted_issuer(
-            setup.accounts.claim_issuer_account.contract_address, array![alice_claim_666.topic],
+            setup.accounts.claim_issuer_account.contract_address, [alice_claim_666.topic].span(),
         );
     stop_cheat_caller_address(mock_verifier_address);
 
