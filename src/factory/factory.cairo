@@ -90,24 +90,24 @@ pub mod IdFactory {
     }
 
     pub mod Errors {
-        pub const TOKEN_FACTORY_IS_ZERO_ADDRESS: felt252 = 'token factory address zero';
-        pub const TOKEN_IS_ZERO_ADDRESS: felt252 = 'token address zero';
-        pub const TOKEN_OWNER_IS_ZERO_ADDRESS: felt252 = 'token owner address zero';
-        pub const OWNER_IS_ZERO_ADDRESS: felt252 = 'owner is zero address';
-        pub const IMPLEMENTATION_AUTH_ZERO_ADDRESS: felt252 = 'impl. auth. zero address';
-        pub const WALLET_IS_ZERO_ADDRESS: felt252 = 'wallet is zero address';
-        pub const ALREADY_FACTORY: felt252 = 'already a factory';
-        pub const NOT_FACTORY: felt252 = 'not a factory';
-        pub const WALLET_ALREADY_LINKED: felt252 = 'wallet already linked';
-        pub const WALLET_NOT_LINKED: felt252 = 'wallet not linked to identity';
-        pub const MAX_WALLET_PER_IDENTITY: felt252 = 'max wallets per ID exceeded';
-        pub const ADDRESS_ALREADY_LINKED_TOKEN: felt252 = 'address already linked token';
-        pub const NOT_FACTORY_NOR_OWNER: felt252 = 'only factory or owner can call';
-        pub const SALT_TAKEN: felt252 = 'salt already taken';
-        pub const SALT_IS_ZERO: felt252 = 'salt cannot be zero';
-        pub const MANAGEMENT_KEYS_EMPTY: felt252 = 'empty list of managent keys';
-        pub const CANNOT_REMOVE_CALLER: felt252 = 'cant remove caller address';
-        pub const ONLY_LINKED_WALLET_CAN_UNLINK: felt252 = 'only linked wallet can unlink';
+        pub const TOKEN_FACTORY_IS_ZERO_ADDRESS: felt252 = 'Token factory address zero';
+        pub const TOKEN_IS_ZERO_ADDRESS: felt252 = 'Token address zero';
+        pub const TOKEN_OWNER_IS_ZERO_ADDRESS: felt252 = 'Token owner address zero';
+        pub const OWNER_IS_ZERO_ADDRESS: felt252 = 'Owner is zero address';
+        pub const IMPLEMENTATION_AUTH_ZERO_ADDRESS: felt252 = 'Impl. auth. zero address';
+        pub const WALLET_IS_ZERO_ADDRESS: felt252 = 'Wallet is zero address';
+        pub const ALREADY_FACTORY: felt252 = 'Already a factory';
+        pub const NOT_FACTORY: felt252 = 'Not a factory';
+        pub const WALLET_ALREADY_LINKED: felt252 = 'Wallet already linked';
+        pub const WALLET_NOT_LINKED: felt252 = 'Wallet not linked to identity';
+        pub const MAX_WALLET_PER_IDENTITY: felt252 = 'Max wallets per ID exceeded';
+        pub const ADDRESS_ALREADY_LINKED_TOKEN: felt252 = 'Address already linked token';
+        pub const NOT_FACTORY_NOR_OWNER: felt252 = 'Only factory or owner can call';
+        pub const SALT_TAKEN: felt252 = 'Salt already taken';
+        pub const SALT_IS_ZERO: felt252 = 'Salt cannot be zero';
+        pub const MANAGEMENT_KEYS_EMPTY: felt252 = 'Empty list of managent keys';
+        pub const CANNOT_REMOVE_CALLER: felt252 = 'Cant remove caller address';
+        pub const ONLY_LINKED_WALLET_CAN_UNLINK: felt252 = 'Only linked wallet can unlink';
     }
 
     #[constructor]
@@ -251,7 +251,7 @@ pub mod IdFactory {
                 // wallet will not be initial key but will be linked wallet?
                 assert!(
                     *key != poseidon_hash_span(array![wallet.into()].span()),
-                    "wallet is also listed in management keys",
+                    "Wallet is also listed in management keys",
                 );
                 identity_dispatcher.add_key(*key, 1, 1);
             }

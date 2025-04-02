@@ -30,7 +30,7 @@ pub mod add_remove_token_factory {
     }
 
     #[test]
-    #[should_panic(expected: 'token factory address zero')]
+    #[should_panic(expected: 'Token factory address zero')]
     fn test_should_panic_when_add_when_token_factory_is_zero() {
         let setup = setup_factory();
         start_cheat_caller_address(
@@ -41,7 +41,7 @@ pub mod add_remove_token_factory {
     }
 
     #[test]
-    #[should_panic(expected: 'token factory address zero')]
+    #[should_panic(expected: 'Token factory address zero')]
     fn test_should_panic_when_remove_when_token_factory_is_zero() {
         let setup = setup_factory();
         start_cheat_caller_address(
@@ -52,7 +52,7 @@ pub mod add_remove_token_factory {
     }
 
     #[test]
-    #[should_panic(expected: 'already a factory')]
+    #[should_panic(expected: 'Already a factory')]
     fn test_should_panic_when_add_when_address_already_token_factory() {
         let setup = setup_factory();
         start_cheat_caller_address(
@@ -65,7 +65,7 @@ pub mod add_remove_token_factory {
     }
 
     #[test]
-    #[should_panic(expected: 'not a factory')]
+    #[should_panic(expected: 'Not a factory')]
     fn test_should_panic_when_remove_when_address_is_not_token_factory() {
         let setup = setup_factory();
         start_cheat_caller_address(
@@ -153,7 +153,7 @@ pub mod create_token_identity {
     use crate::common::setup_factory;
 
     #[test]
-    #[should_panic(expected: 'only factory or owner can call')]
+    #[should_panic(expected: 'Only factory or owner can call')]
     fn test_should_panic_when_caller_not_authorized() {
         let setup = setup_factory();
         let alice_account_address = setup.accounts.alice_account.contract_address;
@@ -165,7 +165,7 @@ pub mod create_token_identity {
     }
 
     #[test]
-    #[should_panic(expected: 'token address zero')]
+    #[should_panic(expected: 'Token address zero')]
     fn test_should_panic_when_token_address_is_zero() {
         let setup = setup_factory();
 
@@ -181,7 +181,7 @@ pub mod create_token_identity {
     }
 
     #[test]
-    #[should_panic(expected: 'token owner address zero')]
+    #[should_panic(expected: 'Token owner address zero')]
     fn test_should_panic_when_owner_is_zero() {
         let setup = setup_factory();
 
@@ -197,7 +197,7 @@ pub mod create_token_identity {
     }
 
     #[test]
-    #[should_panic(expected: 'salt cannot be zero')]
+    #[should_panic(expected: 'Salt cannot be zero')]
     fn test_should_panic_when_salt_is_zero() {
         let setup = setup_factory();
         let alice_account_address = setup.accounts.alice_account.contract_address;
@@ -257,7 +257,7 @@ pub mod create_token_identity {
     }
 
     #[test]
-    #[should_panic(expected: 'salt already taken')]
+    #[should_panic(expected: 'Salt already taken')]
     fn test_should_panic_when_salt_is_taken() {
         let setup = setup_factory();
         let alice_account_address = setup.accounts.alice_account.contract_address;
@@ -279,7 +279,7 @@ pub mod create_token_identity {
     }
 
     #[test]
-    #[should_panic(expected: 'address already linked token')]
+    #[should_panic(expected: 'Address already linked token')]
     fn test_should_panic_when_token_already_linked_to_identity() {
         let setup = setup_factory();
         let alice_account_address = setup.accounts.alice_account.contract_address;

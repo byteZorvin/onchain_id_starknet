@@ -37,7 +37,7 @@ pub mod create_identity {
     }
 
     #[test]
-    #[should_panic(expected: 'wallet is zero address')]
+    #[should_panic(expected: 'Wallet is zero address')]
     fn test_should_panic_when_wallet_zero_address() {
         let setup = setup_factory();
         start_cheat_caller_address(
@@ -48,7 +48,7 @@ pub mod create_identity {
     }
 
     #[test]
-    #[should_panic(expected: 'salt cannot be zero')]
+    #[should_panic(expected: 'Salt cannot be zero')]
     fn test_should_panic_when_salt_is_zero() {
         let setup = setup_factory();
         start_cheat_caller_address(
@@ -61,7 +61,7 @@ pub mod create_identity {
     }
 
     #[test]
-    #[should_panic(expected: 'salt already taken')]
+    #[should_panic(expected: 'Salt already taken')]
     fn test_should_panic_when_salt_is_taken() {
         let setup = setup_factory();
         start_cheat_caller_address(
@@ -77,7 +77,7 @@ pub mod create_identity {
     }
 
     #[test]
-    #[should_panic(expected: 'wallet already linked')]
+    #[should_panic(expected: 'Wallet already linked')]
     fn test_should_panic_when_wallet_already_linked_to_an_identity() {
         let setup = setup_identity();
         start_cheat_caller_address(
@@ -104,7 +104,7 @@ pub mod create_identity_with_management_keys {
     use crate::common::setup_identity;
 
     #[test]
-    #[should_panic(expected: 'empty list of managent keys')]
+    #[should_panic(expected: 'Empty list of managent keys')]
     fn test_should_panic_when_no_management_keys_are_provided() {
         let setup = setup_identity();
         start_cheat_caller_address(
@@ -119,7 +119,7 @@ pub mod create_identity_with_management_keys {
     }
 
     #[test]
-    #[should_panic(expected: "wallet is also listed in management keys")]
+    #[should_panic(expected: "Wallet is also listed in management keys")]
     fn test_should_panic_when_wallet_is_included_in_management_keys() {
         let setup = setup_identity();
         start_cheat_caller_address(
@@ -233,7 +233,7 @@ pub mod link_unlink_wallet {
         use crate::common::setup_identity;
 
         #[test]
-        #[should_panic(expected: 'wallet is zero address')]
+        #[should_panic(expected: 'Wallet is zero address')]
         fn test_should_revert_when_new_wallet_is_zero_address() {
             let setup = setup_identity();
             start_cheat_caller_address(
@@ -245,7 +245,7 @@ pub mod link_unlink_wallet {
         }
 
         #[test]
-        #[should_panic(expected: 'wallet not linked to identity')]
+        #[should_panic(expected: 'Wallet not linked to identity')]
         fn test_should_revert_when_caller_is_not_linked_wallet() {
             let setup = setup_identity();
             start_cheat_caller_address(
@@ -257,7 +257,7 @@ pub mod link_unlink_wallet {
         }
 
         #[test]
-        #[should_panic(expected: 'wallet already linked')]
+        #[should_panic(expected: 'Wallet already linked')]
         fn test_should_revert_when_new_wallet_already_linked_identity() {
             let setup = setup_identity();
             start_cheat_caller_address(
@@ -269,7 +269,7 @@ pub mod link_unlink_wallet {
         }
 
         #[test]
-        #[should_panic(expected: 'address already linked token')]
+        #[should_panic(expected: 'Address already linked token')]
         fn test_should_revert_when_new_wallet_already_linked_to_token_identity() {
             let setup = setup_identity();
 
@@ -332,7 +332,7 @@ pub mod link_unlink_wallet {
         use crate::common::setup_identity;
 
         #[test]
-        #[should_panic(expected: 'wallet is zero address')]
+        #[should_panic(expected: 'Wallet is zero address')]
         fn test_should_panic_when_wallet_to_unlink_is_zero_address() {
             let setup = setup_identity();
             start_cheat_caller_address(
@@ -344,7 +344,7 @@ pub mod link_unlink_wallet {
         }
 
         #[test]
-        #[should_panic(expected: 'cant remove caller address')]
+        #[should_panic(expected: 'Cant remove caller address')]
         fn test_should_panic_when_wallet_to_unlink_is_caller() {
             let setup = setup_identity();
             start_cheat_caller_address(
@@ -355,7 +355,7 @@ pub mod link_unlink_wallet {
             stop_cheat_caller_address(setup.identity_factory.contract_address);
         }
         #[test]
-        #[should_panic(expected: 'only linked wallet can unlink')]
+        #[should_panic(expected: 'Only linked wallet can unlink')]
         fn test_should_panic_when_caller_is_not_linked() {
             let setup = setup_identity();
             start_cheat_caller_address(
