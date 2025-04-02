@@ -64,32 +64,32 @@ pub mod Gateway {
 
     pub mod Errors {
         pub fn ZeroAddress() {
-            panic!("A required parameter was set to the Zero address.");
+            panic!("A required parameter was set to the zero address.");
         }
         pub fn TooManySigners() {
-            panic!("The maximum number of signers was reached at deployment.");
+            panic!("The maximum number of signers was reached during deployment.");
         }
         pub fn SignerAlreadyApproved() {
             panic!("The signer attempted to add was already approved.");
         }
-        pub fn SignerAlreadyNotApproved() {
+        pub fn SignerNotApproved() {
             panic!("The signer attempted to remove was not approved.");
         }
         pub fn UnsignedDeployment() {
             panic!(
-                "A requested ONCHAINID deployment was requested without a valid signature while the Gateway requires one.",
+                "A requested ONCHAINID deployment was made without a valid signature while the Gateway requires one.",
             );
         }
         pub fn UnapprovedSigner() {
             panic!(
-                "A requested ONCHAINID deployment was requested and signed by a non approved signer.",
+                "A requested ONCHAINID deployment was made and signed by a non-approved signer.",
             );
         }
         pub fn RevokedSignature() {
-            panic!("A requested ONCHAINID deployment was requested with a signature revoked.");
+            panic!("A requested ONCHAINID deployment was made with a revoked signature.");
         }
         pub fn ExpiredSignature() {
-            panic!("A requested ONCHAINID deployment was requested with a signature that expired.");
+            panic!("A requested ONCHAINID deployment was made with an expired signature.");
         }
         pub fn SignatureAlreadyRevoked() {
             panic!("Attempted to revoke a signature that was already revoked.");
@@ -175,7 +175,7 @@ pub mod Gateway {
 
             let approved_signer_storage_path = self.approved_signers.entry(signer);
             if !approved_signer_storage_path.read() {
-                Errors::SignerAlreadyNotApproved();
+                Errors::SignerNotApproved();
             }
 
             approved_signer_storage_path.write(false);

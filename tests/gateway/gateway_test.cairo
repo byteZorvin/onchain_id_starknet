@@ -100,7 +100,7 @@ pub mod approve_signer {
     use super::{setup_factory, setup_gateway};
 
     #[test]
-    #[should_panic(expected: "A required parameter was set to the Zero address.")]
+    #[should_panic(expected: "A required parameter was set to the zero address.")]
     fn test_should_panic_when_signer_is_zero() {
         let factory_setup = setup_factory();
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
@@ -174,7 +174,7 @@ pub mod revoke_signer {
     use super::{setup_factory, setup_gateway};
 
     #[test]
-    #[should_panic(expected: "A required parameter was set to the Zero address.")]
+    #[should_panic(expected: "A required parameter was set to the zero address.")]
     fn test_should_panic_when_signer_is_zero() {
         let factory_setup = setup_factory();
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
@@ -259,7 +259,7 @@ pub mod deploy_identity_with_salt {
     use super::{setup_factory, setup_gateway};
 
     #[test]
-    #[should_panic(expected: "A required parameter was set to the Zero address.")]
+    #[should_panic(expected: "A required parameter was set to the zero address.")]
     fn test_should_panic_when_input_address_is_zero() {
         let factory_setup = setup_factory();
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
@@ -294,7 +294,7 @@ pub mod deploy_identity_with_salt {
 
     #[test]
     #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested and signed by a non approved signer.",
+        expected: "A requested ONCHAINID deployment was made and signed by a non-approved signer.",
     )]
     fn test_should_panic_when_signature_signed_by_non_authorized_signer() {
         let factory_setup = setup_factory();
@@ -468,9 +468,7 @@ pub mod deploy_identity_with_salt {
     }
 
     #[test]
-    #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested with a signature revoked.",
-    )]
+    #[should_panic(expected: "A requested ONCHAINID deployment was made with a revoked signature.")]
     fn test_should_panic_when_signature_is_valid_but_revoked() {
         let factory_setup = setup_factory();
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
@@ -507,7 +505,7 @@ pub mod deploy_identity_with_salt {
 
     #[test]
     #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested with a signature that expired.",
+        expected: "A requested ONCHAINID deployment was made with an expired signature.",
     )]
     fn test_should_panic_when_signature_is_valid_but_expired() {
         let factory_setup = setup_factory();
@@ -564,7 +562,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
     use super::{setup_factory, setup_gateway};
 
     #[test]
-    #[should_panic(expected: "A required parameter was set to the Zero address.")]
+    #[should_panic(expected: "A required parameter was set to the zero address.")]
     fn test_should_panic_when_input_address_is_zero() {
         let factory_setup = setup_factory();
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
@@ -601,7 +599,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
 
     #[test]
     #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested and signed by a non approved signer.",
+        expected: "A requested ONCHAINID deployment was made and signed by a non-approved signer.",
     )]
     fn test_should_panic_when_signature_signed_by_non_authorized_signer() {
         let factory_setup = setup_factory();
@@ -823,9 +821,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
     }
 
     #[test]
-    #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested with a signature revoked.",
-    )]
+    #[should_panic(expected: "A requested ONCHAINID deployment was made with a revoked signature.")]
     fn test_should_panic_when_signature_is_valid_but_revoked() {
         let factory_setup = setup_factory();
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
@@ -873,7 +869,7 @@ pub mod deploy_identity_with_salt_and_management_keys {
 
     #[test]
     #[should_panic(
-        expected: "A requested ONCHAINID deployment was requested with a signature that expired.",
+        expected: "A requested ONCHAINID deployment was made with an expired signature.",
     )]
     fn test_should_panic_when_signature_is_valid_but_expired() {
         let factory_setup = setup_factory();
@@ -930,7 +926,7 @@ pub mod deploy_identity_for_wallet {
     use super::{setup_factory, setup_gateway};
 
     #[test]
-    #[should_panic(expected: "A required parameter was set to the Zero address.")]
+    #[should_panic(expected: "A required parameter was set to the zero address.")]
     fn test_should_panic_when_input_address_is_zero() {
         let factory_setup = setup_factory();
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
@@ -1056,7 +1052,7 @@ pub mod deploy_identity_for_wallet {
     }
 
     #[test]
-    #[should_panic(expected: 'salt already taken')]
+    #[should_panic(expected: 'Salt already taken')]
     fn test_should_panic_when_identity_already_deployed_for_this_wallet() {
         let factory_setup = setup_factory();
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
@@ -1391,7 +1387,7 @@ pub mod call_factory {
     }
 
     #[test]
-    #[should_panic(expected: 'token factory address zero')]
+    #[should_panic(expected: 'Token factory address zero')]
     fn test_should_panic_when_calling_as_owner_with_invalid_parameters() {
         let factory_setup = setup_factory();
         let carol_pub_key = factory_setup.accounts.carol_key.public_key;
