@@ -89,31 +89,21 @@ pub mod VerifierComponent {
         +Drop<TContractState>,
     > of IVerifier<ComponentState<TContractState>> {
         fn verify(self: @ComponentState<TContractState>, identity: ContractAddress) -> bool {
-            let required_claim_topics_storage = self.Verifier_required_claim_topics.as_path();
-            let claim_topics_to_trusted_issuers_storage = self
+            let identity_dispatcher = IERC735Dispatcher { contract_address: identity };
+            let issuers_for_claim_topic_map = self
                 .Verifier_claim_topics_to_trusted_issuers
                 .as_path();
 
-            if required_claim_topics_storage.len().is_zero() {
-                return true;
-            }
-            let identity_dispatcher = IERC735Dispatcher { contract_address: identity };
-            let mut required_claims_iterator = required_claim_topics_storage
+            let mut required_claims_iterator = self
+                .Verifier_required_claim_topics
                 .into_iter_full_range()
                 .map(|claim_storage| claim_storage.read());
 
             required_claims_iterator
                 .all(
                     |claim_topic| {
-                        let mut claim_topics_to_trusted_issuers_storage =
-                            claim_topics_to_trusted_issuers_storage
-                            .entry(claim_topic);
-
-                        if claim_topics_to_trusted_issuers_storage.len().is_zero() {
-                            return false;
-                        }
-
-                        let mut claim_ids = claim_topics_to_trusted_issuers_storage
+                        let mut claim_ids_iter = issuers_for_claim_topic_map
+                            .entry(claim_topic)
                             .into_iter_full_range()
                             .map(
                                 |claim_issuer| {
@@ -121,10 +111,8 @@ pub mod VerifierComponent {
                                         array![claim_issuer.read().into(), claim_topic].span(),
                                     )
                                 },
-                            )
-                            .collect::<Array<_>>();
+                            );
 
-                        let mut claim_ids_iter = claim_ids.into_iter();
                         claim_ids_iter
                             .any(
                                 |claim_id| {
