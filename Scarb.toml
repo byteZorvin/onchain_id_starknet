@@ -13,6 +13,7 @@ openzeppelin_upgrades = "1.0.0"
 openzeppelin_account = "1.0.0"
 
 [dev-dependencies]
+assert_macros = "2.11.2"
 snforge_std = "0.39.0"
 
 [lib]

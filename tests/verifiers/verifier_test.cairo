@@ -10,7 +10,7 @@ pub mod verify {
         let setup = setup_identity();
         let verifier = setup_verifier(@setup, [].span(), [].span());
         let is_verified = verifier.verify(setup.alice_identity.contract_address);
-        assert(is_verified, 'Should have return true');
+        assert!(is_verified, "Should have return true");
     }
 
     #[test]
@@ -18,7 +18,7 @@ pub mod verify {
         let setup = setup_identity();
         let verifier = setup_verifier(@setup, ['CLAIM_TOPIC'].span(), [].span());
         let is_verified = verifier.verify(setup.alice_identity.contract_address);
-        assert(!is_verified, 'Should have return false');
+        assert!(!is_verified, "Should have return false");
     }
 
     #[test]
@@ -30,7 +30,7 @@ pub mod verify {
             [(setup.claim_issuer.contract_address, array!['ANOTHER_CLAIM_TOPIC'])].span(),
         );
         let is_verified = verifier.verify(setup.alice_identity.contract_address);
-        assert(!is_verified, 'Should have return false');
+        assert!(!is_verified, "Should have return false");
     }
 
     #[test]
@@ -42,7 +42,7 @@ pub mod verify {
             [(setup.claim_issuer.contract_address, array!['CLAIM_TOPIC'])].span(),
         );
         let is_verified = verifier.verify(setup.alice_identity.contract_address);
-        assert(!is_verified, 'Should have return false');
+        assert!(!is_verified, "Should have return false");
     }
 
     #[test]
@@ -61,7 +61,7 @@ pub mod verify {
         setup.claim_issuer.revoke_claim_by_signature(setup.alice_claim_666.signature);
         stop_cheat_caller_address(setup.claim_issuer.contract_address);
         let is_verified = verifier.verify(setup.alice_identity.contract_address);
-        assert(!is_verified, 'Should have return false');
+        assert!(!is_verified, "Should have return false");
     }
 
     #[test]
@@ -74,7 +74,7 @@ pub mod verify {
         );
 
         let is_verified = verifier.verify(setup.alice_identity.contract_address);
-        assert(is_verified, 'Should have return true');
+        assert!(is_verified, "Should have return true");
     }
 
     #[test]
@@ -112,7 +112,7 @@ pub mod verify {
         stop_cheat_caller_address(setup.alice_identity.contract_address);
 
         let is_verified = verifier.verify(setup.alice_identity.contract_address);
-        assert(is_verified, 'Should have return true');
+        assert!(is_verified, "Should have return true");
     }
 
     #[test]
@@ -131,7 +131,7 @@ pub mod verify {
         );
 
         let is_verified = verifier.verify(setup.alice_identity.contract_address);
-        assert(!is_verified, 'Should have return false');
+        assert!(!is_verified, "Should have return false");
     }
 }
 
@@ -179,7 +179,7 @@ pub mod add_claim_topic {
         verifier.add_claim_topic(claim_topic);
         stop_cheat_caller_address(verifier.contract_address);
 
-        assert(verifier.get_claim_topics() == [claim_topic].span(), 'Topic not removed');
+        assert_eq!(verifier.get_claim_topics(), [claim_topic].span(), "Topic not removed");
 
         spy
             .assert_emitted(
@@ -243,7 +243,7 @@ pub mod remove_claim_topic {
         verifier.remove_claim_topic(claim_topic);
         stop_cheat_caller_address(verifier.contract_address);
 
-        assert(verifier.get_claim_topics() == [].span(), 'Topic not removed');
+        assert_eq!(verifier.get_claim_topics(), [].span(), "Topic not removed");
 
         spy
             .assert_emitted(
@@ -383,14 +383,16 @@ pub mod add_trusted_issuer {
         verifier.add_trusted_issuer(issuer, [claim_topic].span());
         stop_cheat_caller_address(verifier.contract_address);
 
-        assert(verifier.get_trusted_issuers() == [issuer].span(), 'Issuer mismatch');
-        assert(
-            verifier.get_trusted_issuer_claim_topics(issuer) == [claim_topic].span(),
-            'Claim topics does not match',
+        assert_eq!(verifier.get_trusted_issuers(), [issuer].span(), "Issuer mismatch");
+        assert_eq!(
+            verifier.get_trusted_issuer_claim_topics(issuer),
+            [claim_topic].span(),
+            "Claim topics does not match",
         );
-        assert(
-            verifier.get_trusted_issuers_for_claim_topic(claim_topic) == [issuer].span(),
-            'Issuer for claim topic mismatch',
+        assert_eq!(
+            verifier.get_trusted_issuers_for_claim_topic(claim_topic),
+            [issuer].span(),
+            "Issuer for claim topic mismatch",
         );
 
         spy
@@ -472,10 +474,11 @@ pub mod remove_trusted_issuer {
         verifier.remove_trusted_issuer(issuer);
         stop_cheat_caller_address(verifier.contract_address);
 
-        assert(verifier.get_trusted_issuers() == [].span(), 'Issuer mismatch');
-        assert(
-            verifier.get_trusted_issuers_for_claim_topic(claim_topic) == [].span(),
-            'Issuer for claim topic mismatch',
+        assert_eq!(verifier.get_trusted_issuers(), [].span(), "Issuer mismatch");
+        assert_eq!(
+            verifier.get_trusted_issuers_for_claim_topic(claim_topic),
+            [].span(),
+            "Issuer for claim topic mismatch",
         );
 
         spy
@@ -608,17 +611,18 @@ pub mod update_issuer_claim_topics {
         verifier.update_issuer_claim_topics(issuer, new_claim_topics.span());
         stop_cheat_caller_address(verifier.contract_address);
 
-        assert(verifier.get_trusted_issuers() == [issuer].span(), 'Issuer mismatch');
-        assert(
-            verifier.get_trusted_issuer_claim_topics(issuer) == new_claim_topics.span(),
-            'Claim topics does not match',
+        assert_eq!(verifier.get_trusted_issuers(), [issuer].span(), "Issuer mismatch");
+        assert_eq!(
+            verifier.get_trusted_issuer_claim_topics(issuer),
+            new_claim_topics.span(),
+            "Claim topics does not match",
         );
-        assert(
+        assert!(
             verifier.get_trusted_issuers_for_claim_topic(*new_claim_topics.at(0)) == [issuer].span()
                 && verifier
                     .get_trusted_issuers_for_claim_topic(*new_claim_topics.at(1)) == [issuer]
                     .span(),
-            'Issuer for claim topic mismatch',
+            "Issuer for claim topic mismatch",
         );
 
         spy
@@ -660,9 +664,10 @@ pub mod get_trusted_issuer_claim_topics {
             @setup, [claim_topic].span(), [(issuer, array![claim_topic])].span(),
         );
 
-        assert(
-            verifier.get_trusted_issuer_claim_topics(issuer) == [claim_topic].span(),
-            'Claim topics mismatch',
+        assert_eq!(
+            verifier.get_trusted_issuer_claim_topics(issuer),
+            [claim_topic].span(),
+            "Claim topics mismatch",
         );
     }
 }
@@ -691,7 +696,7 @@ pub mod get_trusted_issuers {
                 .span(),
         );
 
-        assert(verifier.get_trusted_issuers() == issuers.span(), 'Issuers mismatch');
+        assert_eq!(verifier.get_trusted_issuers(), issuers.span(), "Issuers mismatch");
     }
 }
 
@@ -719,9 +724,10 @@ pub mod get_trusted_issuers_for_claim_topic {
                 .span(),
         );
 
-        assert(
-            verifier.get_trusted_issuers_for_claim_topic(claim_topic) == issuers.span(),
-            'Issuers mismatch',
+        assert_eq!(
+            verifier.get_trusted_issuers_for_claim_topic(claim_topic),
+            issuers.span(),
+            "Issuers mismatch",
         );
     }
 }
@@ -736,7 +742,7 @@ pub mod is_trusted_issuer {
         let verifier = setup_verifier(@setup, [].span(), [].span());
         let issuer = setup.claim_issuer.contract_address;
 
-        assert(!verifier.is_trusted_issuer(issuer), 'Should have returned false');
+        assert!(!verifier.is_trusted_issuer(issuer), "Should have returned false");
     }
 
     #[test]
@@ -748,7 +754,7 @@ pub mod is_trusted_issuer {
             @setup, [claim_topic].span(), [(issuer, array![claim_topic])].span(),
         );
 
-        assert(verifier.is_trusted_issuer(issuer), 'Should have returned true');
+        assert!(verifier.is_trusted_issuer(issuer), "Should have returned true");
     }
 }
 
@@ -763,7 +769,7 @@ pub mod has_claim_topic {
         let claim_topic = 'CLAIM_TOPIC';
         let issuer = setup.claim_issuer.contract_address;
 
-        assert(!verifier.has_claim_topic(issuer, claim_topic), 'Should have returned false');
+        assert!(!verifier.has_claim_topic(issuer, claim_topic), "Should have returned false");
     }
 
     #[test]
@@ -775,6 +781,6 @@ pub mod has_claim_topic {
             @setup, [claim_topic].span(), [(issuer, array![claim_topic])].span(),
         );
 
-        assert(verifier.has_claim_topic(issuer, claim_topic), 'Should have returned true');
+        assert!(verifier.has_claim_topic(issuer, claim_topic), "Should have returned true");
     }
 }
