@@ -195,7 +195,7 @@ pub mod add_claim_topic {
     }
 
     #[test]
-    #[should_panic(expected: 'Topic length should be < 16')]
+    #[should_panic(expected: 'Topic length should be <= 15')]
     fn test_should_panic_when_topic_len_exceed_limit() {
         let setup = setup_identity();
         let verifier = setup_verifier(
@@ -324,7 +324,7 @@ pub mod add_trusted_issuer {
     }
 
     #[test]
-    #[should_panic(expected: 'Topic length should be < 16')]
+    #[should_panic(expected: 'Topic length should be <= 15')]
     fn test_should_panic_when_claim_topics_array_contains_more_than_fifteen_topics() {
         let setup = setup_identity();
         let verifier = setup_verifier(@setup, [].span(), [].span());
@@ -341,7 +341,7 @@ pub mod add_trusted_issuer {
     }
 
     #[test]
-    #[should_panic(expected: 'Trusted issuers should be < 51')]
+    #[should_panic(expected: 'Trusted issuers should be <= 50')]
     fn test_should_panic_when_adding_fifty_oneth_trusted_issuer() {
         let setup = setup_identity();
         let claim_topic = 'CLAIM_TOPIC';
@@ -575,7 +575,7 @@ pub mod update_issuer_claim_topics {
     }
 
     #[test]
-    #[should_panic(expected: 'Topic length should be < 16')]
+    #[should_panic(expected: 'Topic length should be <= 15')]
     fn test_should_panic_when_array_contains_more_than_fifteen_topics() {
         let setup = setup_identity();
         let initial_claim_topic = 'FIRST_TOPIC';

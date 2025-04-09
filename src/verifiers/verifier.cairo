@@ -70,11 +70,11 @@ pub mod VerifierComponent {
     }
 
     mod Errors {
-        pub const TOPIC_LENGTH_EXCEEDS_LIMIT: felt252 = 'Topic length should be < 16';
+        pub const TOPIC_LENGTH_EXCEEDS_LIMIT: felt252 = 'Topic length should be <= 15';
         pub const ZERO_ADDRESS: felt252 = 'Invalid argument - zero address';
         pub const ZERO_TOPICS: felt252 = 'Topics should be > 0';
         pub const ISSUER_ALREADY_EXIST: felt252 = 'Issuer already exist';
-        pub const TRUSTED_ISSUERS_EXCEEDS_LIMIT: felt252 = 'Trusted issuers should be < 51';
+        pub const TRUSTED_ISSUERS_EXCEEDS_LIMIT: felt252 = 'Trusted issuers should be <= 50';
         pub const TRUSTED_ISSUER_DOES_NOT_EXIST: felt252 = 'Trusted issuer does not exist';
         pub const SENDER_IS_NOT_VERIFIED: felt252 = 'Sender is not verified';
         pub const CLAIM_TOPIC_ALREADY_EXIST: felt252 = 'Claim topic already exist';
