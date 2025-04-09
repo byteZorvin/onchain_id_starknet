@@ -36,7 +36,7 @@ fn test_should_return_when_identity_verified() {
 
 #[test]
 #[should_panic(expected: 'Sender is not verified')]
-fn test_should_return_false_when_identity_is_not_verified() {
+fn test_should_panic_when_identity_is_not_verified() {
     let setup = setup_identity();
     let verifier = setup_verifier(
         @setup,
