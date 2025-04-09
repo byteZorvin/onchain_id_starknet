@@ -89,7 +89,6 @@ pub mod VerifierComponent {
         +Drop<TContractState>,
     > of IVerifier<ComponentState<TContractState>> {
         fn verify(self: @ComponentState<TContractState>, identity: ContractAddress) -> bool {
-            let identity_dispatcher = IERC735Dispatcher { contract_address: identity };
             let issuers_for_claim_topic_map = self
                 .Verifier_claim_topics_to_trusted_issuers
                 .as_path();
@@ -99,6 +98,7 @@ pub mod VerifierComponent {
                 .into_iter_full_range()
                 .map(|claim_storage| claim_storage.read());
 
+            let identity_dispatcher = IERC735Dispatcher { contract_address: identity };
             required_claims_iterator
                 .all(
                     |claim_topic| {
