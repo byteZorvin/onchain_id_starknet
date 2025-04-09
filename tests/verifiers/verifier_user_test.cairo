@@ -19,7 +19,7 @@ fn test_should_panic_when_calling_a_verified_function_not_as_an_identity() {
 }
 
 #[test]
-fn test_should_return_when_identity_verified() {
+fn test_should_succeed_when_identity_verified() {
     let setup = setup_identity();
     let verifier = setup_verifier(
         @setup,
