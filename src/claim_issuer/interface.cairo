@@ -19,7 +19,7 @@ pub trait ClaimIssuerABI<TContractState> {
         identity: ContractAddress,
         claim_topic: felt252,
         signature: Span<felt252>,
-        data: ByteArray,
+        data: Span<felt252>,
     ) -> bool;
     // IERC734
     fn add_key(ref self: TContractState, key: felt252, purpose: felt252, key_type: felt252) -> bool;
@@ -39,12 +39,12 @@ pub trait ClaimIssuerABI<TContractState> {
         scheme: felt252,
         issuer: ContractAddress,
         signature: Span<felt252>,
-        data: ByteArray,
+        data: Span<felt252>,
         uri: ByteArray,
     ) -> felt252;
     fn remove_claim(ref self: TContractState, claim_id: felt252) -> bool;
     fn get_claim(
         self: @TContractState, claim_id: felt252,
-    ) -> (felt252, felt252, ContractAddress, Span<felt252>, ByteArray, ByteArray);
+    ) -> (felt252, felt252, ContractAddress, Span<felt252>, Span<felt252>, ByteArray);
     fn get_claim_ids_by_topics(self: @TContractState, topic: felt252) -> Span<felt252>;
 }

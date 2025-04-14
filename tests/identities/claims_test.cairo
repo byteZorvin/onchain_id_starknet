@@ -18,7 +18,7 @@ pub mod add_claim {
             let identity = *setup.alice_identity.contract_address;
             let issuer = identity;
             let claim_topic = 42_felt252;
-            let claim_data = "0x0042";
+            let claim_data = [0x0042].span();
             let claim_id = poseidon_hash_span(array![issuer.into(), claim_topic].span());
 
             let mut serialized_claim_to_sign: Array<felt252> = array![];
@@ -71,7 +71,7 @@ pub mod add_claim {
                 issuer: identity,
                 topic: claim_topic,
                 scheme: 1,
-                data: "0xC0FFEE",
+                data: [0xC0FFEE].span(),
                 signature: serialized_signature.span(),
                 uri: "https://example.com",
             };
@@ -88,7 +88,7 @@ pub mod add_claim {
                     self_attested_claim.scheme,
                     self_attested_claim.issuer,
                     self_attested_claim.signature,
-                    self_attested_claim.data.clone(),
+                    self_attested_claim.data,
                     self_attested_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -154,7 +154,7 @@ pub mod add_claim {
                         self_attested_claim.identity,
                         self_attested_claim.topic,
                         self_attested_claim.signature,
-                        self_attested_claim.data.clone(),
+                        self_attested_claim.data,
                     ),
                 "Claim not added",
             );
@@ -197,7 +197,7 @@ pub mod add_claim {
                     self_attested_claim.scheme,
                     self_attested_claim.issuer,
                     self_attested_claim.signature,
-                    self_attested_claim.data.clone(),
+                    self_attested_claim.data,
                     self_attested_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -209,7 +209,7 @@ pub mod add_claim {
                         self_attested_claim.identity,
                         self_attested_claim.topic,
                         self_attested_claim.signature,
-                        self_attested_claim.data.clone(),
+                        self_attested_claim.data,
                     ),
                 "Claim not added",
             );
@@ -251,7 +251,7 @@ pub mod add_claim {
                     self_attested_claim.scheme,
                     self_attested_claim.issuer,
                     self_attested_claim.signature,
-                    self_attested_claim.data.clone(),
+                    self_attested_claim.data,
                     self_attested_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -278,7 +278,7 @@ pub mod add_claim {
         fn test_should_panic_when_invalid_claim() {
             let setup = setup_identity();
             let mut test_claim = get_test_claim(
-                @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+                @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
             );
 
             let mut serialized_claim_to_sign: Array<felt252> = array![];
@@ -308,7 +308,7 @@ pub mod add_claim {
                     test_claim.scheme,
                     test_claim.issuer,
                     serialized_signature.span(),
-                    test_claim.data.clone(),
+                    test_claim.data,
                     test_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -318,7 +318,7 @@ pub mod add_claim {
         fn test_should_add_claim_when_caller_identity() {
             let setup = setup_identity();
             let mut test_claim = get_test_claim(
-                @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+                @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
             );
 
             let mut calldata = array![
@@ -367,7 +367,7 @@ pub mod add_claim {
                     );
                 }
             }
-            assert!(data == test_claim.data.clone(), "Stored data does not match");
+            assert!(data == test_claim.data, "Stored data does not match");
             assert!(uri == test_claim.uri.clone(), "Stored uri does not match");
 
             spy
@@ -395,7 +395,7 @@ pub mod add_claim {
         fn test_should_add_claim_when_caller_management_or_claim_key() {
             let setup = setup_identity();
             let mut test_claim = get_test_claim(
-                @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+                @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
             );
 
             let mut spy = spy_events();
@@ -411,7 +411,7 @@ pub mod add_claim {
                     test_claim.scheme,
                     test_claim.issuer,
                     test_claim.signature,
-                    test_claim.data.clone(),
+                    test_claim.data,
                     test_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -438,7 +438,7 @@ pub mod add_claim {
                     );
                 }
             }
-            assert!(data == test_claim.data.clone(), "Stored data does not match");
+            assert!(data == test_claim.data, "Stored data does not match");
             assert!(uri == test_claim.uri.clone(), "Stored uri does not match");
 
             spy
@@ -467,7 +467,7 @@ pub mod add_claim {
         fn test_should_panic_if_caller_is_not_claim_key() {
             let setup = setup_identity();
             let mut test_claim = get_test_claim(
-                @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+                @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
             );
 
             start_cheat_caller_address(
@@ -480,7 +480,7 @@ pub mod add_claim {
                     test_claim.scheme,
                     test_claim.issuer,
                     test_claim.signature,
-                    test_claim.data.clone(),
+                    test_claim.data,
                     test_claim.uri.clone(),
                 );
             stop_cheat_caller_address(setup.alice_identity.contract_address);
@@ -500,13 +500,13 @@ pub mod update_claim {
     use snforge_std::{
         EventSpyAssertionsTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
-    use crate::common::{TestClaim, get_test_claim, setup_identity};
+    use crate::common::{get_test_claim, setup_identity};
 
     #[test]
     fn test_should_replace_existing_claim() {
         let setup = setup_identity();
         let mut test_claim = get_test_claim(
-            @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+            @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
         );
 
         start_cheat_caller_address(
@@ -519,18 +519,18 @@ pub mod update_claim {
                 test_claim.scheme,
                 test_claim.issuer,
                 test_claim.signature,
-                test_claim.data.clone(),
+                test_claim.data,
                 test_claim.uri.clone(),
             );
         stop_cheat_caller_address(setup.alice_identity.contract_address);
 
         /// Second time adding with same topic and issuer should change existing claim
-        let new_data: ByteArray = "0xBadCafe";
+        test_claim.data = [0xBadCafe].span();
+
         let mut serialized_claim_to_sign: Array<felt252> = array![];
         test_claim.identity.serialize(ref serialized_claim_to_sign);
         test_claim.topic.serialize(ref serialized_claim_to_sign);
-        new_data.serialize(ref serialized_claim_to_sign);
-
+        test_claim.data.serialize(ref serialized_claim_to_sign);
         let hashed_claim = poseidon_hash_span(
             array!['Starknet Message', poseidon_hash_span(serialized_claim_to_sign.span())].span(),
         );
@@ -541,17 +541,7 @@ pub mod update_claim {
         );
         let mut serialized_signature = Default::default();
         signature.serialize(ref serialized_signature);
-
-        let test_claim_updated = TestClaim {
-            claim_id: test_claim.claim_id,
-            identity: test_claim.identity,
-            issuer: test_claim.issuer,
-            topic: test_claim.topic,
-            scheme: test_claim.scheme,
-            data: new_data,
-            signature: serialized_signature.span(),
-            uri: "https://example.com",
-        };
+        test_claim.signature = serialized_signature.span();
 
         let mut spy = spy_events();
 
@@ -561,12 +551,12 @@ pub mod update_claim {
         setup
             .alice_identity
             .add_claim(
-                test_claim_updated.topic,
-                test_claim_updated.scheme,
-                test_claim_updated.issuer,
-                test_claim_updated.signature,
-                test_claim_updated.data.clone(),
-                test_claim_updated.uri.clone(),
+                test_claim.topic,
+                test_claim.scheme,
+                test_claim.issuer,
+                test_claim.signature,
+                test_claim.data,
+                test_claim.uri.clone(),
             );
         stop_cheat_caller_address(setup.alice_identity.contract_address);
 
@@ -574,23 +564,18 @@ pub mod update_claim {
             .alice_identity
             .get_claim(test_claim.claim_id);
 
-        assert!(topic == test_claim_updated.topic, "Stored claim topic does not match");
-        assert!(scheme == test_claim_updated.scheme, "Stored scheme does not match");
-        assert!(issuer == test_claim_updated.issuer, "Stored issuer does not match");
+        assert!(topic == test_claim.topic, "Stored claim topic does not match");
+        assert!(scheme == test_claim.scheme, "Stored scheme does not match");
+        assert!(issuer == test_claim.issuer, "Stored issuer does not match");
         if let Signature::StarkSignature(stored_sig) =
             Serde::<Signature>::deserialize(ref returned_signature)
             .unwrap() {
             if let Signature::StarkSignature(actual_sig) = signature {
-                assert!(
-                    stored_sig.r == actual_sig.r
-                        && stored_sig.s == actual_sig.s
-                        && stored_sig.public_key == actual_sig.public_key,
-                    "Stored signature does not match",
-                );
+                assert!(stored_sig == actual_sig, "Stored signature does not match");
             }
         }
-        assert!(data == test_claim_updated.data.clone(), "Stored data does not match");
-        assert!(uri == test_claim_updated.uri.clone(), "Stored uri does not match");
+        assert!(data == test_claim.data, "Stored data does not match");
+        assert!(uri == test_claim.uri.clone(), "Stored uri does not match");
 
         spy
             .assert_emitted(
@@ -603,8 +588,8 @@ pub mod update_claim {
                                 topic: test_claim.topic,
                                 scheme: test_claim.scheme,
                                 issuer: test_claim.issuer,
-                                signature: test_claim_updated.signature,
-                                data: test_claim_updated.data,
+                                signature: test_claim.signature,
+                                data: test_claim.data,
                                 uri: test_claim.uri,
                             },
                         ),
@@ -627,7 +612,7 @@ pub mod remove_claim {
     fn test_should_remove_existing_claim_when_caller_is_identity_contract() {
         let setup = setup_identity();
         let mut test_claim = get_test_claim(
-            @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+            @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
         );
         start_cheat_caller_address(
             setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address,
@@ -639,7 +624,7 @@ pub mod remove_claim {
                 test_claim.scheme,
                 test_claim.issuer,
                 test_claim.signature,
-                test_claim.data.clone(),
+                test_claim.data,
                 test_claim.uri.clone(),
             );
 
@@ -663,7 +648,7 @@ pub mod remove_claim {
         assert!(scheme == Zero::zero(), "Stored scheme not cleaned");
         assert!(issuer == Zero::zero(), "Stored issuer not cleaned");
         assert!(signature == [].span(), "Signature not cleaned");
-        assert!(data == Default::default(), "Stored data not cleaned");
+        assert!(data == [].span(), "Stored data not cleaned");
         assert!(uri == Default::default(), "Stored uri not cleaned");
 
         spy
@@ -692,7 +677,7 @@ pub mod remove_claim {
     fn test_should_panic_when_caller_is_not_a_claim_key() {
         let setup = setup_identity();
         let mut test_claim = get_test_claim(
-            @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+            @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
         );
         start_cheat_caller_address(
             setup.alice_identity.contract_address, setup.accounts.bob_account.contract_address,
@@ -706,7 +691,7 @@ pub mod remove_claim {
     fn test_should_panic_when_claim_does_not_exist() {
         let setup = setup_identity();
         let mut test_claim = get_test_claim(
-            @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+            @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
         );
         start_cheat_caller_address(
             setup.alice_identity.contract_address, setup.accounts.alice_account.contract_address,
@@ -719,7 +704,7 @@ pub mod remove_claim {
     fn test_should_remove_claim_when_caller_has_claim_or_management_key() {
         let setup = setup_identity();
         let mut test_claim = get_test_claim(
-            @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+            @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
         );
 
         start_cheat_caller_address(
@@ -749,7 +734,7 @@ pub mod remove_claim {
         assert!(scheme == Zero::zero(), "Stored scheme not cleaned");
         assert!(issuer == Zero::zero(), "Stored issuer not cleaned");
         assert(signature == [].span(), 'Signature not cleaned');
-        assert!(data == Default::default(), "Stored data not cleaned");
+        assert!(data == [].span(), "Stored data not cleaned");
         assert!(uri == Default::default(), "Stored uri not cleaned");
 
         spy
@@ -790,7 +775,7 @@ pub mod get_claim {
         assert!(scheme == Zero::zero());
         assert!(issuer == Zero::zero());
         assert!(signature == [].span());
-        assert!(data == Default::default());
+        assert!(data == [].span());
         assert!(uri == Default::default());
     }
 

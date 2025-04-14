@@ -19,7 +19,7 @@ pub struct ClaimAdded {
     pub issuer: ContractAddress,
     pub signature: Span<felt252>,
     pub uri: ByteArray,
-    pub data: ByteArray,
+    pub data: Span<felt252>,
 }
 
 #[derive(Drop, starknet::Event)]
@@ -33,7 +33,7 @@ pub struct ClaimRemoved {
     pub issuer: ContractAddress,
     pub signature: Span<felt252>,
     pub uri: ByteArray,
-    pub data: ByteArray,
+    pub data: Span<felt252>,
 }
 
 #[derive(Drop, starknet::Event)]
@@ -47,7 +47,7 @@ pub struct ClaimChanged {
     pub issuer: ContractAddress,
     pub signature: Span<felt252>,
     pub uri: ByteArray,
-    pub data: ByteArray,
+    pub data: Span<felt252>,
 }
 
 #[starknet::interface]
@@ -58,14 +58,14 @@ pub trait IERC735<TContractState> {
         scheme: felt252,
         issuer: ContractAddress,
         signature: Span<felt252>,
-        data: ByteArray,
+        data: Span<felt252>,
         uri: ByteArray,
     ) -> felt252;
     fn remove_claim(ref self: TContractState, claim_id: felt252) -> bool;
     fn get_claim(
         self: @TContractState, claim_id: felt252,
     ) -> (
-        felt252, felt252, ContractAddress, Span<felt252>, ByteArray, ByteArray,
+        felt252, felt252, ContractAddress, Span<felt252>, Span<felt252>, ByteArray,
     ); // NOTE: turn this into a struct?
     fn get_claim_ids_by_topics(self: @TContractState, topic: felt252) -> Span<felt252>;
 }

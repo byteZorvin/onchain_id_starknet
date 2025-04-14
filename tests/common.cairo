@@ -67,7 +67,7 @@ pub struct TestClaim {
     pub identity: ContractAddress,
     pub issuer: ContractAddress,
     pub signature: Span<felt252>,
-    pub data: ByteArray,
+    pub data: Span<felt252>,
     pub uri: ByteArray,
 }
 
@@ -252,7 +252,7 @@ pub fn setup_identity() -> IdentitySetup {
 
     let claim_topic = 666_felt252;
     let issuer = claim_issuer_address;
-    let claim_data = "0x00666";
+    let claim_data = [0x00666].span();
     let claim_id = poseidon_hash_span(array![issuer.into(), claim_topic].span());
 
     let mut serialized_claim_to_sign: Array<felt252> = array![];
@@ -288,7 +288,7 @@ pub fn setup_identity() -> IdentitySetup {
             alice_claim_666.scheme,
             alice_claim_666.issuer,
             alice_claim_666.signature,
-            alice_claim_666.data.clone(),
+            alice_claim_666.data,
             alice_claim_666.uri.clone(),
         );
     stop_cheat_caller_address(alice_identity.contract_address);
@@ -356,7 +356,10 @@ pub fn setup_verifier(
 }
 
 pub fn get_test_claim(
-    setup: @IdentitySetup, identity: ContractAddress, claim_topic: felt252, claim_data: ByteArray,
+    setup: @IdentitySetup,
+    identity: ContractAddress,
+    claim_topic: felt252,
+    claim_data: Span<felt252>,
 ) -> TestClaim {
     let issuer = *setup.claim_issuer.contract_address;
     let claim_id = poseidon_hash_span(array![issuer.into(), claim_topic].span());
