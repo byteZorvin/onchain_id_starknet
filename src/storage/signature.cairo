@@ -1,6 +1,6 @@
 use core::poseidon::poseidon_hash_span;
 
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, PartialEq)]
 pub struct StarkSignature {
     pub r: felt252,
     pub s: felt252,

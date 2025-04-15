@@ -68,7 +68,7 @@ pub mod IdentityComponent {
             identity: ContractAddress,
             claim_topic: felt252,
             signature: Span<felt252>,
-            data: ByteArray,
+            data: Span<felt252>,
         ) -> bool {
             let pub_key_hash = get_public_key_hash(signature);
             if !self.key_has_purpose(pub_key_hash, Purpose::CLAIM) {
@@ -392,7 +392,7 @@ pub mod IdentityComponent {
             scheme: felt252,
             issuer: ContractAddress,
             signature: Span<felt252>,
-            data: ByteArray,
+            data: Span<felt252>,
             uri: ByteArray,
         ) -> felt252 {
             self.only_claim_key();
@@ -400,7 +400,7 @@ pub mod IdentityComponent {
 
             if issuer != this_address {
                 let is_valid_claim = IIdentityDispatcher { contract_address: issuer }
-                    .is_claim_valid(this_address, topic, signature, data.clone());
+                    .is_claim_valid(this_address, topic, signature, data);
                 assert(is_valid_claim, Errors::INVALID_CLAIM);
             }
 
@@ -412,14 +412,23 @@ pub mod IdentityComponent {
             let claim_storage_path = self.Identity_claims.entry(claim_id);
 
             claim_storage_path.scheme.write(scheme);
-            claim_storage_path.data.write(data.clone());
+
+            let signature_storage = claim_storage_path.signature.deref();
+            signature_storage.clear();
+            for chunk in signature {
+                signature_storage.push(*chunk);
+            }
+
+            let data_storage = claim_storage_path.data.deref();
+
+            data_storage.clear();
+            for chunk in data {
+                data_storage.push(*chunk);
+            }
+
             claim_storage_path.uri.write(uri.clone());
 
             if claim_storage_path.issuer.read().is_zero() {
-                let signature_storage = claim_storage_path.signature.deref();
-                for chunk in signature {
-                    signature_storage.push(*chunk);
-                }
                 self.Identity_claims_by_topic.entry(topic).push(claim_id);
                 claim_storage_path.issuer.write(issuer);
                 claim_storage_path.topic.write(topic);
@@ -432,13 +441,6 @@ pub mod IdentityComponent {
                         ),
                     );
             } else {
-                let signature_storage = claim_storage_path.signature.deref();
-                // Clear previous signature
-                signature_storage.clear();
-                // Store new signature
-                for chunk in signature {
-                    signature_storage.push(*chunk);
-                }
                 self
                     .emit(
                         ERC735Event::ClaimChanged(
@@ -470,9 +472,6 @@ pub mod IdentityComponent {
 
             claims_by_topic_storage_path.pop_swap(index.into());
 
-            let signature_storage = claim_storage_path.signature.deref();
-            let signature = signature_storage.to_array().span();
-
             self
                 .emit(
                     ERC735Event::ClaimRemoved(
@@ -481,8 +480,8 @@ pub mod IdentityComponent {
                             topic,
                             scheme: claim_storage_path.scheme.read(),
                             issuer: claim_storage_path.issuer.read(),
-                            signature,
-                            data: claim_storage_path.data.read(),
+                            signature: claim_storage_path.signature.to_array().span(),
+                            data: claim_storage_path.data.to_array().span(),
                             uri: claim_storage_path.uri.read(),
                         },
                     ),
@@ -493,22 +492,23 @@ pub mod IdentityComponent {
             claim_storage_path.scheme.write(Default::default());
             claim_storage_path.issuer.write(Zero::zero());
             // Clear signature
-            signature_storage.clear();
-            claim_storage_path.data.write(Default::default());
+            claim_storage_path.signature.clear();
+            // Clear data
+            claim_storage_path.data.clear();
             claim_storage_path.uri.write(Default::default());
             true
         }
 
         fn get_claim(
             self: @ComponentState<TContractState>, claim_id: felt252,
-        ) -> (felt252, felt252, ContractAddress, Span<felt252>, ByteArray, ByteArray) {
+        ) -> (felt252, felt252, ContractAddress, Span<felt252>, Span<felt252>, ByteArray) {
             let claim_storage_path = self.Identity_claims.entry(claim_id);
             (
                 claim_storage_path.topic.read(),
                 claim_storage_path.scheme.read(),
                 claim_storage_path.issuer.read(),
                 claim_storage_path.signature.to_array().span(),
-                claim_storage_path.data.read(),
+                claim_storage_path.data.to_array().span(),
                 claim_storage_path.uri.read(),
             )
         }

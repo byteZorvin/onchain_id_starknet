@@ -83,9 +83,9 @@ pub mod ClaimIssuer {
             identity: ContractAddress,
             claim_topic: felt252,
             signature: Span<felt252>,
-            data: ByteArray,
+            data: Span<felt252>,
         ) -> bool {
-            if self.is_claim_revoked(signature.clone()) {
+            if self.is_claim_revoked(signature) {
                 return false;
             }
             self.identity.is_claim_valid(identity, claim_topic, signature, data)

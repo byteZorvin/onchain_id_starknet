@@ -127,7 +127,7 @@ pub struct Claim {
     pub signature: Vec<felt252>,
     /// The hash of the claim data, sitting in another location, a bit-mask, call data, or actual
     /// data based on the claim scheme.
-    pub data: ByteArray,
+    pub data: Vec<felt252>,
     /// The location of the claim, this can be HTTP links, swarm hashes, IPFS hashes, and such.
     pub uri: ByteArray,
 }

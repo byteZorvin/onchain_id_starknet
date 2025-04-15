@@ -93,7 +93,7 @@ pub mod verify {
         );
 
         let test_claim = get_test_claim(
-            @setup, setup.alice_identity.contract_address, 'CLAIM_TOPIC', "",
+            @setup, setup.alice_identity.contract_address, 'CLAIM_TOPIC', [].span(),
         );
 
         start_cheat_caller_address(

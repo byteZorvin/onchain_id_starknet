@@ -155,7 +155,7 @@ pub mod is_claim_valid {
     fn test_should_return_false_when_key_does_not_have_claim_or_management_purpose() {
         let setup = setup_identity();
         let mut test_claim = get_test_claim(
-            @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+            @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
         );
 
         let mut data_to_hash = array![test_claim.identity.into(), test_claim.topic];
@@ -185,7 +185,7 @@ pub mod is_claim_valid {
     fn test_should_return_false_when_key_has_claim_purpose_when_signature_revoked() {
         let setup = setup_identity();
         let mut test_claim = get_test_claim(
-            @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+            @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
         );
 
         start_cheat_caller_address(
@@ -207,7 +207,7 @@ pub mod is_claim_valid {
     fn test_should_return_false_when_invalid_signature() {
         let setup = setup_identity();
         let mut test_claim = get_test_claim(
-            @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+            @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
         );
 
         let mut serialized_claim_to_sign: Array<felt252> = array![];
@@ -239,7 +239,7 @@ pub mod is_claim_valid {
     fn test_should_return_true_when_valid_signature() {
         let setup = setup_identity();
         let mut test_claim = get_test_claim(
-            @setup, setup.alice_identity.contract_address, 42_felt252, "0x0042",
+            @setup, setup.alice_identity.contract_address, 42_felt252, [0x0042].span(),
         );
 
         let is_claim_valid = setup
