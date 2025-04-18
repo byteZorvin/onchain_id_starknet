@@ -2,6 +2,7 @@
 pub mod IdentityComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
+    use openzeppelin_utils::cryptography::snip12::{OffchainMessageHash, SNIP12Metadata};
     use starknet::ContractAddress;
     use starknet::storage::{
         IntoIterRange, Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess,
@@ -13,7 +14,7 @@ pub mod IdentityComponent {
         IIdentity, IIdentityDispatcher, IIdentityDispatcherTrait,
     };
     use crate::identity::interface::{ierc734, ierc735};
-    use crate::storage::signature::{get_public_key_hash, is_valid_signature};
+    use crate::storage::signature::{ClaimMessage, get_public_key_hash, is_valid_signature};
     use crate::storage::structs::{
         Claim, Execution, ExecutionRequestStatus, KeyDetails, KeyDetailsTrait,
     };
@@ -75,17 +76,11 @@ pub mod IdentityComponent {
                 return false;
             }
 
-            // NOTE: How about comply with SNIP12
-            let mut serialized_claim: Array<felt252> = array![];
-            identity.serialize(ref serialized_claim);
-            serialized_claim.append(claim_topic);
-            data.serialize(ref serialized_claim);
-            // TODO: Add prefix
-            let data_hash = poseidon_hash_span(
-                array!['Starknet Message', poseidon_hash_span(serialized_claim.span())].span(),
-            );
+            let message = ClaimMessage { identity, topic: claim_topic, data };
 
-            is_valid_signature(data_hash, signature)
+            let message_hash = message.get_message_hash(starknet::get_contract_address());
+
+            is_valid_signature(message_hash, signature)
         }
     }
 
@@ -288,7 +283,7 @@ pub mod IdentityComponent {
             execution_storage_path.to.write(to);
             execution_storage_path.selector.write(selector);
             let calldata_storage_path = execution_storage_path.calldata.deref();
-            for chunk in calldata.clone() {
+            for chunk in calldata {
                 calldata_storage_path.push(*chunk);
             }
 
@@ -517,6 +512,18 @@ pub mod IdentityComponent {
             self: @ComponentState<TContractState>, topic: felt252,
         ) -> Span<felt252> {
             self.Identity_claims_by_topic.entry(topic).to_array().span()
+        }
+    }
+
+    pub impl SNIP12MetadataImpl of SNIP12Metadata {
+        /// Returns the name of the SNIP-12 metadata.
+        fn name() -> felt252 {
+            'OnchainID'
+        }
+
+        /// Returns the version of the SNIP-12 metadata.
+        fn version() -> felt252 {
+            'v1'
         }
     }
 
