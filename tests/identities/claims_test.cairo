@@ -1,7 +1,7 @@
 pub mod add_claim {
     pub mod when_self_attested_claim {
         use core::poseidon::poseidon_hash_span;
-        use onchain_id_starknet::identity::component::IdentityComponent::SNIP12MetadataImpl;
+        use onchain_id_starknet::identity::identity::Identity::SNIP12MetadataImpl;
         use onchain_id_starknet::identity::interface::ierc735;
         use onchain_id_starknet::identity::interface::iidentity::IdentityABIDispatcherTrait;
         use onchain_id_starknet::storage::signature::{ClaimMessage, Signature, StarkSignature};
@@ -504,7 +504,7 @@ pub mod add_claim {
 }
 
 pub mod update_claim {
-    use onchain_id_starknet::identity::component::IdentityComponent::SNIP12MetadataImpl;
+    use onchain_id_starknet::identity::identity::Identity::SNIP12MetadataImpl;
     use onchain_id_starknet::identity::interface::ierc735;
     use onchain_id_starknet::identity::interface::iidentity::IdentityABIDispatcherTrait;
     use onchain_id_starknet::storage::signature::{ClaimMessage, Signature, StarkSignature};

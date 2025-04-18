@@ -142,7 +142,7 @@ pub mod revoke_claim {
 
 pub mod is_claim_valid {
     use onchain_id_starknet::claim_issuer::interface::ClaimIssuerABIDispatcherTrait;
-    use onchain_id_starknet::identity::component::IdentityComponent::SNIP12MetadataImpl;
+    use onchain_id_starknet::identity::identity::Identity::SNIP12MetadataImpl;
     use onchain_id_starknet::storage::signature::{ClaimMessage, Signature, StarkSignature};
     use openzeppelin_utils::cryptography::snip12::OffchainMessageHash;
     use snforge_std::signature::SignerTrait;

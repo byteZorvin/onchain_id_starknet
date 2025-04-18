@@ -2,6 +2,7 @@
 pub mod IdentityComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
+    use openzeppelin_utils::cryptography::interface::ISNIP12Metadata;
     use openzeppelin_utils::cryptography::snip12::{OffchainMessageHash, SNIP12Metadata};
     use starknet::ContractAddress;
     use starknet::storage::{
@@ -62,7 +63,7 @@ pub mod IdentityComponent {
 
     #[embeddable_as(IdentityImpl)]
     pub impl Identity<
-        TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
+        TContractState, +Drop<TContractState>, +HasComponent<TContractState>, +SNIP12Metadata,
     > of IIdentity<ComponentState<TContractState>> {
         fn is_claim_valid(
             self: @ComponentState<TContractState>,
@@ -515,15 +516,13 @@ pub mod IdentityComponent {
         }
     }
 
-    pub impl SNIP12MetadataImpl of SNIP12Metadata {
-        /// Returns the name of the SNIP-12 metadata.
-        fn name() -> felt252 {
-            'OnchainID'
-        }
-
-        /// Returns the version of the SNIP-12 metadata.
-        fn version() -> felt252 {
-            'v1'
+    #[embeddable_as(SNIP12MetadataExternalImpl)]
+    pub impl SNIP12MetadataExternal<
+        TContractState, +HasComponent<TContractState>, impl Metadata: SNIP12Metadata,
+    > of ISNIP12Metadata<ComponentState<TContractState>> {
+        /// Returns the domain name and version used to generate the message hash.
+        fn snip12_metadata(self: @ComponentState<TContractState>) -> (felt252, felt252) {
+            (Metadata::name(), Metadata::version())
         }
     }
 

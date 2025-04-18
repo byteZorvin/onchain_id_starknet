@@ -3,7 +3,7 @@ use onchain_id_starknet::claim_issuer::interface::{
     ClaimIssuerABIDispatcher, ClaimIssuerABIDispatcherTrait,
 };
 use onchain_id_starknet::factory::interface::{IIdFactoryDispatcher, IIdFactoryDispatcherTrait};
-use onchain_id_starknet::identity::component::IdentityComponent::SNIP12MetadataImpl;
+use onchain_id_starknet::identity::identity::Identity::SNIP12MetadataImpl;
 use onchain_id_starknet::identity::interface::iidentity::{
     IdentityABIDispatcher, IdentityABIDispatcherTrait,
 };
