@@ -106,7 +106,7 @@ pub struct Execution {
     /// Enum that stores information about status of execution request
     pub execution_request_status: ExecutionRequestStatus,
 }
-// TODO: Go over comments
+
 #[starknet::storage_node]
 pub struct Claim {
     /// A `felt252` which represents the topic of the claim. (e.g. 1 biometric, 2 residence etc...)
@@ -123,7 +123,7 @@ pub struct Claim {
     /// contract address itself, at which the claim can be verified using the call data.
     pub issuer: ContractAddress,
     /// Signature which is the proof that the claim issuer issued a claim of topic for this
-    /// identity. it MUST be a signed message of the following structure: TODO: Define the SNIP12
+    /// identity.
     pub signature: Vec<felt252>,
     /// The hash of the claim data, sitting in another location, a bit-mask, call data, or actual
     /// data based on the claim scheme.
