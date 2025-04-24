@@ -235,7 +235,7 @@ pub mod IdFactory {
             assert(
                 self.token_identity.entry(wallet).read().is_zero(),
                 Errors::ADDRESS_ALREADY_LINKED_TOKEN,
-            ); // solidity does not have this check ensure required
+            );
             assert(management_keys.len().is_non_zero(), Errors::MANAGEMENT_KEYS_EMPTY);
 
             let identity = self
@@ -306,7 +306,7 @@ pub mod IdFactory {
             let token_identity_storage_path = self.token_identity.entry(token);
             assert(
                 token_identity_storage_path.read().is_zero(), Errors::ADDRESS_ALREADY_LINKED_TOKEN,
-            ); // solidity does not have this check ensure required
+            );
             assert(self.user_identity.entry(token).read().is_zero(), Errors::WALLET_ALREADY_LINKED);
             let identity = self
                 .deploy_identity(token_salt, self.implementation_authority.read(), token_owner);

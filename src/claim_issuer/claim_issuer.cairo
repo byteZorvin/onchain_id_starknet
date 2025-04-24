@@ -99,7 +99,7 @@ pub mod ClaimIssuer {
     pub impl SNIP12MetadataImpl of SNIP12Metadata {
         /// Returns the name of the SNIP-12 metadata.
         fn name() -> felt252 {
-            'OnchainID.ClaimIssuer'
+            'OnchainID'
         }
 
         /// Returns the version of the SNIP-12 metadata.
