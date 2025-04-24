@@ -91,7 +91,7 @@ pub mod Identity {
     pub impl SNIP12MetadataImpl of SNIP12Metadata {
         /// Returns the name of the SNIP-12 metadata.
         fn name() -> felt252 {
-            'OnchainID'
+            'OnchainID.Identity'
         }
 
         /// Returns the version of the SNIP-12 metadata.
