@@ -8,7 +8,7 @@ pub mod gateway {
     pub mod interface;
 }
 
-pub mod proxy {
+pub mod implementation_authority {
     pub mod implementation_authority;
     pub mod interface;
 }
@@ -42,4 +42,5 @@ pub mod identity {
     pub mod component;
     pub mod identity;
     pub mod interface;
+    pub mod structs;
 }

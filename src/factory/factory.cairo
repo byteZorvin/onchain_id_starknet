@@ -10,7 +10,7 @@ pub mod IdFactory {
     };
     use crate::factory::interface::IIdFactory;
     use crate::identity::interface::ierc734::{IERC734Dispatcher, IERC734DispatcherTrait};
-    use crate::proxy::interface::{
+    use crate::implementation_authority::interface::{
         IIdentityImplementationAuthorityDispatcher, IIdentityImplementationAuthorityDispatcherTrait,
     };
     use crate::libraries::vec_ext::{VecDeleteTrait, VecToArrayTrait};

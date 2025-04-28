@@ -81,7 +81,7 @@ pub struct ClaimMessage {
     pub data: Span<felt252>,
 }
 
-/// StructHash implemenatation for `ClaimMessage`.
+/// StructHash implementation for `ClaimMessage`.
 pub impl ClaimMessageStructHash of StructHash<ClaimMessage> {
     fn hash_struct(self: @ClaimMessage) -> felt252 {
         PoseidonTrait::new()

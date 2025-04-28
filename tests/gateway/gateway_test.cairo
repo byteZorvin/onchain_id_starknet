@@ -1,6 +1,6 @@
 use onchain_id_starknet::factory::interface::IIdFactoryDispatcher;
 use onchain_id_starknet::gateway::interface::IGatewayDispatcher;
-use onchain_id_starknet::proxy::interface::IIdentityImplementationAuthorityDispatcher;
+use onchain_id_starknet::implementation_authority::interface::IIdentityImplementationAuthorityDispatcher;
 use openzeppelin_access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,

@@ -1,7 +1,7 @@
 use core::num::traits::Zero;
 use onchain_id_starknet::identity::interface::iidentity::IdentityABIDispatcherTrait;
-use onchain_id_starknet::proxy::implementation_authority::IdentityImplementationAuthority;
-use onchain_id_starknet::proxy::interface::{
+use onchain_id_starknet::implementation_authority::implementation_authority::IdentityImplementationAuthority;
+use onchain_id_starknet::implementation_authority::interface::{
     IIdentityImplementationAuthorityDispatcher, IIdentityImplementationAuthorityDispatcherTrait,
 };
 use openzeppelin_access::ownable::interface::{
