@@ -121,6 +121,8 @@ pub mod IdFactory {
         pub factory: ContractAddress,
     }
 
+    pub const MAX_WALLET_PER_IDENTITY: u64 = 100;
+
     pub mod Errors {
         pub const TOKEN_FACTORY_IS_ZERO_ADDRESS: felt252 = 'Token factory address zero';
         pub const TOKEN_IS_ZERO_ADDRESS: felt252 = 'Token address zero';
@@ -132,7 +134,7 @@ pub mod IdFactory {
         pub const NOT_FACTORY: felt252 = 'Not a factory';
         pub const WALLET_ALREADY_LINKED: felt252 = 'Wallet already linked';
         pub const WALLET_NOT_LINKED: felt252 = 'Wallet not linked to identity';
-        pub const MAX_WALLET_PER_IDENTITY: felt252 = 'Max wallets per ID exceeded';
+        pub const MAX_WALLET_PER_IDENTITY_EXCEEDED: felt252 = 'Max wallets per ID exceeded';
         pub const ADDRESS_ALREADY_LINKED_TOKEN: felt252 = 'Address already linked token';
         pub const NOT_FACTORY_NOR_OWNER: felt252 = 'Only factory or owner can call';
         pub const SALT_TAKEN: felt252 = 'Salt already taken';
@@ -378,7 +380,8 @@ pub mod IdFactory {
             );
             let caller_user_identity_wallets_storage = self.wallets.entry(caller_user_identity);
             assert(
-                caller_user_identity_wallets_storage.len() < 101, Errors::MAX_WALLET_PER_IDENTITY,
+                caller_user_identity_wallets_storage.len() <= MAX_WALLET_PER_IDENTITY,
+                Errors::MAX_WALLET_PER_IDENTITY_EXCEEDED,
             );
             new_wallet_user_identity_storage.write(caller_user_identity);
             caller_user_identity_wallets_storage.push(new_wallet);
