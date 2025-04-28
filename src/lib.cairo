@@ -8,14 +8,13 @@ pub mod gateway {
     pub mod interface;
 }
 
-pub mod proxy {
+pub mod implementation_authority {
     pub mod implementation_authority;
     pub mod interface;
 }
 
-pub mod storage {
+pub mod libraries {
     pub mod signature;
-    pub mod structs;
     pub mod vec_ext;
 }
 
@@ -43,4 +42,5 @@ pub mod identity {
     pub mod component;
     pub mod identity;
     pub mod interface;
+    pub mod structs;
 }

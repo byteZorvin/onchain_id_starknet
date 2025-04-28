@@ -113,9 +113,9 @@ pub mod ClaimIssuer {
         #[inline]
         fn _revoke_claim_by_signature(ref self: ContractState, signature: Span<felt252>) {
             let sig_hash = core::poseidon::poseidon_hash_span(signature);
-            let revoked_claim_storage_path = self.revoked_claims.entry(sig_hash);
-            assert(!revoked_claim_storage_path.read(), Errors::CLAIM_ALREADY_REVOKED);
-            revoked_claim_storage_path.write(true);
+            let revoked_claim_storage = self.revoked_claims.entry(sig_hash);
+            assert(!revoked_claim_storage.read(), Errors::CLAIM_ALREADY_REVOKED);
+            revoked_claim_storage.write(true);
             self.emit(ClaimRevoked { signature });
         }
     }

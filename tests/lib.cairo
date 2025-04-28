@@ -24,6 +24,6 @@ pub mod verifiers {
     pub mod verifier_user_test;
 }
 
-pub mod proxy {
+pub mod implementation_authority {
     pub mod implementation_authority_test;
 }

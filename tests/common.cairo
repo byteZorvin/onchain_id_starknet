@@ -7,8 +7,8 @@ use onchain_id_starknet::identity::identity::Identity::SNIP12MetadataImpl;
 use onchain_id_starknet::identity::interface::iidentity::{
     IdentityABIDispatcher, IdentityABIDispatcherTrait,
 };
-use onchain_id_starknet::proxy::interface::IIdentityImplementationAuthorityDispatcher;
-use onchain_id_starknet::storage::signature::{ClaimMessage, Signature, StarkSignature};
+use onchain_id_starknet::implementation_authority::interface::IIdentityImplementationAuthorityDispatcher;
+use onchain_id_starknet::libraries::signature::{ClaimMessage, Signature, StarkSignature};
 use onchain_id_starknet::verifiers::interface::{VerifierABIDispatcher, VerifierABIDispatcherTrait};
 use openzeppelin_account::interface::AccountABIDispatcher;
 use openzeppelin_utils::cryptography::snip12::OffchainMessageHash;
