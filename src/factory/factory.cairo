@@ -136,9 +136,9 @@ pub mod IdFactory {
         fn add_token_factory(ref self: ContractState, factory: ContractAddress) {
             self.ownable.assert_only_owner();
             assert(factory.is_non_zero(), Errors::TOKEN_FACTORY_IS_ZERO_ADDRESS);
-            let token_factory_storage_path = self.token_factories.entry(factory);
-            assert(!token_factory_storage_path.read(), Errors::ALREADY_FACTORY);
-            token_factory_storage_path.write(true);
+            let token_factory_storage = self.token_factories.entry(factory);
+            assert(!token_factory_storage.read(), Errors::ALREADY_FACTORY);
+            token_factory_storage.write(true);
             self.emit(TokenFactoryAdded { factory });
         }
 
@@ -156,9 +156,9 @@ pub mod IdFactory {
         fn remove_token_factory(ref self: ContractState, factory: ContractAddress) {
             self.ownable.assert_only_owner();
             assert(factory.is_non_zero(), Errors::TOKEN_FACTORY_IS_ZERO_ADDRESS);
-            let token_factory_storage_path = self.token_factories.entry(factory);
-            assert(token_factory_storage_path.read(), Errors::NOT_FACTORY);
-            token_factory_storage_path.write(false);
+            let token_factory_storage = self.token_factories.entry(factory);
+            assert(token_factory_storage.read(), Errors::NOT_FACTORY);
+            token_factory_storage.write(false);
             self.emit(TokenFactoryRemoved { factory });
         }
 
@@ -183,18 +183,18 @@ pub mod IdFactory {
             assert(wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRESS);
             assert(salt.is_non_zero(), Errors::SALT_IS_ZERO);
             let oid_salt = poseidon_hash_span(array!['OID', salt].span());
-            let salt_taken_storage_path = self.salt_taken.entry(oid_salt);
-            assert(!salt_taken_storage_path.read(), Errors::SALT_TAKEN);
-            let user_identity_storage_path = self.user_identity.entry(wallet);
-            assert(user_identity_storage_path.read().is_zero(), Errors::WALLET_ALREADY_LINKED);
+            let salt_taken_storage = self.salt_taken.entry(oid_salt);
+            assert(!salt_taken_storage.read(), Errors::SALT_TAKEN);
+            let user_identity_storage = self.user_identity.entry(wallet);
+            assert(user_identity_storage.read().is_zero(), Errors::WALLET_ALREADY_LINKED);
             assert(
                 self.token_identity.entry(wallet).read().is_zero(),
                 Errors::ADDRESS_ALREADY_LINKED_TOKEN,
             ); // solidity does not have this check ensure required
             let identity = self
                 .deploy_identity(oid_salt, self.implementation_authority.read(), wallet);
-            salt_taken_storage_path.write(true);
-            user_identity_storage_path.write(identity);
+            salt_taken_storage.write(true);
+            user_identity_storage.write(identity);
             self.wallets.entry(identity).push(wallet);
             self.emit(WalletLinked { wallet, identity });
             identity
@@ -228,10 +228,10 @@ pub mod IdFactory {
             assert(wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRESS);
             assert(salt.is_non_zero(), Errors::SALT_IS_ZERO);
             let oid_salt = poseidon_hash_span(array!['OID', salt].span());
-            let salt_taken_storage_path = self.salt_taken.entry(oid_salt);
-            assert(!salt_taken_storage_path.read(), Errors::SALT_TAKEN);
-            let user_identity_storage_path = self.user_identity.entry(wallet);
-            assert(user_identity_storage_path.read().is_zero(), Errors::WALLET_ALREADY_LINKED);
+            let salt_taken_storage = self.salt_taken.entry(oid_salt);
+            assert(!salt_taken_storage.read(), Errors::SALT_TAKEN);
+            let user_identity_storage = self.user_identity.entry(wallet);
+            assert(user_identity_storage.read().is_zero(), Errors::WALLET_ALREADY_LINKED);
             assert(
                 self.token_identity.entry(wallet).read().is_zero(),
                 Errors::ADDRESS_ALREADY_LINKED_TOKEN,
@@ -259,8 +259,8 @@ pub mod IdFactory {
                 .remove_key(
                     poseidon_hash_span(array![starknet::get_contract_address().into()].span()), 1,
                 );
-            salt_taken_storage_path.write(true);
-            user_identity_storage_path.write(identity);
+            salt_taken_storage.write(true);
+            user_identity_storage.write(identity);
             self.wallets.entry(identity).push(wallet);
             self.emit(WalletLinked { wallet, identity });
             identity
@@ -301,17 +301,15 @@ pub mod IdFactory {
             assert(token_owner.is_non_zero(), Errors::TOKEN_OWNER_IS_ZERO_ADDRESS);
             assert(salt.is_non_zero(), Errors::SALT_IS_ZERO);
             let token_salt = poseidon_hash_span(array!['Token', salt].span());
-            let salt_taken_storage_path = self.salt_taken.entry(token_salt);
-            assert(!salt_taken_storage_path.read(), Errors::SALT_TAKEN);
-            let token_identity_storage_path = self.token_identity.entry(token);
-            assert(
-                token_identity_storage_path.read().is_zero(), Errors::ADDRESS_ALREADY_LINKED_TOKEN,
-            );
+            let salt_taken_storage = self.salt_taken.entry(token_salt);
+            assert(!salt_taken_storage.read(), Errors::SALT_TAKEN);
+            let token_identity_storage = self.token_identity.entry(token);
+            assert(token_identity_storage.read().is_zero(), Errors::ADDRESS_ALREADY_LINKED_TOKEN);
             assert(self.user_identity.entry(token).read().is_zero(), Errors::WALLET_ALREADY_LINKED);
             let identity = self
                 .deploy_identity(token_salt, self.implementation_authority.read(), token_owner);
-            salt_taken_storage_path.write(true);
-            token_identity_storage_path.write(identity);
+            salt_taken_storage.write(true);
+            token_identity_storage.write(identity);
             self.token_address.entry(identity).write(token);
             self.wallets.entry(identity).push(token);
             self.emit(TokenLinked { token, identity });
@@ -337,24 +335,20 @@ pub mod IdFactory {
                 .entry(starknet::get_caller_address())
                 .read();
             assert(caller_user_identity.is_non_zero(), Errors::WALLET_NOT_LINKED);
-            let new_wallet_user_identity_storage_path = self.user_identity.entry(new_wallet);
+            let new_wallet_user_identity_storage = self.user_identity.entry(new_wallet);
             assert(
-                new_wallet_user_identity_storage_path.read().is_zero(),
-                Errors::WALLET_ALREADY_LINKED,
+                new_wallet_user_identity_storage.read().is_zero(), Errors::WALLET_ALREADY_LINKED,
             );
             assert(
                 self.token_identity.entry(new_wallet).read().is_zero(),
                 Errors::ADDRESS_ALREADY_LINKED_TOKEN,
             );
-            let caller_user_identity_wallets_storage_path = self
-                .wallets
-                .entry(caller_user_identity);
+            let caller_user_identity_wallets_storage = self.wallets.entry(caller_user_identity);
             assert(
-                caller_user_identity_wallets_storage_path.len() < 101,
-                Errors::MAX_WALLET_PER_IDENTITY,
+                caller_user_identity_wallets_storage.len() < 101, Errors::MAX_WALLET_PER_IDENTITY,
             );
-            new_wallet_user_identity_storage_path.write(caller_user_identity);
-            caller_user_identity_wallets_storage_path.push(new_wallet);
+            new_wallet_user_identity_storage.write(caller_user_identity);
+            caller_user_identity_wallets_storage.push(new_wallet);
             self.emit(WalletLinked { wallet: new_wallet, identity: caller_user_identity });
         }
 
@@ -373,16 +367,16 @@ pub mod IdFactory {
             assert(old_wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRESS);
             let caller = starknet::get_caller_address();
             assert(old_wallet != caller, Errors::CANNOT_REMOVE_CALLER);
-            let old_wallet_user_identity_storage_path = self.user_identity.entry(old_wallet);
-            let old_wallet_user_identity = old_wallet_user_identity_storage_path.read();
+            let old_wallet_user_identity_storage = self.user_identity.entry(old_wallet);
+            let old_wallet_user_identity = old_wallet_user_identity_storage.read();
             assert(
                 self.user_identity.entry(caller).read() == old_wallet_user_identity,
                 Errors::ONLY_LINKED_WALLET_CAN_UNLINK,
             );
 
-            old_wallet_user_identity_storage_path.write(Zero::zero());
-            let wallets_storage_path = self.wallets.entry(old_wallet_user_identity);
-            let mut iterator = wallets_storage_path.into_iter_full_range().enumerate();
+            old_wallet_user_identity_storage.write(Zero::zero());
+            let wallets_storage = self.wallets.entry(old_wallet_user_identity);
+            let mut iterator = wallets_storage.into_iter_full_range().enumerate();
             let (index, _) = iterator
                 .find(|iter| {
                     let (_, storage) = iter;
@@ -390,7 +384,7 @@ pub mod IdFactory {
                 })
                 .expect(Errors::WALLET_NOT_LINKED);
 
-            wallets_storage_path.pop_swap(index.into());
+            wallets_storage.pop_swap(index.into());
 
             self.emit(WalletUnlinked { wallet: old_wallet, identity: old_wallet_user_identity });
         }

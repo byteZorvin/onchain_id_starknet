@@ -114,13 +114,13 @@ pub mod IdentityComponent {
             key_type: felt252,
         ) -> bool {
             self.only_manager();
-            let key_storage_path = self.Identity_keys.entry(key);
-            let mut key_details = key_storage_path.read();
+            let key_storage = self.Identity_keys.entry(key);
+            let mut key_details = key_storage.read();
             let purpose_bit_index = purpose.try_into().expect('Invalid Purpose');
             assert(!key_details.has_purpose(purpose_bit_index), Errors::KEY_ALREADY_HAS_PURPOSE);
             key_details.grant_purpose(purpose_bit_index);
             key_details.key_type = key_type.try_into().expect('Invalid Key Type');
-            key_storage_path.write(key_details);
+            key_storage.write(key_details);
 
             self.Identity_keys_by_purpose.entry(purpose).push(key);
             self.emit(ERC734Event::KeyAdded(ierc734::KeyAdded { key, purpose, key_type }));
@@ -147,8 +147,8 @@ pub mod IdentityComponent {
             ref self: ComponentState<TContractState>, key: felt252, purpose: felt252,
         ) -> bool {
             self.only_manager();
-            let key_storage_path = self.Identity_keys.entry(key);
-            let mut key_details = key_storage_path.read();
+            let key_storage = self.Identity_keys.entry(key);
+            let mut key_details = key_storage.read();
             assert(key_details.purposes.is_non_zero(), Errors::KEY_NOT_REGISTERED);
             assert(key_details.has_purpose(purpose), Errors::KEY_DOES_NOT_HAVE_PURPOSE);
 
@@ -159,10 +159,10 @@ pub mod IdentityComponent {
                 key_details.key_type = Zero::zero();
             }
 
-            key_storage_path.write(key_details);
+            key_storage.write(key_details);
 
-            let keys_by_purpose_key_storage_path = self.Identity_keys_by_purpose.entry(purpose);
-            let mut iterator = keys_by_purpose_key_storage_path.into_iter_full_range().enumerate();
+            let keys_by_purpose_key_storage = self.Identity_keys_by_purpose.entry(purpose);
+            let mut iterator = keys_by_purpose_key_storage.into_iter_full_range().enumerate();
 
             let (index, _) = iterator
                 .find(|iter| {
@@ -171,7 +171,7 @@ pub mod IdentityComponent {
                 })
                 .expect(Errors::KEY_DOES_NOT_HAVE_PURPOSE);
 
-            keys_by_purpose_key_storage_path.pop_swap(index.into());
+            keys_by_purpose_key_storage.pop_swap(index.into());
             self.emit(ERC734Event::KeyRemoved(ierc734::KeyRemoved { key, purpose, key_type }));
             true
         }
@@ -197,10 +197,8 @@ pub mod IdentityComponent {
                     .into(),
                 Errors::NON_EXISTING_EXECUTION,
             );
-            let execution_storage_path = self.Identity_executions.entry(execution_id);
-            let mut execution_request_status = execution_storage_path
-                .execution_request_status
-                .read();
+            let execution_storage = self.Identity_executions.entry(execution_id);
+            let mut execution_request_status = execution_storage.execution_request_status.read();
 
             assert(
                 execution_request_status != ExecutionRequestStatus::Executed,
@@ -213,7 +211,7 @@ pub mod IdentityComponent {
             let caller_hash = poseidon_hash_span(
                 array![starknet::get_caller_address().into()].span(),
             );
-            let to_address = execution_storage_path.to.read();
+            let to_address = execution_storage.to.read();
             if to_address == starknet::get_contract_address() {
                 assert(
                     self.key_has_purpose(caller_hash, Purpose::MANAGEMENT),
@@ -226,16 +224,14 @@ pub mod IdentityComponent {
             }
             self.emit(ERC734Event::Approved(ierc734::Approved { execution_id, approved: approve }));
             if !approve {
-                execution_storage_path
-                    .execution_request_status
-                    .write(ExecutionRequestStatus::Rejected);
+                execution_storage.execution_request_status.write(ExecutionRequestStatus::Rejected);
                 return false;
             }
 
             execution_request_status = ExecutionRequestStatus::Approved;
-            let selector = execution_storage_path.selector.read();
+            let selector = execution_storage.selector.read();
 
-            let calldata = execution_storage_path.calldata.to_array().span();
+            let calldata = execution_storage.calldata.to_array().span();
 
             let execution_result =
                 match starknet::syscalls::call_contract_syscall(to_address, selector, calldata) {
@@ -266,7 +262,7 @@ pub mod IdentityComponent {
             if execution_result {
                 execution_request_status = ExecutionRequestStatus::Executed;
             }
-            execution_storage_path.execution_request_status.write(execution_request_status);
+            execution_storage.execution_request_status.write(execution_request_status);
 
             execution_result
         }
@@ -280,12 +276,12 @@ pub mod IdentityComponent {
             let execution_nonce = self.Identity_execution_nonce.read();
             self.Identity_execution_nonce.write(execution_nonce + 1);
 
-            let execution_storage_path = self.Identity_executions.entry(execution_nonce);
-            execution_storage_path.to.write(to);
-            execution_storage_path.selector.write(selector);
-            let calldata_storage_path = execution_storage_path.calldata.deref();
+            let execution_storage = self.Identity_executions.entry(execution_nonce);
+            execution_storage.to.write(to);
+            execution_storage.selector.write(selector);
+            let calldata_storage = execution_storage.calldata.deref();
             for chunk in calldata {
-                calldata_storage_path.push(*chunk);
+                calldata_storage.push(*chunk);
             }
 
             self
@@ -400,34 +396,31 @@ pub mod IdentityComponent {
                 assert(is_valid_claim, Errors::INVALID_CLAIM);
             }
 
-            let mut claim_data_serialized: Array<felt252> = array![];
-            issuer.serialize(ref claim_data_serialized);
-            topic.serialize(ref claim_data_serialized);
-            let claim_id = poseidon_hash_span(claim_data_serialized.span());
+            let claim_id = poseidon_hash_span([issuer.into(), topic].span());
 
-            let claim_storage_path = self.Identity_claims.entry(claim_id);
+            let claim_storage = self.Identity_claims.entry(claim_id);
 
-            claim_storage_path.scheme.write(scheme);
+            claim_storage.scheme.write(scheme);
 
-            let signature_storage = claim_storage_path.signature.deref();
+            let signature_storage = claim_storage.signature.deref();
             signature_storage.clear();
             for chunk in signature {
                 signature_storage.push(*chunk);
             }
 
-            let data_storage = claim_storage_path.data.deref();
+            let data_storage = claim_storage.data.deref();
 
             data_storage.clear();
             for chunk in data {
                 data_storage.push(*chunk);
             }
 
-            claim_storage_path.uri.write(uri.clone());
+            claim_storage.uri.write(uri.clone());
 
-            if claim_storage_path.issuer.read().is_zero() {
+            if claim_storage.issuer.read().is_zero() {
                 self.Identity_claims_by_topic.entry(topic).push(claim_id);
-                claim_storage_path.issuer.write(issuer);
-                claim_storage_path.topic.write(topic);
+                claim_storage.issuer.write(issuer);
+                claim_storage.topic.write(topic);
                 self
                     .emit(
                         ERC735Event::ClaimAdded(
@@ -452,12 +445,12 @@ pub mod IdentityComponent {
 
         fn remove_claim(ref self: ComponentState<TContractState>, claim_id: felt252) -> bool {
             self.only_claim_key();
-            let claim_storage_path = self.Identity_claims.entry(claim_id);
-            let topic = claim_storage_path.topic.read();
+            let claim_storage = self.Identity_claims.entry(claim_id);
+            let topic = claim_storage.topic.read();
             assert(topic.is_non_zero(), Errors::CLAIM_DOES_NOT_EXIST);
 
-            let mut claims_by_topic_storage_path = self.Identity_claims_by_topic.entry(topic);
-            let mut iterator = claims_by_topic_storage_path.into_iter_full_range().enumerate();
+            let mut claims_by_topic_storage = self.Identity_claims_by_topic.entry(topic);
+            let mut iterator = claims_by_topic_storage.into_iter_full_range().enumerate();
 
             let (index, _) = iterator
                 .find(|iter| {
@@ -466,7 +459,7 @@ pub mod IdentityComponent {
                 })
                 .expect(Errors::CLAIM_DOES_NOT_EXIST);
 
-            claims_by_topic_storage_path.pop_swap(index.into());
+            claims_by_topic_storage.pop_swap(index.into());
 
             self
                 .emit(
@@ -474,38 +467,38 @@ pub mod IdentityComponent {
                         ierc735::ClaimRemoved {
                             claim_id,
                             topic,
-                            scheme: claim_storage_path.scheme.read(),
-                            issuer: claim_storage_path.issuer.read(),
-                            signature: claim_storage_path.signature.to_array().span(),
-                            data: claim_storage_path.data.to_array().span(),
-                            uri: claim_storage_path.uri.read(),
+                            scheme: claim_storage.scheme.read(),
+                            issuer: claim_storage.issuer.read(),
+                            signature: claim_storage.signature.to_array().span(),
+                            data: claim_storage.data.to_array().span(),
+                            uri: claim_storage.uri.read(),
                         },
                     ),
                 );
 
             // Delete claim data
-            claim_storage_path.topic.write(Default::default());
-            claim_storage_path.scheme.write(Default::default());
-            claim_storage_path.issuer.write(Zero::zero());
+            claim_storage.topic.write(Default::default());
+            claim_storage.scheme.write(Default::default());
+            claim_storage.issuer.write(Zero::zero());
             // Clear signature
-            claim_storage_path.signature.clear();
+            claim_storage.signature.clear();
             // Clear data
-            claim_storage_path.data.clear();
-            claim_storage_path.uri.write(Default::default());
+            claim_storage.data.clear();
+            claim_storage.uri.write(Default::default());
             true
         }
 
         fn get_claim(
             self: @ComponentState<TContractState>, claim_id: felt252,
         ) -> (felt252, felt252, ContractAddress, Span<felt252>, Span<felt252>, ByteArray) {
-            let claim_storage_path = self.Identity_claims.entry(claim_id);
+            let claim_storage = self.Identity_claims.entry(claim_id);
             (
-                claim_storage_path.topic.read(),
-                claim_storage_path.scheme.read(),
-                claim_storage_path.issuer.read(),
-                claim_storage_path.signature.to_array().span(),
-                claim_storage_path.data.to_array().span(),
-                claim_storage_path.uri.read(),
+                claim_storage.topic.read(),
+                claim_storage.scheme.read(),
+                claim_storage.issuer.read(),
+                claim_storage.signature.to_array().span(),
+                claim_storage.data.to_array().span(),
+                claim_storage.uri.read(),
             )
         }
 

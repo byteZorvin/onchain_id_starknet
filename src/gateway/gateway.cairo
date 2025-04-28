@@ -167,12 +167,12 @@ pub mod Gateway {
                 Errors::ZeroAddress();
             }
 
-            let approved_signer_storage_path = self.approved_signers.entry(signer);
-            if approved_signer_storage_path.read() {
+            let approved_signer_storage = self.approved_signers.entry(signer);
+            if approved_signer_storage.read() {
                 Errors::SignerAlreadyApproved();
             }
 
-            approved_signer_storage_path.write(true);
+            approved_signer_storage.write(true);
             self.emit(SignerApproved { signer });
         }
 
@@ -194,12 +194,12 @@ pub mod Gateway {
                 Errors::ZeroAddress();
             }
 
-            let approved_signer_storage_path = self.approved_signers.entry(signer);
-            if !approved_signer_storage_path.read() {
+            let approved_signer_storage = self.approved_signers.entry(signer);
+            if !approved_signer_storage.read() {
                 Errors::SignerNotApproved();
             }
 
-            approved_signer_storage_path.write(false);
+            approved_signer_storage.write(false);
             self.emit(SignerRevoked { signer });
         }
 
@@ -376,11 +376,11 @@ pub mod Gateway {
         /// - `signature` must not be already revoked.
         fn revoke_signature(ref self: ContractState, signature: Signature) {
             self.ownable.assert_only_owner();
-            let revoked_signature_storage_path = self.revoked_signatures.entry(signature);
-            if revoked_signature_storage_path.read() {
+            let revoked_signature_storage = self.revoked_signatures.entry(signature);
+            if revoked_signature_storage.read() {
                 Errors::SignatureAlreadyRevoked();
             }
-            revoked_signature_storage_path.write(true);
+            revoked_signature_storage.write(true);
             self.emit(SignatureRevoked { signature });
         }
 
@@ -396,11 +396,11 @@ pub mod Gateway {
         /// - `signature` must already revoked.
         fn approve_signature(ref self: ContractState, signature: Signature) {
             self.ownable.assert_only_owner();
-            let revoked_signature_storage_path = self.revoked_signatures.entry(signature);
-            if !revoked_signature_storage_path.read() {
+            let revoked_signature_storage = self.revoked_signatures.entry(signature);
+            if !revoked_signature_storage.read() {
                 Errors::SignatureNotRevoked();
             }
-            revoked_signature_storage_path.write(false);
+            revoked_signature_storage.write(false);
             self.emit(SignatureApproved { signature });
         }
 
