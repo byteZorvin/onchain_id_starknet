@@ -13,9 +13,8 @@ pub mod proxy {
     pub mod interface;
 }
 
-pub mod storage {
+pub mod libraries {
     pub mod signature;
-    pub mod structs;
     pub mod vec_ext;
 }
 

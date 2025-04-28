@@ -11,7 +11,7 @@ pub mod VerifierComponent {
     };
     use crate::identity::interface::ierc735::{IERC735Dispatcher, IERC735DispatcherTrait};
     use crate::identity::interface::iidentity::{IIdentityDispatcher, IIdentityDispatcherTrait};
-    use crate::storage::vec_ext::{VecDeleteTrait, VecToArrayTrait};
+    use crate::libraries::vec_ext::{VecDeleteTrait, VecToArrayTrait};
     use crate::verifiers::interface::{
         IClaimTopicsRegistry, ITrustedIssuersRegistry, IVerifier, VerifierABI,
     };

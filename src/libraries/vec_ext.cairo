@@ -3,6 +3,11 @@ use starknet::storage::{
     StoragePointerReadAccess, StoragePointerWriteAccess, Vec,
 };
 
+/// Trait that encapsulates deletion logic from arbitrary index.
+///
+/// If element is not at the end of list swaps the element at last index to target and pops the last
+/// element.
+/// Does not preserve the order of the list.
 pub trait VecDeleteTrait<T> {
     fn pop_swap(self: T, index: u64);
 }
@@ -22,6 +27,7 @@ pub impl VecDeleteImpl<
     }
 }
 
+/// Trait that encapsulates the logic that clears the all elements in a `Vec`.
 pub trait VecClearTrait<T> {
     fn clear(self: T);
 }
@@ -34,6 +40,7 @@ impl VecClearImpl<
     }
 }
 
+/// Trait that converts `Vec` into an `Array`.
 pub trait VecToArrayTrait<T> {
     type ElementType;
 

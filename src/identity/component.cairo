@@ -15,11 +15,11 @@ pub mod IdentityComponent {
         IIdentity, IIdentityDispatcher, IIdentityDispatcherTrait,
     };
     use crate::identity::interface::{ierc734, ierc735};
-    use crate::storage::signature::{ClaimMessage, get_public_key_hash, is_valid_signature};
-    use crate::storage::structs::{
+    use crate::identity::structs::{
         Claim, Execution, ExecutionRequestStatus, KeyDetails, KeyDetailsTrait,
     };
-    use crate::storage::vec_ext::{VecClearTrait, VecDeleteTrait, VecToArrayTrait};
+    use crate::libraries::signature::{ClaimMessage, get_public_key_hash, is_valid_signature};
+    use crate::libraries::vec_ext::{VecClearTrait, VecDeleteTrait, VecToArrayTrait};
 
     #[storage]
     pub struct Storage {

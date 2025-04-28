@@ -13,7 +13,7 @@ pub mod IdFactory {
     use crate::proxy::interface::{
         IIdentityImplementationAuthorityDispatcher, IIdentityImplementationAuthorityDispatcherTrait,
     };
-    use crate::storage::vec_ext::{VecDeleteTrait, VecToArrayTrait};
+    use crate::libraries::vec_ext::{VecDeleteTrait, VecToArrayTrait};
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 

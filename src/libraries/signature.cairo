@@ -10,11 +10,14 @@ pub struct StarkSignature {
     pub public_key: felt252,
 }
 
+/// Enum that stores verification schemas
 #[derive(Copy, Drop)]
 pub enum Signature {
     StarkSignature: StarkSignature,
 }
 
+/// Enum serialized in a way that it stores name of the schema at 0 index rather than ordered
+/// manner.
 impl SignatureSerde of Serde<Signature> {
     fn serialize(self: @Signature, ref output: Array<felt252>) {
         match self {
@@ -61,6 +64,7 @@ pub fn get_public_key_hash(signature: Span<felt252>) -> felt252 {
     }
 }
 
+/// SNIP12 type hash for ClaimMessages
 pub const CLAIM_MESSAGE_TYPE_HASH: felt252 = selector!(
     "\"ClaimMessage\"(
         \"identity\":\"ContractAddress\",
@@ -69,6 +73,7 @@ pub const CLAIM_MESSAGE_TYPE_HASH: felt252 = selector!(
     )",
 );
 
+/// Claim message that should be signed by the issuer.
 #[derive(Drop, Copy, Serde)]
 pub struct ClaimMessage {
     pub identity: ContractAddress,
@@ -76,6 +81,7 @@ pub struct ClaimMessage {
     pub data: Span<felt252>,
 }
 
+/// StructHash implemenatation for `ClaimMessage`.
 pub impl ClaimMessageStructHash of StructHash<ClaimMessage> {
     fn hash_struct(self: @ClaimMessage) -> felt252 {
         PoseidonTrait::new()
