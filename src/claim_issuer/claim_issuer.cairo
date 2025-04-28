@@ -1,7 +1,6 @@
 //! The `ClaimIssuer` contract extends the core functionalities of the OnchainID protocol by
 //! introducing a robust claim revocation mechanism. It allows for the management of claims
-//! associated with identities, ensuring that claims can be revoked when necessary, thus
-//! maintaining the integrity of identity management.
+//! associated with identities, ensuring that claims can be revoked when necessary.
 //!
 //! # Features
 //!
@@ -11,8 +10,7 @@
 //! # Components
 //!
 //! - **IdentityComponent**: Utilized for core identity functionalities, including key management,
-//! claim
-//!   management, and validation.
+//! claim management, and claim validation.
 //!
 //! # Security Notice
 //!

@@ -7,13 +7,20 @@
 //!
 //! - **Key Management**: Functions for adding/removing keys and their purposes. Provides getters
 //! for the key details. Purposes are limited to 128 at most, and key types are limited to
-//! 64 at most.
+//! 64 at most. Keys are stored as hash of the public key, in order to support various key types.
+//!
 //! - **Arbitrary External Calls**: Functions to create arbitrary execution requests and make
 //! external calls on behalf of the Identity itself.
+//!
 //! - **Claim Management**: Functions for adding, updating, and removing claims, along with getters
-//! for them.
-//! - **Claim Validation**: Validates claims using Stark signatures, with the potential for future
-//!   support for additional verification methods.
+//! for them. Signature/Proof field of claim is stored as `Vec<felt252>` to hold arbitrary proof to
+//! allow various verification schemas.
+//!
+//! - **Claim Validation**: Validates claims using Stark signatures over SNIP12 compliant hashed
+//! claims. Additional verifications schemas can be introduced by enhancing `Signature` enum with
+//! different proof schemas or completely replacing 'IIdentity' interface implementation with custom
+//! one rather than using `IIdentity` implementation provided by this component while utilizing the
+//! `ERC734` and `ERC735` implementations.
 //!
 //! # Constants
 //!
