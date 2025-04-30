@@ -1,3 +1,41 @@
+//! The `IdentityComponent` is a crucial part of the OnchainID protocol, responsible for managing
+//! identities and their associated claims. It implements the IERC734 `KeyHolder` and IERC735
+//! `ClaimHolder` interfaces, providing a robust framework for identity management on the Starknet
+//! blockchain.
+//!
+//! # Features
+//!
+//! - **Key Management**: Functions for adding/removing keys and their purposes. Provides getters
+//! for the key details. Purposes are limited to 128 at most, and key types are limited to
+//! 64 at most. Keys are stored as hash of the public key, in order to support various key types.
+//!
+//! - **Arbitrary External Calls**: Functions to create arbitrary execution requests and make
+//! external calls on behalf of the Identity itself.
+//!
+//! - **Claim Management**: Functions for adding, updating, and removing claims, along with getters
+//! for them. Signature/Proof field of claim is stored as `Vec<felt252>` to hold arbitrary proof to
+//! allow various verification schemas.
+//!
+//! - **Claim Validation**: Validates claims using Stark signatures over SNIP12 compliant hashed
+//! claims. Additional verifications schemas can be introduced by enhancing `Signature` enum with
+//! different proof schemas or completely replacing 'IIdentity' interface implementation with custom
+//! one rather than using `IIdentity` implementation provided by this component while utilizing the
+//! `ERC734` and `ERC735` implementations.
+//!
+//! # Constants
+//!
+//! - `Purpose`: Defines roles for role-based authentication for keys, including management, action,
+//!   and claim purposes.
+//!
+//! This component is intended for use within the OnchainID protocol providing core functionalities
+//! for Identity.
+//!
+//! ## Security Notice
+//!
+//! This component has not undergone a formal security audit and should be considered experimental.
+//! Users should exercise caution when implementing or deploying this code in production
+//! environments.
+
 #[starknet::component]
 pub mod IdentityComponent {
     use core::num::traits::Zero;
@@ -65,6 +103,27 @@ pub mod IdentityComponent {
     pub impl Identity<
         TContractState, +Drop<TContractState>, +HasComponent<TContractState>, +SNIP12Metadata,
     > of IIdentity<ComponentState<TContractState>> {
+        /// Checks if a claim is valid for given identity.
+        ///
+        /// # Arguments
+        ///
+        /// * `identity` - `ContractAddress` representing the identity related to claim.
+        /// * `claim_topic` - `felt252` representing the topic of the claim.
+        /// * `signature` - `Span<felt252> representing the signature of the claim`.
+        /// * `data` - `ByteArray` representing the data field of the claim.
+        ///
+        /// # Requirements
+        ///
+        /// - The issuer of the claim must have a key with CLAIM purpose on the identity.
+        ///
+        /// # Dev
+        ///
+        /// - Identity does not have a built-in revocation mechanism and claims are considered valid
+        /// as long as their signature is valid and they are stored by the identity contract.
+        ///
+        /// # Returns
+        ///
+        /// A `bool` indicating whether claim is valid or not.
         fn is_claim_valid(
             self: @ComponentState<TContractState>,
             identity: ContractAddress,
@@ -127,7 +186,7 @@ pub mod IdentityComponent {
             true
         }
 
-        /// This function removes given purpose from given key of given identity.
+        /// This function removes given purpose from key of identity.
         ///
         /// # Arguments
         ///
@@ -183,6 +242,12 @@ pub mod IdentityComponent {
         /// * `execution_id` A `felt252` representing the identifier of execution to approve/reject.
         /// * `approve` A `bool` representing the status of approval. (true for approve, false
         /// for reject).
+        ///
+        /// # Requirements
+        ///
+        /// - If target of the call is identity itself caller should have MANAGEMENT key else ACTION
+        /// key.
+        /// - Execution request must not be already executed or rejected.
         ///
         /// # Returns
         ///
@@ -267,6 +332,19 @@ pub mod IdentityComponent {
             execution_result
         }
 
+        /// Passes execution request to the key manager, executed immediately if caller has MANAGENT
+        /// key or ACTION key if target is not self. Else execution request is stored to get
+        /// approval by authorized key.
+        ///
+        /// # Arguments
+        ///
+        /// * `to` - `ContractAddress` to call.
+        /// * `selector` - Selector of the function to call.
+        /// * `calldata` - Arguments to pass to external call.
+        ///
+        /// # Returns
+        ///
+        /// A `felt252` representing execution ID.
         fn execute(
             ref self: ComponentState<TContractState>,
             to: ContractAddress,
@@ -378,6 +456,30 @@ pub mod IdentityComponent {
     pub impl ERC735<
         TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
     > of IERC735<ComponentState<TContractState>> {
+        /// Registers a claim, if the claim already exists, it will update the existing claim
+        /// instead of creating a new one.
+        ///
+        /// # Arguments
+        ///
+        /// * `topic` - Topic of the claim.
+        /// * `scheme` - The scheme that describes how to verify the claim.
+        /// * `issuer` - The issuers identity contract address.
+        /// * `signature` - Signature of the claim, which is a proof that claim is issued by
+        /// provided issuer.
+        /// * `data` - Any data attached to claim, usually a hash of the data to not leak private
+        /// information.
+        /// * `uri` - Pointer to the location of the claim, such as HTTP links, IPFS hashes.
+        ///
+        /// # Dev
+        ///
+        /// - Self attested claims are not validated by this function, one can register invalid
+        /// claims if self attested.
+        /// - Issuer and topic cannot be updated since change in those parameters yields in
+        /// different claim_id.
+        ///
+        /// # Returns
+        ///
+        /// A `felt252` representing the id of the claim.
         fn add_claim(
             ref self: ComponentState<TContractState>,
             topic: felt252,
@@ -443,6 +545,19 @@ pub mod IdentityComponent {
             claim_id
         }
 
+        /// Removes claim from identity.
+        ///
+        /// # Arguments
+        ///
+        /// * `claim_id` - Identifier of the claim to remove.
+        ///
+        /// # Requirements
+        ///
+        /// - Caller must have CLAIM key.
+        ///
+        /// # Returns
+        ///
+        /// A `bool` true if claim removed successfully.
         fn remove_claim(ref self: ComponentState<TContractState>, claim_id: felt252) -> bool {
             self.only_claim_key();
             let claim_storage = self.Identity_claims.entry(claim_id);
@@ -488,6 +603,20 @@ pub mod IdentityComponent {
             true
         }
 
+        /// Returns all information about the queried `claim_id`.
+        ///
+        /// # Arguments
+        ///
+        /// * `claim_id` - Identifier of the claim to query for.
+        ///
+        /// # Returns
+        ///
+        /// A `felt252` - representing claim topic.
+        /// A `felt252` - representing scheme.
+        /// A `ContractAddress` - representing the issuers identity contract.
+        /// A `Span<felt252>` - representing signature of the claim.
+        /// A `ByteArray` - representing data attached to claim.
+        /// A `ByteArray` - representing URI of the claim.
         fn get_claim(
             self: @ComponentState<TContractState>, claim_id: felt252,
         ) -> (felt252, felt252, ContractAddress, Span<felt252>, Span<felt252>, ByteArray) {
@@ -502,6 +631,7 @@ pub mod IdentityComponent {
             )
         }
 
+        /// Returns `Span<felt252>` representing claim ids for given topic.
         fn get_claim_ids_by_topics(
             self: @ComponentState<TContractState>, topic: felt252,
         ) -> Span<felt252> {
@@ -523,6 +653,7 @@ pub mod IdentityComponent {
     pub impl InternalImpl<
         TContractState, +Drop<TContractState>, +HasComponent<TContractState>,
     > of InternalTrait<TContractState> {
+        /// Initializer of the component. Registers initial management key.
         fn initialize(
             ref self: ComponentState<TContractState>, initial_management_key: ContractAddress,
         ) {
@@ -546,6 +677,7 @@ pub mod IdentityComponent {
                 );
         }
 
+        /// Asserts if caller has MANAGEMENT key on this identity.
         fn only_manager(self: @ComponentState<TContractState>) {
             let caller = starknet::get_caller_address();
             assert(
@@ -558,6 +690,7 @@ pub mod IdentityComponent {
             );
         }
 
+        /// Asserts if caller has CLAIM key on this identity.
         fn only_claim_key(self: @ComponentState<TContractState>) {
             let caller = starknet::get_caller_address();
             assert(
@@ -570,6 +703,7 @@ pub mod IdentityComponent {
             );
         }
 
+        /// Internal function that executes the execution request and updates it status.
         fn _approve(
             ref self: ComponentState<TContractState>,
             execution_id: felt252,
