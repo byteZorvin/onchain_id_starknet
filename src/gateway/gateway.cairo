@@ -154,7 +154,7 @@ pub mod Gateway {
 
         for signer in signers_to_approve {
             self.approved_signers.entry(*signer).write(true);
-        }
+        };
 
         self.id_factory.write(id_factory_address);
     }

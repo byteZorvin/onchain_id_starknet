@@ -181,7 +181,7 @@ pub mod IdentityComponent {
             key_details.key_type = key_type.try_into().expect('Invalid Key Type');
             key_storage.write(key_details);
 
-            self.Identity_keys_by_purpose.entry(purpose).push(key);
+            self.Identity_keys_by_purpose.entry(purpose).append().write(key);
             self.emit(ERC734Event::KeyAdded(ierc734::KeyAdded { key, purpose, key_type }));
             true
         }
@@ -359,8 +359,8 @@ pub mod IdentityComponent {
             execution_storage.selector.write(selector);
             let calldata_storage = execution_storage.calldata.deref();
             for chunk in calldata {
-                calldata_storage.push(*chunk);
-            }
+                calldata_storage.append().write(*chunk);
+            };
 
             self
                 .emit(
@@ -507,20 +507,20 @@ pub mod IdentityComponent {
             let signature_storage = claim_storage.signature.deref();
             signature_storage.clear();
             for chunk in signature {
-                signature_storage.push(*chunk);
-            }
+                signature_storage.append().write(*chunk);
+            };
 
             let data_storage = claim_storage.data.deref();
 
             data_storage.clear();
             for chunk in data {
-                data_storage.push(*chunk);
-            }
+                data_storage.append().write(*chunk);
+            };
 
             claim_storage.uri.write(uri.clone());
 
             if claim_storage.issuer.read().is_zero() {
-                self.Identity_claims_by_topic.entry(topic).push(claim_id);
+                self.Identity_claims_by_topic.entry(topic).append().write(claim_id);
                 claim_storage.issuer.write(issuer);
                 claim_storage.topic.write(topic);
                 self
@@ -666,7 +666,7 @@ pub mod IdentityComponent {
                 .entry(initial_management_key_hash)
                 .write(KeyDetails { purposes: 2, key_type: 1 });
 
-            self.Identity_keys_by_purpose.entry(1).push(initial_management_key_hash);
+            self.Identity_keys_by_purpose.entry(1).append().write(initial_management_key_hash);
             self
                 .emit(
                     ERC734Event::KeyAdded(
