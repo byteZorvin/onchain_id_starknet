@@ -31,8 +31,8 @@ pub mod IdFactory {
     use openzeppelin_access::ownable::ownable::OwnableComponent;
     use starknet::ContractAddress;
     use starknet::storage::{
-        IntoIterRange, Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess,
-        StoragePointerWriteAccess, Vec,
+        Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+        Vec,
     };
     use crate::factory::interface::IIdFactory;
     use crate::identity::interface::ierc734::{IERC734Dispatcher, IERC734DispatcherTrait};
@@ -52,6 +52,7 @@ pub mod IdFactory {
         token_factories: Map<ContractAddress, bool>,
         implementation_authority: ContractAddress,
         salt_taken: Map<felt252, bool>,
+        // wallet to identity
         user_identity: Map<ContractAddress, ContractAddress>,
         wallets: Map<ContractAddress, Vec<ContractAddress>>,
         token_identity: Map<ContractAddress, ContractAddress>,
@@ -402,6 +403,7 @@ pub mod IdFactory {
         fn unlink_wallet(ref self: ContractState, old_wallet: ContractAddress) {
             assert(old_wallet.is_non_zero(), Errors::WALLET_IS_ZERO_ADDRESS);
             let caller = starknet::get_caller_address();
+            // This ensures that at least 1 wallet is linked
             assert(old_wallet != caller, Errors::CANNOT_REMOVE_CALLER);
             let old_wallet_user_identity_storage = self.user_identity.entry(old_wallet);
             let old_wallet_user_identity = old_wallet_user_identity_storage.read();
@@ -412,15 +414,21 @@ pub mod IdFactory {
 
             old_wallet_user_identity_storage.write(Zero::zero());
             let wallets_storage = self.wallets.entry(old_wallet_user_identity);
-            let mut iterator = wallets_storage.into_iter_full_range().enumerate();
-            let (index, _) = iterator
-                .find(|iter| {
-                    let (_, storage) = iter;
-                    storage.read() == old_wallet
-                })
-                .expect(Errors::WALLET_NOT_LINKED);
 
-            wallets_storage.pop_swap(index.into());
+            let mut index = 0;
+            {
+                let mut found_wallet = false;
+                for i in 0..wallets_storage.len() {
+                    if wallets_storage.at(i).read() == old_wallet {
+                        found_wallet = true;
+                        index = i;
+                        break;
+                    }
+                };
+                assert(found_wallet == true, Errors::WALLET_NOT_LINKED);
+            }
+
+            wallets_storage.pop_swap(index.into(), self.wallets.__base_address__);
 
             self.emit(WalletUnlinked { wallet: old_wallet, identity: old_wallet_user_identity });
         }
