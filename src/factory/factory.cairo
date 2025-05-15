@@ -229,7 +229,7 @@ pub mod IdFactory {
                 .deploy_identity(oid_salt, self.implementation_authority.read(), wallet);
             salt_taken_storage.write(true);
             user_identity_storage.write(identity);
-            self.wallets.entry(identity).push(wallet);
+            self.wallets.entry(identity).append().write(wallet);
             self.emit(WalletLinked { wallet, identity });
             identity
         }
@@ -288,14 +288,14 @@ pub mod IdFactory {
                     "Wallet is also listed in management keys",
                 );
                 identity_dispatcher.add_key(*key, 1, 1);
-            }
+            };
             identity_dispatcher
                 .remove_key(
                     poseidon_hash_span(array![starknet::get_contract_address().into()].span()), 1,
                 );
             salt_taken_storage.write(true);
             user_identity_storage.write(identity);
-            self.wallets.entry(identity).push(wallet);
+            self.wallets.entry(identity).append().write(wallet);
             self.emit(WalletLinked { wallet, identity });
             identity
         }
@@ -346,7 +346,7 @@ pub mod IdFactory {
             salt_taken_storage.write(true);
             token_identity_storage.write(identity);
             self.token_address.entry(identity).write(token);
-            self.wallets.entry(identity).push(token);
+            self.wallets.entry(identity).append().write(token);
             self.emit(TokenLinked { token, identity });
             identity
         }
@@ -384,7 +384,7 @@ pub mod IdFactory {
                 Errors::MAX_WALLET_PER_IDENTITY_EXCEEDED,
             );
             new_wallet_user_identity_storage.write(caller_user_identity);
-            caller_user_identity_wallets_storage.push(new_wallet);
+            caller_user_identity_wallets_storage.append().write(new_wallet);
             self.emit(WalletLinked { wallet: new_wallet, identity: caller_user_identity });
         }
 

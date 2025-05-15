@@ -39,7 +39,8 @@
 
 #[starknet::component]
 pub mod VerifierComponent {
-    use core::num::traits::Zero;
+    use starknet::storage::StoragePointerWriteAccess;
+use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
     use openzeppelin_access::ownable::ownable::OwnableComponent;
     use openzeppelin_access::ownable::ownable::OwnableComponent::InternalTrait as OwnableInternalTrait;
@@ -152,6 +153,7 @@ pub mod VerifierComponent {
                 .into_iter_full_range()
                 .map(|claim_storage| claim_storage.read());
 
+
             /// For each required claim topic ensures there is at least one valid claim issued by
             /// trusted issuer.
             let identity_dispatcher = IERC735Dispatcher { contract_address: identity };
@@ -233,7 +235,7 @@ pub mod VerifierComponent {
             let is_topics_exist = iterator.any(|_claim_topic| _claim_topic.read() == claim_topic);
             assert(!is_topics_exist, Errors::CLAIM_TOPIC_ALREADY_EXIST);
 
-            self.Verifier_required_claim_topics.push(claim_topic);
+            self.Verifier_required_claim_topics.append().write(claim_topic);
             self.emit(ClaimTopicAdded { claim_topic });
         }
 
@@ -329,15 +331,15 @@ pub mod VerifierComponent {
                 Errors::TRUSTED_ISSUERS_EXCEEDS_LIMIT,
             );
 
-            trusted_issuers_storage.push(trusted_issuer);
+            trusted_issuers_storage.append().write(trusted_issuer);
 
             for claim_topic in claim_topics.clone() {
                 self
                     .Verifier_claim_topics_to_trusted_issuers
                     .entry(*claim_topic)
-                    .push(trusted_issuer);
-                trusted_issuer_claim_topics_storage.push(*claim_topic);
-            }
+                    .append().write(trusted_issuer);
+                trusted_issuer_claim_topics_storage.append().write(*claim_topic);
+            };
             self.emit(TrustedIssuerAdded { trusted_issuer: trusted_issuer, claim_topics })
         }
 
@@ -374,7 +376,7 @@ pub mod VerifierComponent {
             let mut issuer_claim_topics = array![];
             for _ in 0..trusted_issuer_claim_topics_storage.len() {
                 issuer_claim_topics.append(trusted_issuer_claim_topics_storage.pop().unwrap());
-            }
+            };
 
             // Remove issuer from trusted issuers by claim topics list
             for trusted_issuer_for_claim_topic_storage in issuer_claim_topics
@@ -385,8 +387,8 @@ pub mod VerifierComponent {
                         trusted_issuer_for_claim_topic_storage.pop_swap(i);
                         break;
                     }
-                }
-            }
+                };
+            };
 
             /// Remove issuer from trusted issuers
             let trusted_issuers_storage = self.Verifier_trusted_issuers.as_path();
@@ -443,7 +445,7 @@ pub mod VerifierComponent {
             let mut issuer_claim_topics = array![];
             for _ in 0..trusted_issuer_claim_topics_storage.len() {
                 issuer_claim_topics.append(trusted_issuer_claim_topics_storage.pop().unwrap());
-            }
+            };
 
             let claim_topics_to_trusted_issuers_storage = self
                 .Verifier_claim_topics_to_trusted_issuers
@@ -458,14 +460,14 @@ pub mod VerifierComponent {
                         trusted_issuer_for_claim_topic_storage.pop_swap(i);
                         break;
                     }
-                }
-            }
+                };
+            };
 
             // Registers trusted issuers claim topics and registers issuer for claim topic
             for claim_topic in claim_topics.clone() {
-                trusted_issuer_claim_topics_storage.push(*claim_topic);
-                claim_topics_to_trusted_issuers_storage.entry(*claim_topic).push(trusted_issuer);
-            }
+                trusted_issuer_claim_topics_storage.append().write(*claim_topic);
+                claim_topics_to_trusted_issuers_storage.entry(*claim_topic).append().write(trusted_issuer);
+            };
 
             self.emit(ClaimTopicsUpdated { trusted_issuer: trusted_issuer, claim_topics });
         }

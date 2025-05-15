@@ -53,7 +53,7 @@ impl KeyDetailsImpl of KeyDetailsTrait {
             }
             purposes /= 2;
             index += 1;
-        }
+        };
         all_purposes
     }
 }
