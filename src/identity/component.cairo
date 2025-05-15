@@ -44,8 +44,8 @@ pub mod IdentityComponent {
     use openzeppelin_utils::cryptography::snip12::{OffchainMessageHash, SNIP12Metadata};
     use starknet::ContractAddress;
     use starknet::storage::{
-        IntoIterRange, Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess,
-        StoragePointerWriteAccess, Vec,
+        Map, MutableVecTrait, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+        Vec, StorageAsPath
     };
     use crate::identity::interface::ierc734::{ERC734Event, IERC734};
     use crate::identity::interface::ierc735::{ERC735Event, IERC735};
@@ -57,7 +57,7 @@ pub mod IdentityComponent {
         Claim, Execution, ExecutionRequestStatus, KeyDetails, KeyDetailsTrait,
     };
     use crate::libraries::signature::{ClaimMessage, get_public_key_hash, is_valid_signature};
-    use crate::libraries::vec_ext::{VecClearTrait, VecDeleteTrait, VecToArrayTrait};
+    use crate::libraries::vec_ext::VecToArrayTrait;
 
     #[storage]
     pub struct Storage {
@@ -221,16 +221,31 @@ pub mod IdentityComponent {
             key_storage.write(key_details);
 
             let keys_by_purpose_key_storage = self.Identity_keys_by_purpose.entry(purpose);
-            let mut iterator = keys_by_purpose_key_storage.into_iter_full_range().enumerate();
+            // let mut iterator = keys_by_purpose_key_storage.into_iter_full_range().enumerate();
 
-            let (index, _) = iterator
-                .find(|iter| {
-                    let (_, storage) = iter;
-                    storage.read() == key
-                })
-                .expect(Errors::KEY_DOES_NOT_HAVE_PURPOSE);
+            // let (index, _) = iterator
+            //     .find(|iter| {
+            //         let (_, storage) = iter;
+            //         storage.read() == key
+            //     })
+            //     .expect(Errors::KEY_DOES_NOT_HAVE_PURPOSE);
 
-            keys_by_purpose_key_storage.pop_swap(index.into());
+            let mut index = 0;
+            {
+                let mut found = false;
+                for i in 0..keys_by_purpose_key_storage.len() {
+                    if keys_by_purpose_key_storage.at(i).read() == key {
+                        index = i;
+                        found = true;
+                        break;
+                    }
+                };
+                assert(found, Errors::KEY_DOES_NOT_HAVE_PURPOSE);
+            }
+
+            // TODO: Fix this
+            // keys_by_purpose_key_storage
+            //     .pop_swap(index.into(), keys_by_purpose_key_storage.__base_address__);
             self.emit(ERC734Event::KeyRemoved(ierc734::KeyRemoved { key, purpose, key_type }));
             true
         }
@@ -505,14 +520,18 @@ pub mod IdentityComponent {
             claim_storage.scheme.write(scheme);
 
             let signature_storage = claim_storage.signature.deref();
-            signature_storage.clear();
+            // TODO: Fix this
+            // signature_storage.clear(claim_storage.signature.as_path().__base_address__);
+
+
             for chunk in signature {
                 signature_storage.append().write(*chunk);
             };
 
             let data_storage = claim_storage.data.deref();
 
-            data_storage.clear();
+            // TODO: Fix this
+            // data_storage.clear();
             for chunk in data {
                 data_storage.append().write(*chunk);
             };
@@ -565,16 +584,30 @@ pub mod IdentityComponent {
             assert(topic.is_non_zero(), Errors::CLAIM_DOES_NOT_EXIST);
 
             let mut claims_by_topic_storage = self.Identity_claims_by_topic.entry(topic);
-            let mut iterator = claims_by_topic_storage.into_iter_full_range().enumerate();
+            // let mut iterator = claims_by_topic_storage.into_iter_full_range().enumerate();
+            // let (index, _) = iterator
+            //     .find(|iter| {
+            //         let (_, storage) = iter;
+            //         storage.read() == claim_id
+            //     })
+            //     .expect(Errors::CLAIM_DOES_NOT_EXIST);
 
-            let (index, _) = iterator
-                .find(|iter| {
-                    let (_, storage) = iter;
-                    storage.read() == claim_id
-                })
-                .expect(Errors::CLAIM_DOES_NOT_EXIST);
+            let mut index = 0;
+            {
+                let mut found = false;
+                for i in 0..claims_by_topic_storage.len() {
+                    if claims_by_topic_storage.at(i).read() == claim_id {
+                        index = i;
+                        found = true;
+                        break;
+                    }
+                };
+                assert(found, Errors::CLAIM_DOES_NOT_EXIST);
+            }
 
-            claims_by_topic_storage.pop_swap(index.into());
+            // TODO: Fix this
+            // claims_by_topic_storage
+            //     .pop_swap(index.into(), claims_by_topic_storage.__base_address__);
 
             self
                 .emit(
@@ -596,9 +629,11 @@ pub mod IdentityComponent {
             claim_storage.scheme.write(Default::default());
             claim_storage.issuer.write(Zero::zero());
             // Clear signature
-            claim_storage.signature.clear();
+            // TODO: Fix this
+            // claim_storage.signature.clear();
             // Clear data
-            claim_storage.data.clear();
+            // TODO: Fix this
+            // claim_storage.data.clear();
             claim_storage.uri.write(Default::default());
             true
         }
@@ -625,8 +660,8 @@ pub mod IdentityComponent {
                 claim_storage.topic.read(),
                 claim_storage.scheme.read(),
                 claim_storage.issuer.read(),
-                claim_storage.signature.to_array().span(),
-                claim_storage.data.to_array().span(),
+                claim_storage.signature.as_path().to_array().span(),
+                claim_storage.data.as_path().to_array().span(),
                 claim_storage.uri.read(),
             )
         }
