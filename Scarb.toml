@@ -23,7 +23,7 @@ casm = false
 
 [[target.starknet-contract]]
 sierra = true
-casm = false
+casm = true
 
 [tool.fmt]
 sort-module-level-items = true

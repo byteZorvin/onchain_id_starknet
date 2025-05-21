@@ -104,12 +104,12 @@ pub mod IdentityImplementationAuthority {
         fn upgrade_identity(ref self: ContractState) {
             let caller = starknet::get_caller_address();
             let current_implementation = self.implementation_class_hash.read();
-            let identity_implementation = starknet::syscalls::get_class_hash_at_syscall(caller)
-                .unwrap();
-            assert(
-                current_implementation != identity_implementation,
-                Errors::IMPLEMENTATIONS_ARE_IDENTICAL,
-            );
+            // let identity_implementation = starknet::syscalls::get_class_hash_at_syscall(caller)
+            //     .unwrap();
+            // assert(
+            //     current_implementation != identity_implementation,
+            //     Errors::IMPLEMENTATIONS_ARE_IDENTICAL,
+            // );
             IUpgradeableDispatcher { contract_address: caller }.upgrade(current_implementation);
         }
 
